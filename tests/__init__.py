@@ -1,0 +1,1 @@
+"""obsidian-metadata test suite."""

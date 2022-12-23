@@ -1,0 +1,21 @@
+---
+github_actions:
+    - ".github/**"
+dev_container:
+    - ".devcontainer/**"
+configuration:
+    - ".*"
+    - "*.js"
+    - "*.json"
+    - "*.toml"
+    - "*.yaml"
+    - "*.yml"
+documentation:
+    - "**.md"
+    - "docs/**"
+    - LICENSE
+python:
+    - "src/**"
+    - "tests/**"
+dependencies:
+    - "*.lock"

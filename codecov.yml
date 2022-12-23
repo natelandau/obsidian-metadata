@@ -1,0 +1,14 @@
+---
+coverage:
+    status:
+        project:
+            default:
+                target: 50% # the required coverage value
+                threshold: 1% # the leniency in hitting the target
+
+    ignore:
+        - tests/
+
+comment:
+    layout: "reach, diff, flags, files" # Remove items here to change the format
+    require_changes: true

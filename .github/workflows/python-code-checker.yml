@@ -1,0 +1,92 @@
+---
+name: "Python Code Checker"
+
+on:
+    workflow_dispatch:
+    push:
+        paths:
+            - ".github/workflows/python-code-checker.yml"
+            - ".github/actions/**"
+            - "src/**"
+            - "tests/**"
+            - "pyproject.toml"
+            - "poetry.lock"
+    pull_request:
+        types: [opened, reopened]
+        paths:
+            - ".github/workflows/python-code-checker.yml"
+            - ".github/actions/**"
+            - "src/**"
+            - "tests/**"
+            - "pyproject.toml"
+            - "poetry.lock"
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    test-python-code:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: true
+            matrix:
+                python-version: ["3.10", "3.11"]
+        steps:
+            - uses: step-security/harden-runner@18bf8ad2ca49c14cbb28b91346d626ccfb00c518 # v2.1.0
+              with:
+                  egress-policy: block
+                  disable-sudo: true
+                  allowed-endpoints: >
+                      api.snapcraft.io:443
+                      api.github.com:443
+                      codecov.io:443
+                      files.pythonhosted.org:443
+                      github.com:443
+                      install.python-poetry.org:443
+                      pypi.org:443
+                      python-poetry.org:443
+                      storage.googleapis.com:443
+                      uploader.codecov.io:443
+
+            - name: Checkout repository
+              uses: actions/checkout@v3
+
+            - name: Setup Python and Poetry
+              uses: ./.github/actions/setup-poetry
+
+            # ----------------------------------------------
+            #    run linters
+            # ----------------------------------------------
+
+            - name: Lint with Mypy
+              run: poetry run mypy src/
+            - name: lint with ruff
+              run: poetry run ruff --extend-ignore=I001,D301 src/
+            - name: check pyproject.toml
+              run: poetry run poetry check
+            - name: lint with black
+              run: poetry run black --check src/
+            - name: run vulture
+              run: poetry run vulture src/
+            - name: run interrogate
+              run: poetry run interrogate -c pyproject.toml .
+
+            # ----------------------------------------------
+            #    run test suite
+            # ----------------------------------------------
+            - name: Run tests with pytest
+              run: |
+                  poetry run coverage run
+                  poetry run coverage report
+                  poetry run coverage xml
+            # ----------------------------------------------
+            #             upload coverage stats
+            # ----------------------------------------------
+            - name: Upload coverage
+              if: github.ref == 'refs/heads/main' && matrix.python-version == '3.11'
+              uses: codecov/codecov-action@v3
+              with:
+                  # token: ${{ secrets.CODECOV_TOKEN }} # Only required for private repositories
+                  files: reports/coverage.xml
+                  fail_ci_if_error: false

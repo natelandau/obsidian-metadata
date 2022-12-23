@@ -1,0 +1,8 @@
+vault = "tests/fixtures/test_vault"
+
+# folders to ignore when parsing content
+exclude_paths = [".git", ".obsidian", "ignore_folder"]
+
+[metadata]
+    metadata_location = "frontmatter" # "frontmatter", "top", "bottom"
+    tags_location     = "top"         # "frontmatter", "top", "bottom"

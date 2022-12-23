@@ -1,0 +1,5 @@
+# Path to your obsidian vault
+vault = "/path/to/vault"
+
+# Folders within the vault to ignore when indexing metadata
+exclude_paths = [".git", ".obsidian"]

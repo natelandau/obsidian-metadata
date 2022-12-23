@@ -1,0 +1,68 @@
+---
+name: Cached Python and Poetry setup
+description: Cache Poetry with additional extras key
+
+inputs:
+    python-version:
+        description: >
+            Version range or exact version of a Python version to use, using SemVer's version range syntax.
+        required: false
+        default: 3.x
+
+outputs:
+    python-version:
+        description: The installed python version. Useful when given a version range as input.
+        value: ${{ steps.setup-python.outputs.python-version }}
+    cache-hit:
+        description: A boolean value to indicate projects dependencies were cached
+        value: ${{ steps.setup-python.outputs.cache-hit }}
+    poetry-cache-hit:
+        description: A boolean value to indicate Poetry installation was cached
+        value: ${{ steps.pipx-cache.outputs.cache-hit }}
+
+runs:
+    using: composite
+    steps:
+        - name: Get pipx env vars
+          id: pipx-env-vars
+          shell: bash
+          run: |
+              echo "pipx-home=${PIPX_HOME}" >> $GITHUB_OUTPUT
+              echo "pipx-bin-dir=${PIPX_BIN_DIR}" >> $GITHUB_OUTPUT
+
+        - name: Load pipx cache
+          # If env vars are not defined do not load cache
+          if: >
+              steps.pipx-env-vars.outputs.pipx-home != ''
+              && steps.pipx-env-vars.outputs.pipx-bin-dir != ''
+          id: pipx-cache
+          uses: actions/cache@v3
+          with:
+              path: |
+                  ${{ steps.pipx-env-vars.outputs.pipx-home }}/venvs/poetry
+                  ${{ steps.pipx-env-vars.outputs.pipx-bin-dir }}/poetry
+              key: ${{ runner.os }}-${{ inputs.python-version }}-pipx-${{ hashFiles('**/poetry.lock') }}
+
+        - name: Install poetry
+          # If env vars are not defined or we missed pipx cache, install poetry
+          if: >
+              (
+              steps.pipx-env-vars.outputs.pipx-home == ''
+              && steps.pipx-env-vars.outputs.pipx-bin-dir == ''
+              )
+              || steps.pipx-cache.outputs.cache-hit != 'true'
+          shell: bash
+          run: pipx install poetry
+
+        - name: Load poetry cache
+          uses: actions/setup-python@v4
+          id: setup-python
+          with:
+              python-version: ${{ inputs.python-version }}
+              cache: poetry
+
+        - name: Install poetry dependencies
+          # If we missed poetry cache install dependencies
+          if: steps.setup-python.outputs.cache-hit != 'true'
+          shell: bash
+          run: poetry install --all-extras

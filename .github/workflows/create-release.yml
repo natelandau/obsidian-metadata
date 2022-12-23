@@ -1,0 +1,91 @@
+---
+name: Create Release
+
+on:
+    push:
+        tags:
+            - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: write
+
+jobs:
+    autorelease:
+        name: Create Release
+        runs-on: "ubuntu-latest"
+        strategy:
+            fail-fast: true
+            matrix:
+                python-version: ["3.11"]
+        steps:
+            - uses: step-security/harden-runner@18bf8ad2ca49c14cbb28b91346d626ccfb00c518 # v2.1.0
+              with:
+                  egress-policy: block
+                  disable-sudo: true
+                  allowed-endpoints: >
+                      api.github.com:443
+                      files.pythonhosted.org:443
+                      github.com:443
+                      install.python-poetry.org:443
+                      pypi.org:443
+                      python-poetry.org:443
+                      uploads.github.com:443
+
+            - name: Checkout repository
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Python and Poetry
+              uses: ./.github/actions/setup-poetry
+
+            - name: Add version to environment vars
+              run: |
+                  PROJECT_VERSION=$(poetry version --short)
+                  echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
+
+            # ----------------------------------------------
+            # Confirm we did, in fact, update the version
+            # ----------------------------------------------
+
+            - name: Check if tag version matches project version
+              run: |
+                  TAG=$(git describe HEAD --tags --abbrev=0)
+                  echo $TAG
+                  echo $PROJECT_VERSION
+                  if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
+
+            # ----------------------------------------------
+            # Generate release notes
+            # ----------------------------------------------
+
+            - name: Release Notes
+              run: git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:* %h %s' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+
+            # ----------------------------------------------
+            # Test and then build the package
+            # ----------------------------------------------
+            - name: run poetry build
+              run: |
+                  poetry run poetry check
+                  poetry run coverage run
+                  poetry build
+
+            # ----------------------------------------------
+            # Build draft release (Note: Will need to manually publish)
+            # ----------------------------------------------
+
+            - name: Create Release Draft
+              uses: softprops/action-gh-release@v1
+              with:
+                  body_path: ".github/RELEASE-TEMPLATE.md"
+                  draft: true
+                  files: |
+                      dist/*-${{env.PROJECT_VERSION}}-py3-none-any.whl
+                      dist/*-${{env.PROJECT_VERSION}}.tar.gz
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,23 @@
+---
+version: 2
+
+updates:
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: monthly
+      commit-message:
+          prefix: "ci"
+          prefix-development: "ci"
+          include: "scope"
+    - package-ecosystem: pip
+      directory: /
+      schedule:
+          interval: monthly
+      commit-message:
+          prefix: "build"
+          prefix-development: "build"
+          include: "scope"
+      versioning-strategy: lockfile-only
+      allow:
+          - dependency-type: "all"

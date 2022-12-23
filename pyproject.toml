@@ -1,0 +1,238 @@
+[build-system]
+    build-backend = "poetry.core.masonry.api"
+    requires      = ["poetry-core>=1.0.0"]
+
+[tool.poetry]
+    authors     = ["Nate Landau <github@natenate.org>"]
+    description = "Make batch updates to Obsidian frontmatter"
+    name        = "obsidian-frontmatter"
+    readme      = "README.md"
+    repository  = "https://github.com/natelandau/obsidian-frontmatter"
+    version     = "0.0.0"
+
+    [tool.poetry.scripts] # https://python-poetry.org/docs/pyproject/#scripts
+        obsidian-frontmatter = "obsidian_frontmatter.cli:app"
+        of                   = "obsidian_frontmatter.cli:app"
+
+    [tool.poetry.dependencies]
+        loguru             = "^0.6.0"
+        pydantic           = { extras = ["dotenv"], version = "^1.10.2" }
+        python             = "^3.10"
+        python-frontmatter = "^1.0.0"
+        rich               = "^12.5.1"
+        shellingham        = "^1.4.0"
+        typer              = { extras = ["all"], version = "^0.7.0" }
+
+    [tool.poetry.group.test.dependencies]
+        pytest                 = "^7.1.2"
+        pytest-clarity         = "^1.0.1"
+        pytest-mock            = "^3.8.1"
+        pytest-pretty-terminal = "^1.1.0"
+        pytest-xdist           = "^2.5.0"
+
+    [tool.poetry.group.dev.dependencies]
+        absolufy-imports      = "^0.3.1"
+        black                 = "^22.10.0"
+        commitizen            = "^2.37.0"
+        coverage              = { extras = ["toml"], version = "^6.5.0" }
+        interrogate           = "^1.5.0"
+        mypy                  = "^0.991"
+        pdoc                  = "^12.3.0"
+        pep8-naming           = "^0.13.2"
+        poethepoet            = "^0.16.4"
+        pre-commit            = "^2.20.0"
+        ruff                  = "^0.0.187"
+        shellcheck-py         = "^0.8.0.4"
+        typeguard             = "^2.13.3"
+        types-python-dateutil = "^2.8.19"
+        vulture               = "^2.6"
+
+[tool.ruff] # https://github.com/charliermarsh/ruff
+
+    fix = true
+    ignore = [
+        "B006",
+        "B008",
+        "D107",
+        "D203",
+        "D204",
+        "D213",
+        "D215",
+        "D400",
+        "D404",
+        "D406",
+        "D407",
+        "D408",
+        "D409",
+        "D413",
+        "E501",
+        "N805",
+        "PGH001",
+        "PGH003",
+        "UP007",
+    ]
+    ignore-init-module-imports = true
+    line-length = 100
+    select = [
+        "A",
+        "B",
+        "BLE",
+        "C4",
+        "C90",
+        "D",
+        "E",
+        "ERA",
+        "F",
+        "I",
+        "N",
+        "PGH",
+        "PLC",
+        "PLE",
+        "PLR",
+        "PLW",
+        "RET",
+        "RUF",
+        "SIM",
+        "TID",
+        "UP",
+        "W",
+        "YTT",
+    ]
+    src = ["src", "tests"]
+    target-version = "py310"
+    unfixable = ["ERA001", "F401", "UP007"]
+
+[tool.coverage.report] # https://coverage.readthedocs.io/en/latest/config.html#report
+    exclude_lines = [
+        'def __repr__',
+        'except [\w\s\._]+ as .*:',
+        'log\.critical',
+        'log\.debug',
+        'log\.error',
+        'log\.exception',
+        'log\.info',
+        'log\.success',
+        'log\.trace',
+        'log\.warning',
+        'pragma: no cover',
+        'raise Abort',
+        'raise Exit',
+        'raise typer\.Exit',
+    ]
+    fail_under = 50
+    precision = 1
+    show_missing = true
+    skip_covered = true
+
+[tool.coverage.run]
+    branch       = true
+    command_line = "--module pytest"
+    data_file    = "reports/.coverage"
+    source       = ["src"]
+
+[tool.coverage.xml]
+    output = "reports/coverage.xml"
+
+[tool.black]
+    line-length = 100
+
+[tool.commitizen]
+    bump_message = "bump(release): v$current_version → v$new_version"
+    tag_format = "v$version"
+    update_changelog_on_bump = true
+    version = "0.0.0"
+    version_files = [
+        "pyproject.toml:version",
+        "src/obsidian_frontmatter/__version__.py:__version__",
+    ]
+
+[tool.interrogate]
+    exclude            = ["build", "docs", "tests"]
+    fail-under         = 90
+    ignore-init-method = true
+    verbose            = 2
+
+[tool.mypy] # https://mypy.readthedocs.io/en/latest/config_file.html
+    disallow_any_unimported = false
+    disallow_subclassing_any = false
+    disallow_untyped_decorators = false
+    disallow_untyped_defs = true
+    exclude = [
+        'tests/', # TOML literal string (single-quotes, regex okay, no escaping necessary)
+    ]
+    follow_imports = "skip"
+    ignore_missing_imports = true
+    junit_xml = "reports/mypy.xml"
+    no_implicit_optional = true
+    plugins = ["pydantic.mypy"]
+    pretty = false
+    show_column_numbers = true
+    show_error_codes = true
+    show_error_context = true
+    strict_optional = false
+    warn_redundant_casts = true
+    warn_unreachable = true
+    warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+    addopts        = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --verbosity=2 --junitxml=reports/pytest.xml"
+    filterwarnings = ["error", "ignore::DeprecationWarning"]
+    testpaths      = ["src", "tests"]
+    xfail_strict   = true
+
+[tool.vulture] # https://pypi.org/project/vulture/
+    # exclude = ["file*.py", "dir/"]
+    # ignore_decorators = ["@app.route", "@require_*"]
+    ignore_names = ["args", "cls", "kwargs", "request", "version"]
+    # make_whitelist = true
+    min_confidence = 80
+    paths          = ["src", "tests"]
+    sort_by_size   = true
+    verbose        = false
+
+[tool.poe.tasks]
+
+    [tool.poe.tasks.docs]
+        cmd = """
+    pdoc
+      --docformat google
+      --output-directory docs
+      src/obsidian_frontmatter
+    """
+        help = "Generate this package's docs"
+
+    [tool.poe.tasks.lint]
+        help = "Lint this package"
+
+        [[tool.poe.tasks.lint.sequence]]
+            shell = "ruff src/ tests/"
+
+        [[tool.poe.tasks.lint.sequence]]
+            shell = "black --check src/ tests/"
+
+        [[tool.poe.tasks.lint.sequence]]
+            shell = "poetry check"
+
+        [[tool.poe.tasks.lint.sequence]]
+            shell = "mypy --config-file pyproject.toml src/"
+
+        [[tool.poe.tasks.lint.sequence]]
+            shell = "vulture src/ tests/"
+
+        [[tool.poe.tasks.lint.sequence]]
+            shell = "yamllint ."
+
+        [[tool.poe.tasks.lint.sequence]]
+            shell = "interrogate -c pyproject.toml ."
+
+[tool.poe.tasks.test]
+    help = "Test this package"
+
+    [[tool.poe.tasks.test.sequence]]
+        cmd = "coverage run"
+
+    [[tool.poe.tasks.test.sequence]]
+        cmd = "coverage report"
+
+    [[tool.poe.tasks.test.sequence]]
+        cmd = "coverage xml"

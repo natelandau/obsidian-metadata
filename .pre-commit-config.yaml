@@ -1,0 +1,124 @@
+---
+# https://pre-commit.com
+default_install_hook_types: [commit-msg, pre-commit]
+default_stages: [commit, manual]
+fail_fast: true
+repos:
+    - repo: "https://github.com/commitizen-tools/commitizen"
+      rev: v2.38.0
+      hooks:
+          - id: commitizen
+          - id: commitizen-branch
+            stages:
+                - post-commit
+                - push
+
+    - repo: "https://github.com/pre-commit/pygrep-hooks"
+      rev: v1.9.0
+      hooks:
+          - id: python-check-mock-methods
+          - id: python-no-eval
+          - id: python-no-log-warn
+          - id: python-use-type-annotations
+          - id: rst-backticks
+          - id: rst-directive-colons
+          - id: rst-inline-touching-normal
+          - id: text-unicode-replacement-char
+
+    - repo: "https://github.com/pre-commit/pre-commit-hooks"
+      rev: v4.4.0
+      hooks:
+          - id: check-added-large-files
+          - id: check-ast
+          - id: check-builtin-literals
+          - id: check-case-conflict
+          - id: check-docstring-first
+          - id: check-json
+            exclude: .devcontainer/devcontainer.json
+          - id: check-merge-conflict
+          - id: check-shebang-scripts-are-executable
+          - id: check-symlinks
+          - id: check-toml
+          - id: check-vcs-permalinks
+          - id: check-xml
+          - id: check-yaml
+          - id: debug-statements
+          - id: detect-private-key
+          - id: fix-byte-order-marker
+          - id: mixed-line-ending
+          - id: trailing-whitespace
+            types: [python]
+            args: [--markdown-linebreak-ext=md]
+          - id: end-of-file-fixer
+            types: [python]
+
+    - repo: "https://github.com/adrienverge/yamllint.git"
+      rev: v1.28.0
+      hooks:
+          - id: yamllint
+            files: ^.*\.(yaml|yml)$
+            entry: yamllint --strict --config-file .yamllint.yml
+
+    - repo: "https://github.com/charliermarsh/ruff-pre-commit"
+      rev: "v0.0.192"
+      hooks:
+          - id: ruff
+
+    - repo: "https://github.com/jendrikseipp/vulture"
+      rev: "v2.6"
+      hooks:
+          - id: vulture
+
+    - repo: local
+      hooks:
+          - id: custom
+            name: custom pre-commit script
+            entry: scripts/pre-commit-hook.sh
+            language: system
+
+          - id: black
+            name: black
+            entry: black
+            require_serial: true
+            language: system
+            types: [python]
+
+          - id: shellcheck
+            name: shellcheck
+            entry: shellcheck --check-sourced
+            language: system
+            types: [shell]
+
+          - id: poetry-check
+            name: poetry check
+            entry: poetry check
+            language: system
+            files: pyproject.toml
+            pass_filenames: false
+
+          - id: interrogate
+            name: interrogate check
+            entry: interrogate -c pyproject.toml src/
+            language: system
+            types: [python]
+            pass_filenames: false
+
+          - id: mypy
+            name: mypy
+            entry: mypy --config-file pyproject.toml
+            exclude: tests/
+            language: system
+            types: [python]
+
+          - id: pytest
+            name: pytest
+            entry: poe test
+            language: system
+            pass_filenames: false
+            files: |
+                (?x)^(
+                src/|
+                tests/|
+                poetry\.lock|
+                pyproject\.toml
+                )

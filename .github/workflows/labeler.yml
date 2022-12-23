@@ -1,0 +1,23 @@
+---
+name: Pull Request Labeler
+on:
+    - pull_request_target
+
+jobs:
+    label:
+        permissions:
+            contents: read
+            pull-requests: write
+        runs-on: ubuntu-latest
+        steps:
+            - name: Harden Runner
+              uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5 # v2.0.0
+              with:
+                  egress-policy: block
+                  allowed-endpoints: >
+                      api.github.com:443
+                      github.com:443
+
+            - uses: actions/labeler@v4
+              with:
+                  repo-token: ${{ secrets.GITHUB_TOKEN }}

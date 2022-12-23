@@ -1,0 +1,53 @@
+---
+name: Pull Request Linter
+
+on:
+    pull_request_target:
+        types:
+            - opened
+            - edited
+            - synchronize
+        branches:
+            - main
+
+permissions: # added using https://github.com/step-security/secure-workflows
+    contents: read
+
+jobs:
+    lint:
+        permissions:
+            pull-requests: read # for amannn/action-semantic-pull-request to analyze PRs
+            statuses: write # for amannn/action-semantic-pull-request to mark status of analyzed PR
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Harden Runner
+              uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5 # v2.0.0
+              with:
+                  egress-policy: block
+                  allowed-endpoints: >
+                      api.github.com:443
+
+            - name: Lint Pull Request
+              uses: amannn/action-semantic-pull-request@v5
+              with:
+                  validateSingleCommit: true
+                  wip: true
+                  types: |
+                      fix
+                      feat
+                      docs
+                      style
+                      refactor
+                      perf
+                      test
+                      build
+                      ci
+                  requireScope: false
+                  subjectPattern: ^(?![A-Z]).+$
+                  subjectPatternError: |
+                      The subject "{subject}" found in the pull request title "{title}"
+                      didn't match the configured pattern. Please ensure that the subject
+                      doesn't start with an uppercase character.
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

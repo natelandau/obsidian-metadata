@@ -7,7 +7,6 @@ from pathlib import Path
 
 import rich.repr
 import typer
-from rich import print
 
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
@@ -228,9 +227,9 @@ class Note:
         result = list(diff.compare(a, b))
         for line in result:
             if line.startswith("+"):
-                print(f"[green]{line}[/]")
+                print(f"\033[92m{line}\033[0m")
             elif line.startswith("-"):
-                print(f"[red]{line}[/]")
+                print(f"\033[91m{line}\033[0m")
 
     def sub(self, pattern: str, replacement: str, is_regex: bool = False) -> None:
         """Substitutes text within the note.
@@ -348,7 +347,8 @@ class Note:
             self.file_content = new_frontmatter + self.file_content
             return
 
-        self.sub(current_frontmatter, new_frontmatter)
+        current_frontmatter = re.escape(current_frontmatter)
+        self.sub(current_frontmatter, new_frontmatter, is_regex=True)
 
     def write(self, path: Path = None) -> None:
         """Writes the note's content to disk.

@@ -82,7 +82,9 @@ def main(
       - [code]vault:[/] Create a backup of the Obsidian vault.
 
     [bold underline]Usage:[/]
-    Run [tan]obsidian-metadata[/] from the command line. The script will allow you to make batch updates to metadata in an Obsidian vault.  Once you have made your changes, review them prior to committing them to the vault.
+    [tan]Obsidian-metadata[/] allows you to make batch updates to metadata in an Obsidian vault.  Once you have made your changes, review them prior to committing them to the vault.  The script provides a menu of available actions. Make as many changes as you require and review them as you go.  No changes are made to the Vault until they are explicitly committed.
+
+    [bold underline]It is strongly recommended that you back up your vault prior to committing changes.[/] This script makes changes directly to the markdown files in your vault. Once the changes are committed, there is no ability to recreate the original information unless you have a backup.  Follow the instructions in the script to create a backup of your vault if needed.  The author of this script is not responsible for any data loss that may occur. Use at your own risk.
 
     Configuration is specified in a configuration file. On First run, this file will be created at [tan]~/.{0}.env[/]. Any options specified on the command line will override the configuration file.
     """

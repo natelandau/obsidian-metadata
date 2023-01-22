@@ -2,34 +2,29 @@
 # obsidian-metadata
 A script to make batch updates to metadata in an Obsidian vault.  Provides the following capabilities:
 
-- in-text tag: delete every occurrence
-- in-text tags: Rename tag (`#tag1` -> `#tag2`)
-- frontmatter: Delete a key matching a regex pattern and all associated values
-- frontmatter: Rename a key
-- frontmatter: Delete a value matching a regex pattern from a specified key
-- frontmatter: Rename a value from a specified key
-- inline metadata: Delete a key matching a regex pattern and all associated values
-- inline metadata: Rename a key
-- inline metadata: Delete a value matching a regex pattern from a specified key
-- inline metadata: Rename a value from a specified key
-- vault: Create a backup of the Obsidian vault
+- `in-text tag`: delete every occurrence
+- `in-text tags`: Rename tag (`#tag1` -> `#tag2`)
+- `frontmatter`: Delete a key matching a regex pattern and all associated values
+- `frontmatter`: Rename a key
+- `frontmatter`: Delete a value matching a regex pattern from a specified key
+- `frontmatter`: Rename a value from a specified key
+- `inline metadata`: Delete a key matching a regex pattern and all associated values
+- `inline metadata`: Rename a key
+- `inline metadata`: Delete a value matching a regex pattern from a specified key
+- `inline metadata`: Rename a value from a specified key
+- `vault`: Create a backup of the Obsidian vault
 
 
 ## Install
 `obsidian-metadata` requires Python v3.10 or above.
 
-
-Use [PIPX](https://pypa.github.io/pipx/) to install this package from Github.
-
 ```bash
-pipx install git+https://${GITHUB_TOKEN}@github.com/natelandau/obsidian-metadata
+pip install obsidian-metadata
 ```
 
 
-## Disclaimer
-**Important:** It is strongly recommended that you back up your vault prior to committing changes. This script makes changes directly to the markdown files in your vault. Once the changes are committed, there is no ability to recreate the original information unless you have a backup.  Follow the instructions in the script to create a backup of your vault if needed.
-
-The author of this script is not responsible for any data loss that may occur. Use at your own risk.
+## Important Disclaimer
+**It is strongly recommended that you back up your vault prior to committing changes.** This script makes changes directly to the markdown files in your vault. Once the changes are committed, there is no ability to recreate the original information unless you have a backup.  Follow the instructions in the script to create a backup of your vault if needed.  The author of this script is not responsible for any data loss that may occur. Use at your own risk.
 
 ## Usage
 The script provides a menu of available actions. Make as many changes as you require and review them as you go.  No changes are made to the Vault until they are explicitly committed.

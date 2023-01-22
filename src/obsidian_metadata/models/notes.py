@@ -350,11 +350,14 @@ class Note:
 
         self.sub(current_frontmatter, new_frontmatter)
 
-    def write(self, path: Path | None = None) -> None:
+    def write(self, path: Path = None) -> None:
         """Writes the note's content to disk.
 
         Args:
             path (Path): Path to write the note to. Defaults to the note's path.
+
+        Raises:
+            typer.Exit: If the note's path is not found.
         """
         p = self.note_path if path is None else path
 

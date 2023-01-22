@@ -4,7 +4,6 @@
 from typing import Any
 
 import questionary
-import typer
 from rich import print
 
 from obsidian_metadata._config import Config
@@ -132,8 +131,8 @@ class Application:
             if operation == "review_changes":
                 self.review_changes()
 
-            if operation == "commit_changes":
-                self.commit_changes()
+            if operation == "commit_changes" and self.commit_changes():
+                break
 
             if operation == "abort":
                 break
@@ -346,25 +345,29 @@ class Application:
                 break
             changed_notes[note_to_review].print_diff()
 
-    def commit_changes(self) -> None:
-        """Write all changes to disk."""
+    def commit_changes(self) -> bool:
+        """Write all changes to disk.
+
+        Returns:
+            True if changes were committed, False otherwise.
+        """
         changed_notes = self.vault.get_changed_notes()
 
         if len(changed_notes) == 0:
             print("\n")
             alerts.notice("No changes to commit.\n")
-            return
+            return False
 
         backup = questionary.confirm("Create backup before committing changes").ask()
         if backup is None:
-            return
+            return False
         if backup:
             self.vault.backup()
 
         if questionary.confirm(f"Commit {len(changed_notes)} changed files to disk?").ask():
 
             self.vault.write()
-            alerts.success("Changes committed to disk. Exiting.")
-            typer.Exit()
+            alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
+            return True
 
-        return
+        return False

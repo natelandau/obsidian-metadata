@@ -24,7 +24,6 @@ class Vault:
         vault (Path): Path to the vault.
         dry_run (bool): Whether to perform a dry run.
         backup_path (Path): Path to the backup of the vault.
-        new_vault (Path): Path to a new vault.
         notes (list[Note]): List of all notes in the vault.
     """
 
@@ -32,7 +31,6 @@ class Vault:
         self.vault_path: Path = config.vault_path
         self.dry_run: bool = dry_run
         self.backup_path: Path = self.vault_path.parent / f"{self.vault_path.name}.bak"
-        self.new_vault_path: Path = self.vault_path.parent / f"{self.vault_path.name}.new"
         self.exclude_paths: list[Path] = []
         self.metadata = VaultMetadata()
         for p in config.exclude_paths:
@@ -60,7 +58,6 @@ class Vault:
         yield "vault_path", self.vault_path
         yield "dry_run", self.dry_run
         yield "backup_path", self.backup_path
-        yield "new_vault", self.new_vault_path
         yield "num_notes", self.num_notes()
         yield "exclude_paths", self.exclude_paths
 
@@ -285,18 +282,10 @@ class Vault:
             return True
         return False
 
-    def write(self, new_vault: bool = False) -> None:
+    def write(self) -> None:
         """Write changes to the vault."""
         log.debug("Writing changes to vault...")
-        if new_vault:
-            log.debug("Writing changes to backup")
+        if self.dry_run is False:
             for _note in self.notes:
-                _new_note_path: Path = Path(
-                    self.new_vault_path / Path(_note.note_path).relative_to(self.vault_path)
-                )
-                log.debug(f"writing to {_new_note_path}")
-                _note.write(path=_new_note_path)
-        else:
-            for _note in self.notes:
-                log.debug(f"writing to {_note.note_path}")
+                log.trace(f"writing to {_note.note_path}")
                 _note.write()

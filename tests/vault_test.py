@@ -16,7 +16,6 @@ def test_vault_creation(test_vault):
 
     assert vault.vault_path == vault_path
     assert vault.backup_path == Path(f"{vault_path}.bak")
-    assert vault.new_vault_path == Path(f"{vault_path}.new")
     assert vault.dry_run is False
     assert str(vault.exclude_paths[0]) == Regex(r".*\.git")
     assert vault.num_notes() == 2

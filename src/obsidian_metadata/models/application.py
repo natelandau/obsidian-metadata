@@ -34,8 +34,6 @@ class Application:
             ]
         )
 
-        clear_screen()
-
     def load_vault(self, path_filter: str = None) -> None:
         """Load the vault.
 
@@ -47,6 +45,7 @@ class Application:
 
     def main_app(self) -> None:  # noqa: C901
         """Questions for the main application."""
+        clear_screen()
         self.load_vault()
 
         while True:

@@ -132,7 +132,7 @@ def clean_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
     return new_dict
 
 
-def clear_screen() -> None:
+def clear_screen() -> None:  # pragma: no cover
     """Clears the screen."""
     # for windows
     _ = system("cls") if name == "nt" else system("clear")

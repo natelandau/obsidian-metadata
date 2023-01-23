@@ -53,7 +53,7 @@ class Vault:
                 self.metadata.add_metadata(_note.inline_metadata.dict)
                 self.metadata.add_metadata({_note.inline_tags.metadata_key: _note.inline_tags.list})
 
-    def __rich_repr__(self) -> rich.repr.Result:
+    def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover
         """Define rich representation of Vault."""
         yield "vault_path", self.vault_path
         yield "dry_run", self.dry_run

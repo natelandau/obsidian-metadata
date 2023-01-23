@@ -4,6 +4,24 @@
 import re
 
 
+class KeyInputs:
+    """Key inputs for testing."""
+
+    DOWN = "\x1b[B"
+    UP = "\x1b[A"
+    LEFT = "\x1b[D"
+    RIGHT = "\x1b[C"
+    ENTER = "\r"
+    ESCAPE = "\x1b"
+    CONTROLC = "\x03"
+    BACK = "\x7f"
+    SPACE = " "
+    TAB = "\x09"
+    ONE = "1"
+    TWO = "2"
+    THREE = "3"
+
+
 class Regex:
     """Assert that a given string meets some expectations.
 

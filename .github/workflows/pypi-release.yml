@@ -23,7 +23,12 @@ jobs:
                   egress-policy: block
                   disable-sudo: true
                   allowed-endpoints: >
+                      api.github.com:443
+                      files.pythonhosted.org:443
                       github.com:443
+                      install.python-poetry.org:443
+                      pypi.org:443
+                      python-poetry.org:443
                       upload.pypi.org:443
 
             - name: Checkout repository

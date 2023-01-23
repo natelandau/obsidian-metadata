@@ -51,7 +51,7 @@ exclude_paths = [".git", ".obsidian"]
 
 There are two ways to contribute to this project.
 
-### 21. Containerized development (Recommended)
+### 1. Containerized development (Recommended)
 
 1. Clone this repository. `git clone https://github.com/natelandau/obsidian-metadata`
 2. Open the repository in Visual Studio Code

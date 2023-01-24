@@ -1,7 +1,6 @@
 """Utility functions."""
 import re
 from os import name, system
-from pathlib import Path
 from typing import Any
 
 import typer
@@ -81,17 +80,6 @@ def version_callback(value: bool) -> None:
     if value:
         print(f"{__package__.split('.')[0]}: v{__version__}")
         raise typer.Exit()
-
-
-def vault_validation(path: str) -> bool | str:
-    """Validates the vault path."""
-    path_to_validate: Path = Path(path).expanduser().resolve()
-    if not path_to_validate.exists():
-        return f"Path does not exist: {path_to_validate}"
-    if not path_to_validate.is_dir():
-        return f"Path is not a directory: {path_to_validate}"
-
-    return True
 
 
 def docstring_parameter(*sub: Any) -> Any:

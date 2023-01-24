@@ -7,7 +7,6 @@ from obsidian_metadata._utils import (
     dict_contains,
     dict_values_to_lists_strings,
     remove_markdown_sections,
-    vault_validation,
 )
 
 
@@ -65,13 +64,6 @@ def test_dict_values_to_lists_strings():
         "key8": ["1", "3", "4"],
         "key9": ["", "None"],
     }
-
-
-def test_vault_validation():
-    """Test vault validation."""
-    assert vault_validation("tests/") is True
-    assert "Path is not a directory" in vault_validation("pyproject.toml")
-    assert "Path does not exist" in vault_validation("tests/vault2")
 
 
 def test_remove_markdown_sections():

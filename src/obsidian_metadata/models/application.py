@@ -6,8 +6,8 @@ from typing import Any
 import questionary
 from rich import print
 
-from obsidian_metadata._config import Config
-from obsidian_metadata._utils import alerts, clear_screen
+from obsidian_metadata._config import VaultConfig
+from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata.models import Patterns, Vault
 
@@ -22,7 +22,7 @@ class Application:
     More info: https://questionary.readthedocs.io/en/stable/pages/advanced.html#create-questions-from-dictionaries
     """
 
-    def __init__(self, config: Config, dry_run: bool) -> None:
+    def __init__(self, config: VaultConfig, dry_run: bool) -> None:
         self.config = config
         self.dry_run = dry_run
         self.custom_style = questionary.Style(
@@ -45,7 +45,6 @@ class Application:
 
     def main_app(self) -> None:  # noqa: C901
         """Questions for the main application."""
-        clear_screen()
         self.load_vault()
 
         while True:

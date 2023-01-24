@@ -4,11 +4,17 @@
 from pathlib import Path
 from typing import Optional
 
+import questionary
 import typer
 from rich import print
 
 from obsidian_metadata._config import Config
-from obsidian_metadata._utils import alerts, docstring_parameter, version_callback
+from obsidian_metadata._utils import (
+    alerts,
+    clear_screen,
+    docstring_parameter,
+    version_callback,
+)
 from obsidian_metadata.models import Application
 
 app = typer.Typer(add_completion=False, no_args_is_help=True, rich_markup_mode="rich")
@@ -95,9 +101,6 @@ def main(
         log_to_file,
     )
 
-    config: Config = Config(config_path=config_file, vault_path=vault_path)
-    application = Application(dry_run=dry_run, config=config)
-
     banner = r"""
    ___  _         _     _ _
   / _ \| |__  ___(_) __| (_) __ _ _ __
@@ -109,7 +112,28 @@ def main(
  | |  | |  __/ || (_| | (_| | (_| | || (_| |
  |_|  |_|\___|\__\__,_|\__,_|\__,_|\__\__,_|
 """
+    clear_screen()
     print(banner)
+
+    config: Config = Config(config_path=config_file, vault_path=vault_path)
+    if len(config.vaults) == 0:
+        typer.echo("No vaults configured. Exiting.")
+        raise typer.Exit(1)
+
+    if len(config.vaults) == 1:
+        application = Application(dry_run=dry_run, config=config.vaults[0])
+    else:
+        vault_names = [vault.name for vault in config.vaults]
+        vault_name = questionary.select(
+            "Select a vault to process:",
+            choices=vault_names,
+        ).ask()
+        if vault_name is None:
+            raise typer.Exit(code=1)
+
+        vault_to_use = next(vault for vault in config.vaults if vault.name == vault_name)
+        application = Application(dry_run=dry_run, config=vault_to_use)
+
     application.main_app()
 
 

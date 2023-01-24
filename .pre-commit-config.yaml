@@ -5,7 +5,7 @@ default_stages: [commit, manual]
 fail_fast: true
 repos:
     - repo: "https://github.com/commitizen-tools/commitizen"
-      rev: v2.39.1
+      rev: v2.40.0
       hooks:
           - id: commitizen
           - id: commitizen-branch
@@ -39,6 +39,7 @@ repos:
           - id: check-shebang-scripts-are-executable
           - id: check-symlinks
           - id: check-toml
+            exclude: broken_config_file\.toml
           - id: check-vcs-permalinks
           - id: check-xml
           - id: check-yaml
@@ -60,7 +61,7 @@ repos:
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.0.229"
+      rev: "v0.0.230"
       hooks:
           - id: ruff
             args: ["--extend-ignore", "I001,D301,D401,PLR2004"]

@@ -33,16 +33,27 @@ The script provides a menu of available actions. Make as many changes as you req
 
 
 ### Configuration
-`obsidian-metadata` requires a configuration file at `~/.obsidian_metadata.toml`.  On first run, this file will be created.  Read the comments in this file to configure your preferences.  This configuration file contains the following information.
+`obsidian-metadata` requires a configuration file at `~/.obsidian_metadata.toml`.  On first run, this file will be created.  You can specify a new location for the configuration file with the `--config-file` option.
+
+To add additional vaults, copy the default section and add the appropriate information. The script will prompt you to select a vault if multiple exist in the configuration file
+
+Below is an example with two vaults.
 
 ```toml
-# Path to your obsidian vault
-vault = "/path/to/vault"
+["Vault One"] # Name of the vault.
 
-# Folders within the vault to ignore when indexing metadata
-exclude_paths = [".git", ".obsidian"]
+    # Path to your obsidian vault
+    path = "/path/to/vault"
+
+    # Folders within the vault to ignore when indexing metadata
+    exclude_paths = [".git", ".obsidian"]
+
+["Vault Two"]
+    path = "/path/to/second_vault"
+    exclude_paths = [".git", ".obsidian"]
 ```
 
+To bypass the configuration file and specify a vault to use at runtime use the `--vault-path` option.
 
 
 # Contributing

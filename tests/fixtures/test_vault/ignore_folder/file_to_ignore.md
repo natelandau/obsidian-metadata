@@ -8,6 +8,7 @@ tags:
   - ignored_file_tag1
 author: author name
 type: ["article", "note"]
+ignored_frontmatter: ignore_me
 ---
 #inline_tag_top1 #inline_tag_top2
 #ignored_file_tag2

@@ -699,7 +699,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -707,7 +707,7 @@ python-versions = ">=3.7"
 name = "tomlkit"
 version = "0.11.6"
 description = "Style preserving TOML library"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -814,7 +814,7 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "1.1"
         python-versions = "^3.10"
-content-hash = "db4a41f0b94c3bf84fa548a6733da1cced1fedc2bdfdc6f80396dddbd5619bfd"
+content-hash = "acbde0d9374261931e4f12f4ed8fcbc543008f68c4aed0a6748280a3999b3394"
 
 [metadata.files]
 absolufy-imports = [

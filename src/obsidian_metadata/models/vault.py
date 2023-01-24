@@ -10,7 +10,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 from rich.table import Table
 
-from obsidian_metadata._config import Config
+from obsidian_metadata._config import VaultConfig
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata.models import Note, VaultMetadata
@@ -27,8 +27,8 @@ class Vault:
         notes (list[Note]): List of all notes in the vault.
     """
 
-    def __init__(self, config: Config, dry_run: bool = False, path_filter: str = None):
-        self.vault_path: Path = config.vault_path
+    def __init__(self, config: VaultConfig, dry_run: bool = False, path_filter: str = None):
+        self.vault_path: Path = config.path
         self.dry_run: bool = dry_run
         self.backup_path: Path = self.vault_path.parent / f"{self.vault_path.name}.bak"
         self.exclude_paths: list[Path] = []

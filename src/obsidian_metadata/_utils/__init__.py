@@ -2,7 +2,6 @@
 
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import LoggerManager
-from obsidian_metadata._utils.questions import Questions
 from obsidian_metadata._utils.utilities import (
     clean_dictionary,
     clear_screen,
@@ -21,7 +20,6 @@ __all__ = [
     "dict_contains",
     "docstring_parameter",
     "LoggerManager",
-    "Questions",
     "remove_markdown_sections",
     "vault_validation",
     "version_callback",

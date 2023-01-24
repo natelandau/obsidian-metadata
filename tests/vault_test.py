@@ -190,8 +190,8 @@ def test_delete_inline_tag(test_vault) -> None:
     vault_config = config.vaults[0]
     vault = Vault(config=vault_config)
 
-    assert vault.delete_inline_tag("no tag") is False
-    assert vault.delete_inline_tag("intext_tag2") is True
+    assert vault.delete_inline_tag("no tag") == 0
+    assert vault.delete_inline_tag("intext_tag2") == 2
     assert vault.metadata.dict["Inline Tags"] == [
         "ignored_file_tag2",
         "inline_tag_bottom1",
@@ -227,8 +227,8 @@ def test_rename_inline_tag(test_vault) -> None:
     vault_config = config.vaults[0]
     vault = Vault(config=vault_config)
 
-    assert vault.rename_inline_tag("no tag", "new_tag") is False
-    assert vault.rename_inline_tag("intext_tag2", "new_tag") is True
+    assert vault.rename_inline_tag("no tag", "new_tag") == 0
+    assert vault.rename_inline_tag("intext_tag2", "new_tag") == 2
     assert vault.metadata.dict["Inline Tags"] == [
         "ignored_file_tag2",
         "inline_tag_bottom1",
@@ -248,10 +248,10 @@ def test_rename_metadata(test_vault) -> None:
     vault_config = config.vaults[0]
     vault = Vault(config=vault_config)
 
-    assert vault.rename_metadata("no key", "new_key") is False
-    assert vault.rename_metadata("tags", "nonexistent_value", "new_vaule") is False
+    assert vault.rename_metadata("no key", "new_key") == 0
+    assert vault.rename_metadata("tags", "nonexistent_value", "new_vaule") == 0
 
-    assert vault.rename_metadata("tags", "frontmatter_tag1", "new_vaule") is True
+    assert vault.rename_metadata("tags", "frontmatter_tag1", "new_vaule") == 2
     assert vault.metadata.dict["tags"] == [
         "frontmatter_tag2",
         "frontmatter_tag3",
@@ -261,7 +261,7 @@ def test_rename_metadata(test_vault) -> None:
         "📅/frontmatter_tag3",
     ]
 
-    assert vault.rename_metadata("tags", "new_key") is True
+    assert vault.rename_metadata("tags", "new_key") == 2
     assert "tags" not in vault.metadata.dict
     assert vault.metadata.dict["new_key"] == [
         "frontmatter_tag2",

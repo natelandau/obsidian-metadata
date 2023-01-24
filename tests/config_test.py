@@ -7,7 +7,14 @@ from textwrap import dedent
 import pytest
 import typer
 
-from obsidian_metadata._config import Config
+from obsidian_metadata._config.config import Config, ConfigQuestions
+
+
+def test_validate_valid_dir() -> None:
+    """Test vault validation."""
+    assert ConfigQuestions._validate_valid_dir("tests/") is True
+    assert "Path is not a directory" in ConfigQuestions._validate_valid_dir("pyproject.toml")
+    assert "Path does not exist" in ConfigQuestions._validate_valid_dir("tests/vault2")
 
 
 def test_broken_config_file(capsys) -> None:
@@ -79,8 +86,10 @@ def test_no_config_no_vault(tmp_path, mocker) -> None:
     """Test creating a config on first run."""
     fake_vault = Path(tmp_path / "vault")
     fake_vault.mkdir()
+
     mocker.patch(
-        "obsidian_metadata._config.config.Questions.ask_for_vault_path", return_value=fake_vault
+        "obsidian_metadata._config.config.ConfigQuestions.ask_for_vault_path",
+        return_value=fake_vault,
     )
 
     config_file = Path(tmp_path / "config.toml")

@@ -146,25 +146,25 @@ class Vault:
         else:
             alerts.info("No backup found")
 
-    def delete_inline_tag(self, tag: str) -> bool:
+    def delete_inline_tag(self, tag: str) -> int:
         """Delete an inline tag in the vault.
 
         Args:
             tag (str): Tag to delete.
 
         Returns:
-            bool: True if tag was deleted.
+            int: Number of notes that had tag deleted.
         """
-        changes = False
+        num_changed = 0
 
         for _note in self.notes:
             if _note.delete_inline_tag(tag):
-                changes = True
+                num_changed += 1
 
-        if changes:
+        if num_changed > 0:
             self.metadata.delete(self.notes[0].inline_tags.metadata_key, tag)
-            return True
-        return False
+
+        return num_changed
 
     def delete_metadata(self, key: str, value: str = None) -> int:
         """Delete metadata in the vault.
@@ -184,7 +184,7 @@ class Vault:
 
         if num_changed > 0:
             self.metadata.delete(key, value)
-            return num_changed
+
         return num_changed
 
     def get_changed_notes(self) -> list[Note]:
@@ -239,7 +239,7 @@ class Vault:
         """
         return len(self.notes)
 
-    def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> bool:
+    def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> int:
         """Renames a key or key-value pair in the note's metadata.
 
         If no value is provided, will rename an entire key.
@@ -250,19 +250,20 @@ class Vault:
             value_2 (str, optional): New value.
 
         Returns:
-            bool: True if metadata was renamed.
+            int: Number of notes that had metadata renamed.
         """
-        changes = False
+        num_changed = 0
+
         for _note in self.notes:
             if _note.rename_metadata(key, value_1, value_2):
-                changes = True
+                num_changed += 1
 
-        if changes:
+        if num_changed > 0:
             self.metadata.rename(key, value_1, value_2)
-            return True
-        return False
 
-    def rename_inline_tag(self, old_tag: str, new_tag: str) -> bool:
+        return num_changed
+
+    def rename_inline_tag(self, old_tag: str, new_tag: str) -> int:
         """Rename an inline tag in the vault.
 
         Args:
@@ -270,17 +271,18 @@ class Vault:
             new_tag (str): New tag name.
 
         Returns:
-            bool: True if tag was renamed.
+            int: Number of notes that had inline tags renamed.
         """
-        changes = False
+        num_changed = 0
+
         for _note in self.notes:
             if _note.rename_inline_tag(old_tag, new_tag):
-                changes = True
+                num_changed += 1
 
-        if changes:
+        if num_changed > 0:
             self.metadata.rename(self.notes[0].inline_tags.metadata_key, old_tag, new_tag)
-            return True
-        return False
+
+        return num_changed
 
     def write(self) -> None:
         """Write changes to the vault."""

@@ -89,9 +89,9 @@
     "remoteUser": "vscode",
     "postCreateCommand": "bash ./.devcontainer/post-install.sh",
     "mounts": [
-        "source=${localEnv:HOME}/.git_stop_words,target=/home/vscode/.git_stop_words,type=bind,consistency=cached",
-        "source=${localEnv:HOME}/.gitconfig.local,target=/home/vscode/.gitconfig.local,type=bind,consistency=cached",
-        "source=${localEnv:HOME}/tmp,target=/home/vscode/tmp,type=bind"
+        // "source=${localEnv:HOME}/.git_stop_words,target=/home/vscode/.git_stop_words,type=bind,consistency=cached",
+        // "source=${localEnv:HOME}/.gitconfig.local,target=/home/vscode/.gitconfig.local,type=bind,consistency=cached",
+        // "source=${localEnv:HOME}/tmp,target=/home/vscode/tmp,type=bind"
     ]
 
     // Use 'forwardPorts' to make a list of ports inside the container available locally.

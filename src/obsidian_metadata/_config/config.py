@@ -5,12 +5,49 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
+import questionary
 import rich.repr
 import tomlkit
 import typer
 
-from obsidian_metadata._utils import Questions, alerts
+from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
+
+
+class ConfigQuestions:
+    """Questions to ask the user when creating a configuration file."""
+
+    @staticmethod
+    def ask_for_vault_path() -> Path:  # pragma: no cover
+        """Ask the user for the path to their vault.
+
+        Returns:
+            Path: The path to the vault.
+        """
+        vault_path = questionary.path(
+            "Enter a path to Obsidian vault:",
+            only_directories=True,
+            validate=ConfigQuestions._validate_valid_dir,
+        ).ask()
+        if vault_path is None:
+            raise typer.Exit(code=1)
+
+        return Path(vault_path).expanduser().resolve()
+
+    @staticmethod
+    def _validate_valid_dir(path: str) -> bool | str:
+        """Validates a valid directory.
+
+        Returns:
+            bool | str: True if the path is valid, otherwise a string with the error message.
+        """
+        path_to_validate: Path = Path(path).expanduser().resolve()
+        if not path_to_validate.exists():
+            return f"Path does not exist: {path_to_validate}"
+        if not path_to_validate.is_dir():
+            return f"Path is not a directory: {path_to_validate}"
+
+        return True
 
 
 @rich.repr.auto
@@ -70,7 +107,7 @@ class Config:
 
     def _write_default_config(self, path_to_config: Path) -> None:
         """Write the default configuration file when no config file is found."""
-        vault_path = Questions.ask_for_vault_path()
+        vault_path = ConfigQuestions.ask_for_vault_path()
 
         config_text = f"""\
         # Add another vault by replicating this section and changing the name

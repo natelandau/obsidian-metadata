@@ -6,6 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from obsidian_metadata._config import Config
+from obsidian_metadata.models.application import Application
+
 
 def remove_all(root: Path):
     """Remove all files and directories in a directory."""
@@ -66,6 +69,30 @@ def test_vault(tmp_path) -> Path:
 
     shutil.copytree(source_dir, dest_dir)
     yield dest_dir
+
+    # after test - remove fixtures
+    shutil.rmtree(dest_dir)
+
+    if backup_dir.exists():
+        shutil.rmtree(backup_dir)
+
+
+@pytest.fixture()
+def test_application(tmp_path) -> Application:
+    """Fixture which creates a sample vault."""
+    source_dir = Path(__file__).parent / "fixtures" / "sample_vault"
+    dest_dir = Path(tmp_path / "application")
+    backup_dir = Path(f"{dest_dir}.bak")
+
+    if not source_dir.exists():
+        raise FileNotFoundError(f"Sample vault not found: {source_dir}")
+
+    shutil.copytree(source_dir, dest_dir)
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=dest_dir)
+    vault_config = config.vaults[0]
+    app = Application(config=vault_config, dry_run=False)
+
+    yield app
 
     # after test - remove fixtures
     shutil.rmtree(dest_dir)

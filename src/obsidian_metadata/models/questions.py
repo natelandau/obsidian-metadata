@@ -1,4 +1,10 @@
-"""Functions for asking questions to the user and validating responses."""
+"""Functions for asking questions to the user and validating responses.
+
+This module contains wrappers around questionary to ask questions to the user and validate responses. Mocking questionary has proven very difficult. This functionality is separated from the main application logic to make it easier to test.
+
+Progress towards testing questionary can be found on this issue:
+https://github.com/tmbo/questionary/issues/35
+"""
 import re
 from pathlib import Path
 from typing import Any
@@ -65,6 +71,18 @@ class Questions:
         )
         self.vault = vault
         self.key = key
+
+    def ask_confirm(self, question: str, default: bool = True) -> bool:  # pragma: no cover
+        """Ask the user to confirm an action.
+
+        Args:
+            question (str): The question to ask.
+            default (bool, optional): The default value. Defaults to True.
+
+        Returns:
+            bool: True if the user confirms, otherwise False.
+        """
+        return questionary.confirm(question, default=default, style=self.style).ask()
 
     def ask_main_application(self) -> str:  # pragma: no cover
         """Selectable list for the main application interface.

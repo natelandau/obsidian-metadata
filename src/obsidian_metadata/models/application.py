@@ -153,7 +153,7 @@ class Application:
 
         num_changed = self.vault.delete_metadata(key_to_delete)
         if num_changed == 0:
-            alerts.warning(f"No notes found matching: [reverse]{key_to_delete}[/]")
+            alerts.warning(f"No notes found with a key matching: [reverse]{key_to_delete}[/]")
             return
 
         alerts.success(
@@ -186,9 +186,7 @@ class Application:
             alerts.warning(f"No notes were changed")
             return
 
-        alerts.success(
-            f"Renamed [reverse]{key}: {value}[/] to [reverse]{key}: {new_value}[/] in {num_changes} notes"
-        )
+        alerts.success(f"Renamed '{key}:{value}' to '{key}:{new_value}' in {num_changes} notes")
 
     def delete_value(self) -> None:
         """Delete a value from the vault."""
@@ -205,10 +203,12 @@ class Application:
 
         num_changed = self.vault.delete_metadata(key, value)
         if num_changed == 0:
-            alerts.warning(f"No notes found matching: [reverse]{key}: {value}[/]")
+            alerts.warning(f"No notes found matching: {key}: {value}")
             return
 
-        alerts.success(f"Deleted [reverse]{key}[/]: [reverse]{value}[/] from {num_changed} notes")
+        alerts.success(
+            f"Deleted value [reverse]{value}[/] from key [reverse]{key}[/] in {num_changed} notes"
+        )
 
         return
 
@@ -221,7 +221,9 @@ class Application:
             return
 
         print(f"\nFound {len(changed_notes)} changed notes in the vault.\n")
-        answer = questionary.confirm("View diffs of individual files?", default=False).ask()
+        answer = self.questions.ask_confirm(
+            question="View diffs of individual files?", default=False
+        )
         if not answer:
             return
 
@@ -234,14 +236,14 @@ class Application:
             choices.append(_selection)
 
         choices.append(questionary.Separator())
-        choices.append({"name": "Return", "value": "skip"})
+        choices.append({"name": "Return", "value": "return"})
 
         while True:
             note_to_review = self.questions.ask_for_selection(
                 choices=choices,
                 question="Select a new to view the diff",
             )
-            if note_to_review is None or note_to_review == "skip":
+            if note_to_review is None or note_to_review == "return":
                 break
             changed_notes[note_to_review].print_diff()
 

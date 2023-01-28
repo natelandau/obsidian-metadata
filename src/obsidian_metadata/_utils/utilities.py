@@ -52,7 +52,7 @@ def remove_markdown_sections(
     strip_inlinecode: bool = False,
     strip_frontmatter: bool = False,
 ) -> str:
-    """Strips markdown sections from text.
+    """Strip markdown sections from text.
 
     Args:
         text (str): Text to remove code blocks from
@@ -121,7 +121,7 @@ def clean_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
 
 
 def clear_screen() -> None:  # pragma: no cover
-    """Clears the screen."""
+    """Clear the screen."""
     # for windows
     _ = system("cls") if name == "nt" else system("clear")
 
@@ -129,7 +129,7 @@ def clear_screen() -> None:  # pragma: no cover
 def dict_contains(
     dictionary: dict[str, list[str]], key: str, value: str = None, is_regex: bool = False
 ) -> bool:
-    """Checks if a dictionary contains a key.
+    """Check if a dictionary contains a key.
 
     Args:
         dictionary (dict): Dictionary to check

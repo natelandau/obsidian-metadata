@@ -17,14 +17,12 @@ _mainScript_() {
         iotop
         jq
         less
-        libmagickwand-dev
         libxml2-utils
         lnav
         lsof
         nano
         net-tools
         openssh-server
-        p7zip-full
         python3-pip
         shellcheck
         unzip
@@ -34,14 +32,22 @@ _mainScript_() {
     )
 
     echo ""
-    header "Installing apt packages"
+    header "Install apt packages"
     _execute_ "sudo apt-get update"
     _execute_ "sudo apt-get upgrade -y"
     for package in "${APT_PACKAGES[@]}"; do
         _execute_ -p "sudo apt-get install -y \"${package}\""
     done
 
+    if [ -d "${WORKSPACE_DIR}/.venv" ]; then
+        echo ""
+        header "Remove existing virtual environment"
+        _execute_ -pv "rm -rf ${WORKSPACE_DIR}/.venv"
+    fi
+
     if command -v batcat &>/dev/null; then
+        echo ""
+        header "Favor bat over cat"
         _execute_ -p "mkdir -p /home/vscode/.local/bin && ln -s /usr/bin/batcat /home/vscode/.local/bin/bat"
     fi
 
@@ -112,7 +118,7 @@ _mainScript_() {
     echo ""
     header "Install virtual environment with poetry"
     if command -v poetry &>/dev/null; then
-        pushd "/workspaces/obsidian-metadata" &>/dev/null
+        pushd "${WORKSPACE_DIR}" &>/dev/null
         _execute_ -pv "poetry install"
         venv_path="$(poetry env info --path)"
         echo "" >>"/home/vscode/.zshrc"
@@ -128,13 +134,13 @@ _mainScript_() {
     echo ""
     header "Initialize pre-commit"
     if command -v pre-commit &>/dev/null; then
-        if [ -d "/workspaces/obsidian-metadata/.git" ]; then
-            pushd "/workspaces/obsidian-metadata" &>/dev/null
+        if [ -d "${WORKSPACE_DIR}/.git" ]; then
+            pushd "${WORKSPACE_DIR}" &>/dev/null
             _execute_ -pv "pre-commit install --install-hooks"
             _execute_ -pv "pre-commit autoupdate"
             popd &>/dev/null
         else
-            warning "Git repository not found in /workspaces/obsidian-metadata. Initialize pre-commit manually."
+            warning "Git repository not found in ${WORKSPACE_DIR}. Initialize pre-commit manually."
         fi
     else
         warning "pre-commit is not installed"
@@ -154,7 +160,7 @@ DRYRUN=false
 declare -a ARGS=()
 
 # Script specific
-
+WORKSPACE_DIR="/workspaces/obsidian-metadata"
 # ################################## Custom utility functions (Pasted from repository)
 _execute_() {
     # DESC:

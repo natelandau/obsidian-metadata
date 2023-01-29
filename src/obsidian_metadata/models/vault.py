@@ -13,7 +13,7 @@ from rich.table import Table
 from obsidian_metadata._config import VaultConfig
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
-from obsidian_metadata.models import Note, VaultMetadata
+from obsidian_metadata.models import MetadataType, Note, VaultMetadata
 
 
 @rich.repr.auto
@@ -48,10 +48,8 @@ class Vault:
             self.notes: list[Note] = [
                 Note(note_path=p, dry_run=self.dry_run) for p in self.note_paths
             ]
-            for _note in self.notes:
-                self.metadata.add_metadata(_note.frontmatter.dict)
-                self.metadata.add_metadata(_note.inline_metadata.dict)
-                self.metadata.add_metadata({_note.inline_tags.metadata_key: _note.inline_tags.list})
+
+        self._rebuild_vault_metadata()
 
     def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover
         """Define rich representation of Vault."""
@@ -84,6 +82,42 @@ class Vault:
             ]
 
         return notes_list
+
+    def _rebuild_vault_metadata(self) -> None:
+        """Rebuild vault metadata."""
+        self.metadata = VaultMetadata()
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            transient=True,
+        ) as progress:
+            progress.add_task(description="Processing notes...", total=None)
+            for _note in self.notes:
+                self.metadata.add_metadata(_note.frontmatter.dict)
+                self.metadata.add_metadata(_note.inline_metadata.dict)
+                self.metadata.add_metadata({_note.inline_tags.metadata_key: _note.inline_tags.list})
+
+    def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> int:
+        """Add metadata to all notes in the vault.
+
+        Args:
+            area (MetadataType): Area of metadata to add to.
+            key (str): Key to add.
+            value (str|list, optional): Value to add.
+
+        Returns:
+            int: Number of notes updated.
+        """
+        num_changed = 0
+
+        for _note in self.notes:
+            if _note.add_metadata(area, key, value):
+                num_changed += 1
+
+        if num_changed > 0:
+            self._rebuild_vault_metadata()
+
+        return num_changed
 
     def backup(self) -> None:
         """Backup the vault."""
@@ -162,7 +196,7 @@ class Vault:
                 num_changed += 1
 
         if num_changed > 0:
-            self.metadata.delete(self.notes[0].inline_tags.metadata_key, tag)
+            self._rebuild_vault_metadata()
 
         return num_changed
 
@@ -183,7 +217,7 @@ class Vault:
                 num_changed += 1
 
         if num_changed > 0:
-            self.metadata.delete(key, value)
+            self._rebuild_vault_metadata()
 
         return num_changed
 
@@ -203,15 +237,14 @@ class Vault:
 
     def info(self) -> None:
         """Print information about the vault."""
-        log.debug("Printing vault info")
-        table = Table(title="Vault Info", show_header=False)
+        table = Table(show_header=False)
         table.add_row("Vault", str(self.vault_path))
-        table.add_row("Notes being edited", str(self.num_notes()))
-        table.add_row("Notes excluded from editing", str(self.num_excluded_notes()))
         if self.backup_path.exists():
             table.add_row("Backup path", str(self.backup_path))
         else:
             table.add_row("Backup", "None")
+        table.add_row("Notes in scope", str(self.num_notes()))
+        table.add_row("Notes excluded from scope", str(self.num_excluded_notes()))
         table.add_row("Active path filter", str(self.path_filter))
         table.add_row("Notes with updates", str(len(self.get_changed_notes())))
 
@@ -259,7 +292,7 @@ class Vault:
                 num_changed += 1
 
         if num_changed > 0:
-            self.metadata.rename(key, value_1, value_2)
+            self._rebuild_vault_metadata()
 
         return num_changed
 
@@ -280,7 +313,7 @@ class Vault:
                 num_changed += 1
 
         if num_changed > 0:
-            self.metadata.rename(self.notes[0].inline_tags.metadata_key, old_tag, new_tag)
+            self._rebuild_vault_metadata()
 
         return num_changed
 

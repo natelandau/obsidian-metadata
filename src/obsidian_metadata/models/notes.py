@@ -14,6 +14,7 @@ from obsidian_metadata.models import (
     Frontmatter,
     InlineMetadata,
     InlineTags,
+    MetadataType,
     Patterns,
 )
 
@@ -60,6 +61,31 @@ class Note:
         yield "frontmatter", self.frontmatter
         yield "inline_tags", self.inline_tags
         yield "inline_metadata", self.inline_metadata
+
+    def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> bool:
+        """Adds metadata to the note.
+
+        Args:
+            area (MetadataType): Area to add metadata to.
+            key (str): Key to add.
+            value (str, optional): Value to add.
+
+        Returns:
+            bool: Whether the metadata was added.
+        """
+        if area is MetadataType.FRONTMATTER and self.frontmatter.add(key, value):
+            self.replace_frontmatter()
+            return True
+
+        if area is MetadataType.INLINE:
+            # TODO: implement adding to inline metadata
+            pass
+
+        if area is MetadataType.TAGS:
+            # TODO: implement adding to intext tags
+            pass
+
+        return False
 
     def append(self, string_to_append: str, allow_multiple: bool = False) -> None:
         """Appends a string to the end of a note.

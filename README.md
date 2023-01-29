@@ -1,36 +1,58 @@
 [![Python Code Checker](https://github.com/natelandau/obsidian-metadata/actions/workflows/python-code-checker.yml/badge.svg)](https://github.com/natelandau/obsidian-metadata/actions/workflows/python-code-checker.yml) [![codecov](https://codecov.io/gh/natelandau/obsidian-metadata/branch/main/graph/badge.svg?token=3F2R43SSX4)](https://codecov.io/gh/natelandau/obsidian-metadata)
 # obsidian-metadata
-A script to make batch updates to metadata in an Obsidian vault.  Provides the following capabilities:
+A script to make batch updates to metadata in an Obsidian vault. No changes are
+ made to the Vault until they are explicitly committed.
 
-- `in-text tag`: delete every occurrence
-- `in-text tags`: Rename tag (`#tag1` -> `#tag2`)
-- `frontmatter`: Delete a key matching a regex pattern and all associated values
-- `frontmatter`: Rename a key
-- `frontmatter`: Delete a value matching a regex pattern from a specified key
-- `frontmatter`: Rename a value from a specified key
-- `inline metadata`: Delete a key matching a regex pattern and all associated values
-- `inline metadata`: Rename a key
-- `inline metadata`: Delete a value matching a regex pattern from a specified key
-- `inline metadata`: Rename a value from a specified key
-- `vault`: Create a backup of the Obsidian vault
+[![asciicast](https://asciinema.org/a/555789.svg)](https://asciinema.org/a/555789)
+
+## Important Disclaimer
+**It is strongly recommended that you back up your vault prior to committing changes.** This script makes changes directly to the markdown files in your vault. Once the changes are committed, there is no ability to recreate the original information unless you have a backup.  Follow the instructions in the script to create a backup of your vault if needed.  The author of this script is not responsible for any data loss that may occur. Use at your own risk.
 
 
 ## Install
-`obsidian-metadata` requires Python v3.10 or above.
+Requires Python v3.10 or above.
 
 ```bash
 pip install obsidian-metadata
 ```
 
-
-## Important Disclaimer
-**It is strongly recommended that you back up your vault prior to committing changes.** This script makes changes directly to the markdown files in your vault. Once the changes are committed, there is no ability to recreate the original information unless you have a backup.  Follow the instructions in the script to create a backup of your vault if needed.  The author of this script is not responsible for any data loss that may occur. Use at your own risk.
-
 ## Usage
-The script provides a menu of available actions. Make as many changes as you require and review them as you go.  No changes are made to the Vault until they are explicitly committed.
+Run `obsidian-metadata` from the command line to invoke the script.  Add `--help` to view additional options.
 
-[![asciicast](https://asciinema.org/a/553464.svg)](https://asciinema.org/a/553464)
+Obsidian-metadata provides a menu of sub-commands.
 
+**Vault Actions**
+    • Backup:        Create a backup of the vault.
+    • Delete Backup: Delete a backup of the vault.
+
+**Inspect Metadata**
+    • View all metadata in the vault
+
+**Filter Notes in Scope**:
+Limit the scope of notes to be processed with a regex.
+    • Apply regex:          Set a regex to limit scope
+    • List notes in scope:  List notes that will be processed.
+
+**Add Metadata**
+    • Add metadata to the frontmatter
+    • Add to inline metadata (Not yet implemented)
+    • Add to inline tag (Not yet implemented)
+
+**Rename Metadata**
+    • Rename a key
+    • Rename a value
+    • rename an inline tag
+
+**Delete Metadata**
+    • Delete a key and associated values
+    • Delete a value from a key
+    • Delete an inline tag
+
+**Review Changes**
+    • View a diff of the changes that will be made
+
+**Commit Changes**
+    • Commit changes to the vault
 
 ### Configuration
 `obsidian-metadata` requires a configuration file at `~/.obsidian_metadata.toml`.  On first run, this file will be created.  You can specify a new location for the configuration file with the `--config-file` option.

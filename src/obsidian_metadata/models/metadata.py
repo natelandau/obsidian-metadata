@@ -2,7 +2,6 @@
 
 import re
 from io import StringIO
-from typing import Any
 
 from rich import print
 from rich.columns import Columns
@@ -198,7 +197,7 @@ class Frontmatter:
 
         return dict_values_to_lists_strings(frontmatter, strip_null_values=True)
 
-    def add(self, key: str, value: str | list[Any] = None) -> bool:
+    def add(self, key: str, value: str | list[str] = None) -> bool:
         """Add a key and value to the frontmatter.
 
         Args:
@@ -348,6 +347,19 @@ class InlineMetadata:
             str: inline metadata
         """
         return f"InlineMetadata(inline_metadata={self.dict})"
+
+    def add(self, key: str, value: str | list[str] = None) -> bool:
+        """Add a key and value to the frontmatter.
+
+        Args:
+            key (str): Key to add.
+            value (str, optional): Value to add.
+
+        Returns:
+            bool: True if the metadata was added
+        """
+        # TODO: implement adding to inline metadata which requires knowing where in the note the metadata is to be added.  In addition, unlike frontmatter, it is not possible to have multiple values for a key.
+        pass
 
     def _grab_inline_metadata(self, file_content: str) -> dict[str, list[str]]:
         """Grab inline metadata from a note.

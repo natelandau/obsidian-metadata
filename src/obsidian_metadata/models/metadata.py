@@ -2,6 +2,7 @@
 
 import re
 from io import StringIO
+from typing import Any
 
 from rich import print
 from rich.columns import Columns
@@ -196,6 +197,40 @@ class Frontmatter:
                 frontmatter[k] = []
 
         return dict_values_to_lists_strings(frontmatter, strip_null_values=True)
+
+    def add(self, key: str, value: str | list[Any] = None) -> bool:
+        """Add a key and value to the frontmatter.
+
+        Args:
+            key (str): Key to add.
+            value (str, optional): Value to add.
+
+        Returns:
+            bool: True if the metadata was added
+        """
+        if value is None:
+            if key not in self.dict:
+                self.dict[key] = []
+                return True
+            return False
+
+        if key not in self.dict:
+            if isinstance(value, list):
+                self.dict[key] = value
+                return True
+
+            self.dict[key] = [value]
+            return True
+
+        if key in self.dict and value not in self.dict[key]:
+            if isinstance(value, list):
+                self.dict[key].extend(value)
+                return True
+
+            self.dict[key].append(value)
+            return True
+
+        return False
 
     def contains(self, key: str, value: str = None, is_regex: bool = False) -> bool:
         """Check if a key or value exists in the metadata.

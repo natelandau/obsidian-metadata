@@ -125,6 +125,7 @@ class Vault:
         log.debug("Backing up vault")
         if self.dry_run:
             alerts.dryrun(f"Backup up vault to: {self.backup_path}")
+            print("\n")
             return
 
         try:
@@ -256,7 +257,7 @@ class Vault:
         table = Table(title="Notes in current scope", show_header=False, box=box.HORIZONTALS)
         for _n, _note in enumerate(self.notes, start=1):
             table.add_row(str(_n), str(_note.note_path.relative_to(self.vault_path)))
-        Console().print("\n", table)
+        Console().print(table)
 
     def num_excluded_notes(self) -> int:
         """Count number of excluded notes."""

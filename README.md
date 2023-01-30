@@ -22,37 +22,37 @@ Run `obsidian-metadata` from the command line to invoke the script.  Add `--help
 Obsidian-metadata provides a menu of sub-commands.
 
 **Vault Actions**
-    - Backup:        Create a backup of the vault.
-    - Delete Backup: Delete a backup of the vault.
+- Backup:        Create a backup of the vault.
+- Delete Backup: Delete a backup of the vault.
 
 **Inspect Metadata**
-    - View all metadata in the vault
+- View all metadata in the vault
 
 **Filter Notes in Scope**:
 Limit the scope of notes to be processed with a regex.
-    - Apply regex:          Set a regex to limit scope
-    - List notes in scope:  List notes that will be processed.
+- Apply regex:          Set a regex to limit scope
+- List notes in scope:  List notes that will be processed.
 
 **Add Metadata**
-    - Add metadata to the frontmatter
-    - Add to inline metadata (Not yet implemented)
-    - Add to inline tag (Not yet implemented)
+- Add metadata to the frontmatter
+- Add to inline metadata (Not yet implemented)
+- Add to inline tag (Not yet implemented)
 
 **Rename Metadata**
-    - Rename a key
-    - Rename a value
-    - rename an inline tag
+- Rename a key
+- Rename a value
+- rename an inline tag
 
 **Delete Metadata**
-    - Delete a key and associated values
-    - Delete a value from a key
-    - Delete an inline tag
+- Delete a key and associated values
+- Delete a value from a key
+- Delete an inline tag
 
 **Review Changes**
-    - View a diff of the changes that will be made
+- View a diff of the changes that will be made
 
 **Commit Changes**
-    - Commit changes to the vault
+- Commit changes to the vault
 
 ### Configuration
 `obsidian-metadata` requires a configuration file at `~/.obsidian_metadata.toml`.  On first run, this file will be created.  You can specify a new location for the configuration file with the `--config-file` option.

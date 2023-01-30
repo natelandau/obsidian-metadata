@@ -64,9 +64,12 @@ class Questions:
         """
         self.style = questionary.Style(
             [
-                ("separator", "bold fg:#6C6C6C"),
-                ("instruction", "fg:#6C6C6C"),
-                ("highlighted", "bold reverse"),
+                ("qmark", "fg:#808080 bold"),
+                ("question", "bold"),
+                ("separator", "fg:#808080"),
+                ("instruction", "fg:#808080"),
+                ("highlighted", "fg:#c0c0c0 bold reverse"),
+                ("text", ""),
                 ("pointer", "bold"),
             ]
         )
@@ -241,7 +244,10 @@ class Questions:
 
         choices.append(questionary.Separator())  # type: ignore [arg-type]
         choices.append({"name": "Cancel", "value": "cancel"})
-        return self.ask_selection(choices=choices, question="Select the type of metadata")
+        return self.ask_selection(
+            choices=choices,
+            question="Select the type of metadata",
+        )
 
     def ask_confirm(self, question: str, default: bool = True) -> bool:  # pragma: no cover
         """Ask the user to confirm an action.
@@ -253,13 +259,17 @@ class Questions:
         Returns:
             bool: True if the user confirms, otherwise False.
         """
-        return questionary.confirm(question, default=default, style=self.style).ask()
+        return questionary.confirm(
+            question, default=default, style=self.style, qmark="INPUT    |"
+        ).ask()
 
     def ask_existing_inline_tag(self, question: str = "Enter a tag") -> str:  # pragma: no cover
         """Ask the user for an existing inline tag."""
         return questionary.text(
             question,
             validate=self._validate_existing_inline_tag,
+            style=self.style,
+            qmark="INPUT    |",
         ).ask()
 
     def ask_existing_key(self, question: str = "Enter a key") -> str:  # pragma: no cover
@@ -272,8 +282,7 @@ class Questions:
             str: A metadata key that exists in the vault.
         """
         return questionary.text(
-            question,
-            validate=self._validate_key_exists,
+            question, validate=self._validate_key_exists, style=self.style, qmark="INPUT    |"
         ).ask()
 
     def ask_existing_keys_regex(self, question: str = "Regex for keys") -> str:  # pragma: no cover
@@ -286,8 +295,7 @@ class Questions:
             str: A regex for metadata keys that exist in the vault.
         """
         return questionary.text(
-            question,
-            validate=self._validate_key_exists_regex,
+            question, validate=self._validate_key_exists_regex, style=self.style, qmark="INPUT    |"
         ).ask()
 
     def ask_existing_value(self, question: str = "Enter a value") -> str:  # pragma: no cover
@@ -299,7 +307,9 @@ class Questions:
         Returns:
             str: A metadata value.
         """
-        return questionary.text(question, validate=self._validate_value).ask()
+        return questionary.text(
+            question, validate=self._validate_value, style=self.style, qmark="INPUT    |"
+        ).ask()
 
     def ask_filter_path(self) -> str:  # pragma: no cover
         """Ask the user for the path to the filter file.
@@ -311,6 +321,8 @@ class Questions:
             "Regex to filter the notes being processed by their path:",
             only_directories=False,
             validate=self._validate_valid_vault_regex,
+            style=self.style,
+            qmark="INPUT    |",
         ).ask()
         if filter_path_regex is None:
             raise typer.Exit(code=1)
@@ -331,6 +343,8 @@ class Questions:
         return questionary.text(
             question,
             validate=self._validate_value_exists_regex,
+            style=self.style,
+            qmark="INPUT    |",
         ).ask()
 
     def ask_application_main(self) -> str:  # pragma: no cover
@@ -345,7 +359,7 @@ class Questions:
         return questionary.select(
             "What do you want to do?",
             choices=[
-                {"name": "Vault Actions, ", "value": "vault_actions"},
+                {"name": "Vault Actions", "value": "vault_actions"},
                 {"name": "Inspect Metadata", "value": "inspect_metadata"},
                 {"name": "Filter Notes in Scope", "value": "filter_notes"},
                 {"name": "Add Metadata", "value": "add_metadata"},
@@ -359,6 +373,7 @@ class Questions:
             ],
             use_shortcuts=False,
             style=self.style,
+            qmark="INPUT    |",
         ).ask()
 
     def ask_new_key(self, question: str = "New key name") -> str:  # pragma: no cover
@@ -371,15 +386,13 @@ class Questions:
             str: A new metadata key.
         """
         return questionary.text(
-            question,
-            validate=self._validate_new_key,
+            question, validate=self._validate_new_key, style=self.style, qmark="INPUT    |"
         ).ask()
 
     def ask_new_tag(self, question: str = "New tag name") -> str:  # pragma: no cover
         """Ask the user for a new inline tag."""
         return questionary.text(
-            question,
-            validate=self._validate_new_tag,
+            question, validate=self._validate_new_tag, style=self.style, qmark="INPUT    |"
         ).ask()
 
     def ask_new_value(self, question: str = "New value") -> str:  # pragma: no cover
@@ -392,8 +405,7 @@ class Questions:
             str: A new metadata value.
         """
         return questionary.text(
-            question,
-            validate=self._validate_new_value,
+            question, validate=self._validate_new_value, style=self.style, qmark="INPUT    |"
         ).ask()
 
     def ask_selection(
@@ -413,4 +425,5 @@ class Questions:
             choices=choices,
             use_shortcuts=False,
             style=self.style,
+            qmark="INPUT    |",
         ).ask()

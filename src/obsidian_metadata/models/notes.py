@@ -64,6 +64,59 @@ class Note:
         yield "inline_tags", self.inline_tags
         yield "inline_metadata", self.inline_metadata
 
+    def _delete_inline_metadata(self, key: str, value: str = None) -> None:
+        """Deletes an inline metadata key/value pair from the text of the note. This method does not remove the key/value from the metadata attribute of the note.
+
+        Args:
+            key (str): Key to delete.
+            value (str, optional): Value to delete.
+        """
+        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
+        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
+
+        for (_k, _v) in stripped_null_values:
+            if re.search(key, _k):
+                if value is None:
+                    _k = re.escape(_k)
+                    _v = re.escape(_v)
+                    self.sub(rf"\[?{_k}:: ?{_v}]?", "", is_regex=True)
+                    return
+
+                if re.search(value, _v):
+                    _k = re.escape(_k)
+                    _v = re.escape(_v)
+                    self.sub(rf"({_k}::) ?{_v}", r"\1", is_regex=True)
+
+    def _rename_inline_metadata(self, key: str, value_1: str, value_2: str = None) -> None:
+        """Replaces the inline metadata in the note with the current inline metadata object.
+
+        Args:
+            key (str): Key to rename.
+            value_1 (str): Value to replace OR new key name (if value_2 is None).
+            value_2 (str, optional): New value.
+
+        """
+        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
+        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
+
+        for (_k, _v) in stripped_null_values:
+            if re.search(key, _k):
+                if value_2 is None:
+                    if re.search(rf"{key}[^\w\d_-]+", _k):
+                        key_text = re.split(r"[^\w\d_-]+$", _k)[0]
+                        key_markdown = re.split(r"^[\w\d_-]+", _k)[1]
+                        self.sub(
+                            rf"{key_text}{key_markdown}::",
+                            rf"{value_1}{key_markdown}::",
+                        )
+                    else:
+                        self.sub(f"{_k}::", f"{value_1}::")
+                else:
+                    if re.search(key, _k) and re.search(value_1, _v):
+                        _k = re.escape(_k)
+                        _v = re.escape(_v)
+                        self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
+
     def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> bool:
         """Adds metadata to the note.
 
@@ -143,29 +196,6 @@ class Note:
             return True
 
         return False
-
-    def _delete_inline_metadata(self, key: str, value: str = None) -> None:
-        """Deletes an inline metadata key/value pair from the text of the note. This method does not remove the key/value from the metadata attribute of the note.
-
-        Args:
-            key (str): Key to delete.
-            value (str, optional): Value to delete.
-        """
-        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
-
-        for (_k, _v) in stripped_null_values:
-            if re.search(key, _k):
-                if value is None:
-                    _k = re.escape(_k)
-                    _v = re.escape(_v)
-                    self.sub(rf"\[?{_k}:: ?{_v}]?", "", is_regex=True)
-                    return
-
-                if re.search(value, _v):
-                    _k = re.escape(_k)
-                    _v = re.escape(_v)
-                    self.sub(rf"({_k}::) ?{_v}", r"\1", is_regex=True)
 
     def delete_inline_tag(self, tag: str) -> bool:
         """Deletes an inline tag from the `inline_tags` attribute AND removes the tag from the text of the note if it exists.
@@ -263,48 +293,27 @@ class Note:
 
         Console().print(table)
 
-    def sub(self, pattern: str, replacement: str, is_regex: bool = False) -> None:
-        """Substitutes text within the note.
+    def replace_frontmatter(self, sort_keys: bool = False) -> None:
+        """Replaces the frontmatter in the note with the current frontmatter object."""
+        try:
+            current_frontmatter = PATTERNS.frontmatt_block_with_separators.search(
+                self.file_content
+            ).group("frontmatter")
+        except AttributeError:
+            current_frontmatter = None
 
-        Args:
-            pattern (str): The pattern to replace (plain text or regular expression).
-            replacement (str): What to replace the pattern with.
-            is_regex (bool): Whether the pattern is a regex pattern or plain text.
-        """
-        if not is_regex:
-            pattern = re.escape(pattern)
+        if current_frontmatter is None and self.frontmatter.dict == {}:
+            return
 
-        self.file_content = re.sub(pattern, replacement, self.file_content, re.MULTILINE)
+        new_frontmatter = self.frontmatter.to_yaml(sort_keys=sort_keys)
+        new_frontmatter = f"---\n{new_frontmatter}---\n"
 
-    def _rename_inline_metadata(self, key: str, value_1: str, value_2: str = None) -> None:
-        """Replaces the inline metadata in the note with the current inline metadata object.
+        if current_frontmatter is None:
+            self.file_content = new_frontmatter + self.file_content
+            return
 
-        Args:
-            key (str): Key to rename.
-            value_1 (str): Value to replace OR new key name (if value_2 is None).
-            value_2 (str, optional): New value.
-
-        """
-        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
-
-        for (_k, _v) in stripped_null_values:
-            if re.search(key, _k):
-                if value_2 is None:
-                    if re.search(rf"{key}[^\w\d_-]+", _k):
-                        key_text = re.split(r"[^\w\d_-]+$", _k)[0]
-                        key_markdown = re.split(r"^[\w\d_-]+", _k)[1]
-                        self.sub(
-                            rf"{key_text}{key_markdown}::",
-                            rf"{value_1}{key_markdown}::",
-                        )
-                    else:
-                        self.sub(f"{_k}::", f"{value_1}::")
-                else:
-                    if re.search(key, _k) and re.search(value_1, _v):
-                        _k = re.escape(_k)
-                        _v = re.escape(_v)
-                        self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
+        current_frontmatter = re.escape(current_frontmatter)
+        self.sub(current_frontmatter, new_frontmatter, is_regex=True)
 
     def rename_inline_tag(self, tag_1: str, tag_2: str) -> bool:
         """Renames an inline tag from the note ONLY if it's not in the metadata as well.
@@ -360,27 +369,18 @@ class Note:
 
         return False
 
-    def replace_frontmatter(self, sort_keys: bool = False) -> None:
-        """Replaces the frontmatter in the note with the current frontmatter object."""
-        try:
-            current_frontmatter = PATTERNS.frontmatt_block_with_separators.search(
-                self.file_content
-            ).group("frontmatter")
-        except AttributeError:
-            current_frontmatter = None
+    def sub(self, pattern: str, replacement: str, is_regex: bool = False) -> None:
+        """Substitutes text within the note.
 
-        if current_frontmatter is None and self.frontmatter.dict == {}:
-            return
+        Args:
+            pattern (str): The pattern to replace (plain text or regular expression).
+            replacement (str): What to replace the pattern with.
+            is_regex (bool): Whether the pattern is a regex pattern or plain text.
+        """
+        if not is_regex:
+            pattern = re.escape(pattern)
 
-        new_frontmatter = self.frontmatter.to_yaml(sort_keys=sort_keys)
-        new_frontmatter = f"---\n{new_frontmatter}---\n"
-
-        if current_frontmatter is None:
-            self.file_content = new_frontmatter + self.file_content
-            return
-
-        current_frontmatter = re.escape(current_frontmatter)
-        self.sub(current_frontmatter, new_frontmatter, is_regex=True)
+        self.file_content = re.sub(pattern, replacement, self.file_content, re.MULTILINE)
 
     def write(self, path: Path = None) -> None:
         """Writes the note's content to disk.

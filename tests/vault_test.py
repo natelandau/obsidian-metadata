@@ -160,6 +160,19 @@ def test_info(test_vault, capsys):
     assert captured.out == Regex(r"Backup +\│ None")
 
 
+def test_list_editable_notes(test_vault, capsys) -> None:
+    """Test listing editable notes."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+
+    vault.list_editable_notes()
+    captured = capsys.readouterr()
+    assert captured.out == Regex("Notes in current scope")
+    assert captured.out == Regex(r"1 +test1\.md")
+
+
 def test_contains_inline_tag(test_vault) -> None:
     """Test if the vault contains an inline tag."""
     vault_path = test_vault

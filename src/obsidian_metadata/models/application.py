@@ -29,16 +29,6 @@ class Application:
         self.dry_run = dry_run
         self.questions = Questions()
 
-    def load_vault(self, path_filter: str = None) -> None:
-        """Load the vault.
-
-        Args:
-            path_filter (str, optional): Regex to filter notes by path.
-        """
-        self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run, path_filter=path_filter)
-        log.info(f"Indexed {self.vault.num_notes()} notes from {self.vault.vault_path}")
-        self.questions = Questions(vault=self.vault)
-
     def application_main(self) -> None:
         """Questions for the main application."""
         self.load_vault()
@@ -76,9 +66,9 @@ class Application:
     def application_add_metadata(self) -> None:
         """Add metadata."""
         help_text = """
-        [bold underline]Add Metadata[/]
-        Add new metadata to your vault. Currently only supports
-        adding to the frontmatter of a note.\n
+        USAGE    | Add Metadata
+                   [dim]Add new metadata to your vault. Currently only supports
+                   adding to the frontmatter of a note.[/]
         """
         print(dedent(help_text))
 
@@ -114,10 +104,10 @@ class Application:
     def application_filter(self) -> None:
         """Filter notes."""
         help_text = """
-        [bold underline]Filter Notes[/]
-        Enter a regex to filter notes by path. This allows you to
-        specify a subset of notes to update. Leave empty to include
-        all markdown files.\n
+        USAGE    | Filter Notes
+                   [dim]Enter a regex to filter notes by path. This allows you to
+                   specify a subset of notes to update. Leave empty to include
+                   all markdown files.[/]
         """
         print(dedent(help_text))
 
@@ -151,7 +141,6 @@ class Application:
 
                 case "list_notes":
                     self.vault.list_editable_notes()
-                    print("\n")
 
                 case _:
                     return
@@ -159,8 +148,9 @@ class Application:
     def application_inspect_metadata(self) -> None:
         """View metadata."""
         help_text = """
-        [bold underline]View Metadata[/]
-        Inspect the metadata in your vault. Note, uncommitted changes will be reflected in these reports\n
+        USAGE    | View Metadata
+                   [dim]Inspect the metadata in your vault. Note, uncommitted
+                   changes will be reflected in these reports[/]
         """
         print(dedent(help_text))
 
@@ -179,8 +169,8 @@ class Application:
     def application_vault(self) -> None:
         """Vault actions."""
         help_text = """
-        [bold underline]Vault Actions[/]
-        Create or delete a backup of your vault.\n
+        USAGE    | Vault Actions
+                   [dim]Create or delete a backup of your vault.[/]
         """
         print(dedent(help_text))
 
@@ -202,8 +192,9 @@ class Application:
 
     def application_delete_metadata(self) -> None:
         help_text = """
-        [bold underline]Delete Metadata[/]
-        Delete either a key and all associated values, or a specific value.\n
+        USAGE    | Delete Metadata
+                   [dim]Delete either a key and all associated values,
+                   or a specific value.[/]
         """
         print(dedent(help_text))
 
@@ -229,8 +220,8 @@ class Application:
     def application_rename_metadata(self) -> None:
         """Rename metadata."""
         help_text = """
-        [bold underline]Rename Metadata[/]\n
-        Select the type of metadata to rename.\n
+        USAGE    | Rename Metadata
+                   [dim]Select the type of metadata to rename.[/]
         """
         print(dedent(help_text))
 
@@ -253,7 +244,33 @@ class Application:
             case _:
                 return
 
-    ###########################################################################
+    def commit_changes(self) -> bool:
+        """Write all changes to disk.
+
+        Returns:
+            True if changes were committed, False otherwise.
+        """
+        changed_notes = self.vault.get_changed_notes()
+
+        if len(changed_notes) == 0:
+            print("\n")
+            alerts.notice("No changes to commit.\n")
+            return False
+
+        backup = questionary.confirm("Create backup before committing changes").ask()
+        if backup is None:
+            return False
+        if backup:
+            self.vault.backup()
+
+        if questionary.confirm(f"Commit {len(changed_notes)} changed files to disk?").ask():
+
+            self.vault.write()
+            alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
+            return True
+
+        return False
+
     def delete_inline_tag(self) -> None:
         """Delete an inline tag."""
         tag = self.questions.ask_existing_inline_tag(question="Which tag would you like to delete?")
@@ -306,6 +323,16 @@ class Application:
         )
 
         return
+
+    def load_vault(self, path_filter: str = None) -> None:
+        """Load the vault.
+
+        Args:
+            path_filter (str, optional): Regex to filter notes by path.
+        """
+        self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run, path_filter=path_filter)
+        log.info(f"Indexed {self.vault.num_notes()} notes from {self.vault.vault_path}")
+        self.questions = Questions(vault=self.vault)
 
     def rename_key(self) -> None:
         """Renames a key in the vault."""
@@ -406,30 +433,3 @@ class Application:
             if note_to_review is None or note_to_review == "return":
                 break
             changed_notes[note_to_review].print_diff()
-
-    def commit_changes(self) -> bool:
-        """Write all changes to disk.
-
-        Returns:
-            True if changes were committed, False otherwise.
-        """
-        changed_notes = self.vault.get_changed_notes()
-
-        if len(changed_notes) == 0:
-            print("\n")
-            alerts.notice("No changes to commit.\n")
-            return False
-
-        backup = questionary.confirm("Create backup before committing changes").ask()
-        if backup is None:
-            return False
-        if backup:
-            self.vault.backup()
-
-        if questionary.confirm(f"Commit {len(changed_notes)} changed files to disk?").ask():
-
-            self.vault.write()
-            alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
-            return True
-
-        return False

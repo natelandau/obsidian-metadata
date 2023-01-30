@@ -58,38 +58,6 @@ class VaultMetadata:
 
         self.dict = dict(sorted(existing_metadata.items()))
 
-    def print_keys(self) -> None:
-        """Print all metadata keys."""
-        columns = Columns(
-            sorted(self.dict.keys()),
-            equal=True,
-            expand=True,
-            title="All metadata keys in Obsidian vault",
-        )
-        print(columns)
-
-    def print_tags(self) -> None:
-        """Print all tags."""
-        columns = Columns(
-            sorted(self.dict["tags"]),
-            equal=True,
-            expand=True,
-            title="All tags in Obsidian vault",
-        )
-        print(columns)
-
-    def print_metadata(self) -> None:
-        """Print all metadata."""
-        table = Table(show_footer=False, show_lines=True)
-        table.add_column("Keys")
-        table.add_column("Values")
-        for key, value in sorted(self.dict.items()):
-            values: str | dict[str, list[str]] = (
-                "\n".join(sorted(value)) if isinstance(value, list) else value
-            )
-            table.add_row(f"[bold]{key}[/]", str(values))
-        Console().print(table)
-
     def contains(self, key: str, value: str = None, is_regex: bool = False) -> bool:
         """Check if a key and/or a value exists in the metadata.
 
@@ -130,6 +98,38 @@ class VaultMetadata:
             return True
 
         return False
+
+    def print_keys(self) -> None:
+        """Print all metadata keys."""
+        columns = Columns(
+            sorted(self.dict.keys()),
+            equal=True,
+            expand=True,
+            title="All metadata keys in Obsidian vault",
+        )
+        print(columns)
+
+    def print_metadata(self) -> None:
+        """Print all metadata."""
+        table = Table(show_footer=False, show_lines=True)
+        table.add_column("Keys")
+        table.add_column("Values")
+        for key, value in sorted(self.dict.items()):
+            values: str | dict[str, list[str]] = (
+                "\n".join(sorted(value)) if isinstance(value, list) else value
+            )
+            table.add_row(f"[bold]{key}[/]", str(values))
+        Console().print(table)
+
+    def print_tags(self) -> None:
+        """Print all tags."""
+        columns = Columns(
+            sorted(self.dict["tags"]),
+            equal=True,
+            expand=True,
+            title="All tags in Obsidian vault",
+        )
+        print(columns)
 
     def rename(self, key: str, value_1: str, value_2: str = None) -> bool:
         """Replace a value in the frontmatter.
@@ -244,29 +244,6 @@ class Frontmatter:
         """
         return dict_contains(self.dict, key, value, is_regex)
 
-    def rename(self, key: str, value_1: str, value_2: str = None) -> bool:
-        """Replace a value in the frontmatter.
-
-        Args:
-            key (str): Key to check.
-            value_1 (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
-            value_2 (str, Optional): New value.
-
-        Returns:
-            bool: True if a value was renamed
-        """
-        if value_2 is None:
-            if key in self.dict and value_1 not in self.dict:
-                self.dict[value_1] = self.dict.pop(key)
-                return True
-            return False
-
-        if key in self.dict and value_1 in self.dict[key]:
-            self.dict[key] = sorted({value_2 if x == value_1 else x for x in self.dict[key]})
-            return True
-
-        return False
-
     def delete(self, key: str, value_to_delete: str = None) -> bool:
         """Delete a value or key in the frontmatter.  Regex is supported to allow deleting more than one key or value.
 
@@ -302,6 +279,29 @@ class Frontmatter:
             bool: True if the frontmatter has changes.
         """
         return self.dict != self.dict_original
+
+    def rename(self, key: str, value_1: str, value_2: str = None) -> bool:
+        """Replace a value in the frontmatter.
+
+        Args:
+            key (str): Key to check.
+            value_1 (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
+            value_2 (str, Optional): New value.
+
+        Returns:
+            bool: True if a value was renamed
+        """
+        if value_2 is None:
+            if key in self.dict and value_1 not in self.dict:
+                self.dict[value_1] = self.dict.pop(key)
+                return True
+            return False
+
+        if key in self.dict and value_1 in self.dict[key]:
+            self.dict[key] = sorted({value_2 if x == value_1 else x for x in self.dict[key]})
+            return True
+
+        return False
 
     def to_yaml(self, sort_keys: bool = False) -> str:
         """Return the frontmatter as a YAML string.
@@ -348,19 +348,6 @@ class InlineMetadata:
         """
         return f"InlineMetadata(inline_metadata={self.dict})"
 
-    def add(self, key: str, value: str | list[str] = None) -> bool:
-        """Add a key and value to the frontmatter.
-
-        Args:
-            key (str): Key to add.
-            value (str, optional): Value to add.
-
-        Returns:
-            bool: True if the metadata was added
-        """
-        # TODO: implement adding to inline metadata which requires knowing where in the note the metadata is to be added.  In addition, unlike frontmatter, it is not possible to have multiple values for a key.
-        pass
-
     def _grab_inline_metadata(self, file_content: str) -> dict[str, list[str]]:
         """Grab inline metadata from a note.
 
@@ -385,6 +372,19 @@ class InlineMetadata:
 
         return clean_dictionary(inline_metadata)
 
+    def add(self, key: str, value: str | list[str] = None) -> bool:
+        """Add a key and value to the frontmatter.
+
+        Args:
+            key (str): Key to add.
+            value (str, optional): Value to add.
+
+        Returns:
+            bool: True if the metadata was added
+        """
+        # TODO: implement adding to inline metadata which requires knowing where in the note the metadata is to be added.  In addition, unlike frontmatter, it is not possible to have multiple values for a key.
+        pass
+
     def contains(self, key: str, value: str = None, is_regex: bool = False) -> bool:
         """Check if a key or value exists in the inline metadata.
 
@@ -397,29 +397,6 @@ class InlineMetadata:
             bool: True if the key exists.
         """
         return dict_contains(self.dict, key, value, is_regex)
-
-    def rename(self, key: str, value_1: str, value_2: str = None) -> bool:
-        """Replace a value in the inline metadata.
-
-        Args:
-            key (str): Key to check.
-            value_1 (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
-            value_2 (str, Optional): New value.
-
-        Returns:
-            bool: True if a value was renamed
-        """
-        if value_2 is None:
-            if key in self.dict and value_1 not in self.dict:
-                self.dict[value_1] = self.dict.pop(key)
-                return True
-            return False
-
-        if key in self.dict and value_1 in self.dict[key]:
-            self.dict[key] = sorted({value_2 if x == value_1 else x for x in self.dict[key]})
-            return True
-
-        return False
 
     def delete(self, key: str, value_to_delete: str = None) -> bool:
         """Delete a value or key in the inline metadata. Regex is supported to allow deleting more than one key or value.
@@ -456,6 +433,29 @@ class InlineMetadata:
             bool: True if the metadata has changes.
         """
         return self.dict != self.dict_original
+
+    def rename(self, key: str, value_1: str, value_2: str = None) -> bool:
+        """Replace a value in the inline metadata.
+
+        Args:
+            key (str): Key to check.
+            value_1 (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
+            value_2 (str, Optional): New value.
+
+        Returns:
+            bool: True if a value was renamed
+        """
+        if value_2 is None:
+            if key in self.dict and value_1 not in self.dict:
+                self.dict[value_1] = self.dict.pop(key)
+                return True
+            return False
+
+        if key in self.dict and value_1 in self.dict[key]:
+            self.dict[key] = sorted({value_2 if x == value_1 else x for x in self.dict[key]})
+            return True
+
+        return False
 
 
 class InlineTags:
@@ -512,21 +512,6 @@ class InlineTags:
 
         return False
 
-    def rename(self, old_tag: str, new_tag: str) -> bool:
-        """Replace an inline tag with another string.
-
-        Args:
-            old_tag (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
-            new_tag (str, Optional): New value.
-
-        Returns:
-            bool: True if a value was renamed
-        """
-        if old_tag in self.list:
-            self.list = sorted([new_tag if i == old_tag else i for i in self.list])
-            return True
-        return False
-
     def delete(self, tag_to_delete: str) -> bool:
         """Delete a specified inline tag. Regex is supported to allow deleting more than one tag.
 
@@ -550,3 +535,18 @@ class InlineTags:
             bool: True if the metadata has changes.
         """
         return self.list != self.list_original
+
+    def rename(self, old_tag: str, new_tag: str) -> bool:
+        """Replace an inline tag with another string.
+
+        Args:
+            old_tag (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
+            new_tag (str, Optional): New value.
+
+        Returns:
+            bool: True if a value was renamed
+        """
+        if old_tag in self.list:
+            self.list = sorted([new_tag if i == old_tag else i for i in self.list])
+            return True
+        return False

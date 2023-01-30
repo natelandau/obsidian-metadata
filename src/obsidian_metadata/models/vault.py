@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 
 import rich.repr
+from rich import box
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
@@ -252,8 +253,10 @@ class Vault:
 
     def list_editable_notes(self) -> None:
         """Print a list of notes within the scope that are being edited."""
-        for _note in self.notes:
-            print(_note.note_path.relative_to(self.vault_path))
+        table = Table(title="Notes in current scope", show_header=False, box=box.HORIZONTALS)
+        for _n, _note in enumerate(self.notes, start=1):
+            table.add_row(str(_n), str(_note.note_path.relative_to(self.vault_path)))
+        Console().print("\n", table)
 
     def num_excluded_notes(self) -> int:
         """Count number of excluded notes."""

@@ -7,6 +7,8 @@ from pathlib import Path
 
 import rich.repr
 import typer
+from rich.console import Console
+from rich.table import Table
 
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
@@ -251,11 +253,15 @@ class Note:
 
         diff = difflib.Differ()
         result = list(diff.compare(a, b))
+        table = Table(title=f"\nDiff of {self.note_path.name}", show_header=False, min_width=50)
+
         for line in result:
             if line.startswith("+"):
-                print(f"\033[92m{line}\033[0m")
+                table.add_row(line, style="green")
             elif line.startswith("-"):
-                print(f"\033[91m{line}\033[0m")
+                table.add_row(line, style="red")
+
+        Console().print(table)
 
     def sub(self, pattern: str, replacement: str, is_regex: bool = False) -> None:
         """Substitutes text within the note.

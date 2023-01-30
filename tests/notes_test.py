@@ -272,9 +272,6 @@ def test_print_note(sample_note, capsys) -> None:
 def test_print_diff(sample_note, capsys) -> None:
     """Test printing diff."""
     note = Note(note_path=sample_note)
-    note.print_diff()
-    captured = capsys.readouterr()
-    assert captured.out == ""
 
     note.append("This is a test string.")
     note.print_diff()

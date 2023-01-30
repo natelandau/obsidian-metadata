@@ -1,3 +1,13 @@
+## v0.3.0 (2023-01-30)
+
+### Feat
+
+- **application**: add new metadata to frontmatter (#9)
+
+### Fix
+
+- **application**: improve ux (#10)
+
 ## v0.2.0 (2023-01-25)
 
 ### Feat

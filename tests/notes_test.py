@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 import typer
 
+from obsidian_metadata.models.enums import MetadataType
 from obsidian_metadata.models.notes import Note
 from tests.helpers import Regex
 
@@ -100,6 +101,65 @@ def test_append(sample_note) -> None:
     note.append(string_to_append=string2, allow_multiple=True)
     assert string2 in note.file_content
     assert len(re.findall(re.escape(string2), note.file_content)) == 2
+
+
+def test_add_metadata(sample_note) -> None:
+    """Test adding metadata."""
+    note = Note(note_path=sample_note)
+    assert note.add_metadata(MetadataType.FRONTMATTER, "frontmatter_Key1") is False
+    assert note.add_metadata(MetadataType.FRONTMATTER, "shared_key1", "shared_key1_value") is False
+    assert note.add_metadata(MetadataType.FRONTMATTER, "new_key1") is True
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "new_key1": [],
+        "shared_key1": ["shared_key1_value"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+    }
+    assert note.add_metadata(MetadataType.FRONTMATTER, "new_key2", "new_key2_value") is True
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "new_key1": [],
+        "new_key2": ["new_key2_value"],
+        "shared_key1": ["shared_key1_value"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+    }
+    assert (
+        note.add_metadata(
+            MetadataType.FRONTMATTER, "new_key2", ["new_key2_value2", "new_key2_value3"]
+        )
+        is True
+    )
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "new_key1": [],
+        "new_key2": ["new_key2_value", "new_key2_value2", "new_key2_value3"],
+        "shared_key1": ["shared_key1_value"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+    }
 
 
 def test_contains_inline_tag(sample_note) -> None:
@@ -212,9 +272,6 @@ def test_print_note(sample_note, capsys) -> None:
 def test_print_diff(sample_note, capsys) -> None:
     """Test printing diff."""
     note = Note(note_path=sample_note)
-    note.print_diff()
-    captured = capsys.readouterr()
-    assert captured.out == ""
 
     note.append("This is a test string.")
     note.print_diff()

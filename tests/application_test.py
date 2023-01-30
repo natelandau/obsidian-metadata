@@ -3,14 +3,16 @@
 
 How mocking works in this test suite:
 
-1. The main_app() method is mocked using a side effect iterable. This allows us to pass a value in the first run, and then a KeyError in the second run to exit the loop.
+1. The application_main() method is mocked using a side effect iterable. This allows us to pass a value in the first run, and then a KeyError in the second run to exit the loop.
 2. All questions are mocked using return_value. This allows us to pass in a value to the question and then the method will return that value. This is useful for testing questionary prompts without user input.
 """
 
 import re
+from pathlib import Path
 
 import pytest
 
+from obsidian_metadata.models.enums import MetadataType
 from tests.helpers import Regex
 
 
@@ -31,273 +33,335 @@ def test_abort(test_application, mocker, capsys) -> None:
     app = test_application
     app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
+        "obsidian_metadata.models.application.Questions.ask_application_main",
         return_value="abort",
     )
 
-    app.main_app()
+    app.application_main()
     captured = capsys.readouterr()
-    assert "Vault Info" in captured.out
     assert "Done!" in captured.out
 
 
-def test_list_notes(test_application, mocker, capsys) -> None:
-    """Test renaming a key."""
+def test_add_metadata_frontmatter_success(test_application, mocker, capsys) -> None:
+    """Test adding new metadata to the vault."""
     app = test_application
     app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["list_notes", KeyError],
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["add_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_area",
+        return_value=MetadataType.FRONTMATTER,
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_key",
+        return_value="new_key",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_value",
+        return_value="new_key_value",
     )
 
     with pytest.raises(KeyError):
-        app.main_app()
+        app.application_main()
     captured = capsys.readouterr()
-    assert "04 no metadata/no_metadata_1.md" in captured.out
-    assert "02 inline/inline 2.md" in captured.out
-    assert "+inbox/Untitled.md" in captured.out
-    assert "00 meta/templates/data sample.md" in captured.out
+    assert captured.out == Regex(r"SUCCESS +\| Added metadata to.*\d+.*notes", re.DOTALL)
 
 
-def test_all_metadata(test_application, mocker, capsys) -> None:
-    """Test renaming a key."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["all_metadata", KeyError],
-    )
-
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    expected = re.escape("┃ Keys               ┃ Values")
-    assert captured.out == Regex(expected)
-    expected = re.escape("Inline Tags        │ breakfast")
-    assert captured.out == Regex(expected)
-
-
-def test_filter_notes(test_application, mocker, capsys) -> None:
-    """Test renaming a key."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["filter_notes", "list_notes", KeyError],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_filter_path",
-        return_value="inline",
-    )
-
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    assert "04 no metadata/no_metadata_1.md" not in captured.out
-    assert "02 inline/inline 1.md" in captured.out
-    assert "02 inline/inline 2.md" in captured.out
-    assert "+inbox/Untitled.md" not in captured.out
-    assert "00 meta/templates/data sample.md" not in captured.out
-
-
-def test_rename_key_success(test_application, mocker, capsys) -> None:
-    """Test renaming a key."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["rename_key", KeyError],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_key",
-        return_value="tags",
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_new_key",
-        return_value="new_tags",
-    )
-
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Renamed.*tags.*to.*new_tags.*in.*\d+.*notes", re.DOTALL)
-
-
-def test_rename_key_fail(test_application, mocker, capsys) -> None:
-    """Test renaming a key."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["rename_key", KeyError],
-    )
-
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_key",
-        return_value="tag",
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_new_key",
-        return_value="new_tags",
-    )
-
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    assert "WARNING  | No notes were changed" in captured.out
-
-
-def test_rename_inline_tag_success(test_application, mocker, capsys) -> None:
+def test_delete_inline_tag(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
     app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["rename_inline_tag", KeyError],
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["delete_metadata", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_inline_tag",
-        return_value="breakfast",
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["delete_inline_tag", "back"],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_new_tag",
-        return_value="new_tag",
-    )
-
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Renamed.*breakfast.*to.*new_tag.*in.*\d+.*notes", re.DOTALL)
-
-
-def test_rename_inline_tag_fail(test_application, mocker, capsys) -> None:
-    """Test renaming an inline tag."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["rename_inline_tag", KeyError],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_inline_tag",
-        return_value="not_a_tag",
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_new_tag",
-        return_value="new_tag",
-    )
-
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"WARNING +\| No notes were changed", re.DOTALL)
-
-
-def test_delete_inline_tag_success(test_application, mocker, capsys) -> None:
-    """Test renaming an inline tag."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["delete_inline_tag", KeyError],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_inline_tag",
-        return_value="breakfast",
-    )
-
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\| Deleted.*\d+.*notes", re.DOTALL)
-
-
-def test_delete_inline_tag_fail(test_application, mocker, capsys) -> None:
-    """Test renaming an inline tag."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["delete_inline_tag", KeyError],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_inline_tag",
+        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
         return_value="not_a_tag_in_vault",
     )
 
     with pytest.raises(KeyError):
-        app.main_app()
+        app.application_main()
     captured = capsys.readouterr()
     assert captured.out == Regex(r"WARNING +\| No notes were changed", re.DOTALL)
 
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["delete_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["delete_inline_tag", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
+        return_value="breakfast",
+    )
 
-def test_delete_key_success(test_application, mocker, capsys) -> None:
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"SUCCESS +\| Deleted.*\d+.*notes", re.DOTALL)
+
+
+def test_delete_key(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
     app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["delete_key", KeyError],
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["delete_metadata", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_keys_regex",
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["delete_key", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_keys_regex",
+        return_value=r"\d{7}",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"WARNING +\| No notes found with a.*key.*matching", re.DOTALL)
+
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["delete_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["delete_key", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_keys_regex",
         return_value=r"d\w+",
     )
 
     with pytest.raises(KeyError):
-        app.main_app()
+        app.application_main()
     captured = capsys.readouterr()
     assert captured.out == Regex(
         r"SUCCESS +\|.*Deleted.*keys.*matching:.*d\\w\+.*from.*10", re.DOTALL
     )
 
 
-def test_delete_key_fail(test_application, mocker, capsys) -> None:
+def test_delete_value(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
     app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["delete_key", KeyError],
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["delete_metadata", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_keys_regex",
-        return_value=r"\d{7}",
-    )
-
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"WARNING +\| No notes found with a.*key.*matching", re.DOTALL)
-
-
-def test_rename_value_success(test_application, mocker, capsys) -> None:
-    """Test renaming an inline tag."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["rename_value", KeyError],
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["delete_value", "back"],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_key",
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
         return_value="area",
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_value",
-        return_value="frontmatter",
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_new_value",
-        return_value="new_key",
+        "obsidian_metadata.models.application.Questions.ask_existing_value_regex",
+        return_value=r"\d{7}",
     )
     with pytest.raises(KeyError):
-        app.main_app()
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"WARNING +\| No notes found matching:", re.DOTALL)
+
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["delete_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["delete_value", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
+        return_value="area",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_value_regex",
+        return_value=r"^front\w+$",
+    )
+    with pytest.raises(KeyError):
+        app.application_main()
     captured = capsys.readouterr()
     assert captured.out == Regex(
-        r"SUCCESS  | Renamed 'area:frontmatter' to 'area:new_key'", re.DOTALL
+        r"SUCCESS +\| Deleted value.*\^front\\w\+\$.*from.*key.*area.*in.*\d+.*notes", re.DOTALL
     )
-    assert captured.out == Regex(r".*in.*\d+.*notes.*", re.DOTALL)
+
+
+def test_filter_notes_filter(test_application, mocker, capsys) -> None:
+    """Test renaming a key."""
+    app = test_application
+    app.load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["filter_notes", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["apply_filter", "list_notes", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_filter_path",
+        return_value="inline",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"SUCCESS +\| Loaded.*\d+.*notes from.*\d+.*total", re.DOTALL)
+    assert "02 inline/inline 2.md" in captured.out
+    assert "03 mixed/mixed 1.md" not in captured.out
+
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["filter_notes", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["apply_filter", "list_notes", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_filter_path",
+        return_value="",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"SUCCESS +\| Loaded all.*\d+.*total notes", re.DOTALL)
+    assert "02 inline/inline 2.md" in captured.out
+    assert "03 mixed/mixed 1.md" in captured.out
+
+
+def test_inspect_metadata_all(test_application, mocker, capsys) -> None:
+    """Test backing up a vault."""
+    app = test_application
+    app.load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["inspect_metadata", KeyError],
+    )
+
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["all_metadata", "back"],
+    )
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"type +│ article", re.DOTALL)
+
+
+def test_rename_inline_tag(test_application, mocker, capsys) -> None:
+    """Test renaming an inline tag."""
+    app = test_application
+    app.load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["rename_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["rename_inline_tag", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
+        return_value="not_a_tag",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_tag",
+        return_value="new_tag",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"WARNING +\| No notes were changed", re.DOTALL)
+
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["rename_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["rename_inline_tag", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
+        return_value="breakfast",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_tag",
+        return_value="new_tag",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"Renamed.*breakfast.*to.*new_tag.*in.*\d+.*notes", re.DOTALL)
+
+
+def test_rename_key(test_application, mocker, capsys) -> None:
+    """Test renaming a key."""
+    app = test_application
+    app.load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["rename_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["rename_key", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
+        return_value="tag",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_key",
+        return_value="new_tags",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert "WARNING  | No notes were changed" in captured.out
+
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["rename_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["rename_key", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
+        return_value="tags",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_key",
+        return_value="new_tags",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"Renamed.*tags.*to.*new_tags.*in.*\d+.*notes", re.DOTALL)
 
 
 def test_rename_value_fail(test_application, mocker, capsys) -> None:
@@ -305,71 +369,57 @@ def test_rename_value_fail(test_application, mocker, capsys) -> None:
     app = test_application
     app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["rename_value", KeyError],
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["rename_metadata", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_key",
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["rename_value", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
         return_value="area",
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_value",
+        "obsidian_metadata.models.application.Questions.ask_existing_value",
         return_value="not_exists",
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_new_value",
+        "obsidian_metadata.models.application.Questions.ask_new_value",
         return_value="new_key",
     )
     with pytest.raises(KeyError):
-        app.main_app()
+        app.application_main()
     captured = capsys.readouterr()
     assert captured.out == Regex(r"WARNING +\| No notes were changed", re.DOTALL)
 
-
-def test_delete_value_success(test_application, mocker, capsys) -> None:
-    """Test renaming an inline tag."""
-    app = test_application
-    app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["delete_value", KeyError],
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["rename_metadata", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_key",
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["rename_value", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
         return_value="area",
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_value_regex",
-        return_value=r"^front\w+$",
+        "obsidian_metadata.models.application.Questions.ask_existing_value",
+        return_value="frontmatter",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_value",
+        return_value="new_key",
     )
     with pytest.raises(KeyError):
-        app.main_app()
+        app.application_main()
     captured = capsys.readouterr()
     assert captured.out == Regex(
-        r"SUCCESS +\| Deleted value.*\^front\\w\+\$.*from.*key.*area.*in.*\d+.*notes", re.DOTALL
+        r"SUCCESS +\| Renamed.*'area:frontmatter'.*to.*'area:new_key'", re.DOTALL
     )
-
-
-def test_delete_value_fail(test_application, mocker, capsys) -> None:
-    """Test renaming an inline tag."""
-    app = test_application
-    app.load_vault()
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["delete_value", KeyError],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_key",
-        return_value="area",
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_value_regex",
-        return_value=r"\d{7}",
-    )
-    with pytest.raises(KeyError):
-        app.main_app()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"WARNING +\| No notes found matching:", re.DOTALL)
+    assert captured.out == Regex(r".*in.*\d+.*notes.*", re.DOTALL)
 
 
 def test_review_no_changes(test_application, mocker, capsys) -> None:
@@ -377,11 +427,11 @@ def test_review_no_changes(test_application, mocker, capsys) -> None:
     app = test_application
     app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
+        "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["review_changes", KeyError],
     )
     with pytest.raises(KeyError):
-        app.main_app()
+        app.application_main()
     captured = capsys.readouterr()
     assert captured.out == Regex(r"INFO +\| No changes to review", re.DOTALL)
 
@@ -391,24 +441,68 @@ def test_review_changes(test_application, mocker, capsys) -> None:
     app = test_application
     app.load_vault()
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_main_application",
-        side_effect=["delete_key", "review_changes", KeyError],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_existing_keys_regex",
-        return_value=r"d\w+",
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["rename_metadata", "review_changes", KeyError],
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_confirm",
         return_value=True,
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_for_selection",
-        side_effect=[1, "return"],
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
+        return_value="tags",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_key",
+        return_value="new_tags",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["rename_key", 1, "return"],
     )
     with pytest.raises(KeyError):
-        app.main_app()
+        app.application_main()
     captured = capsys.readouterr()
     assert captured.out == Regex(r".*Found.*\d+.*changed notes in the vault.*", re.DOTALL)
-    assert "- date_created: 2022-12-22" in captured.out
-    assert "+   - breakfast" in captured.out
+    assert "- tags:" in captured.out
+    assert "+ new_tags:" in captured.out
+
+
+def test_vault_backup(test_application, mocker, capsys) -> None:
+    """Test backing up a vault."""
+    app = test_application
+    app.load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["vault_actions", KeyError],
+    )
+
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["backup_vault", "back"],
+    )
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"SUCCESS +\|.*application\.bak", re.DOTALL)
+
+
+def test_vault_delete(test_application, mocker, capsys, tmp_path) -> None:
+    """Test backing up a vault."""
+    app = test_application
+    backup_path = Path(tmp_path / "application.bak")
+    backup_path.mkdir()
+    app.load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["vault_actions", KeyError],
+    )
+
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["delete_backup", "back"],
+    )
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"SUCCESS +\| Backup deleted", re.DOTALL)

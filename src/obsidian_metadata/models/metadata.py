@@ -197,6 +197,40 @@ class Frontmatter:
 
         return dict_values_to_lists_strings(frontmatter, strip_null_values=True)
 
+    def add(self, key: str, value: str | list[str] = None) -> bool:
+        """Add a key and value to the frontmatter.
+
+        Args:
+            key (str): Key to add.
+            value (str, optional): Value to add.
+
+        Returns:
+            bool: True if the metadata was added
+        """
+        if value is None:
+            if key not in self.dict:
+                self.dict[key] = []
+                return True
+            return False
+
+        if key not in self.dict:
+            if isinstance(value, list):
+                self.dict[key] = value
+                return True
+
+            self.dict[key] = [value]
+            return True
+
+        if key in self.dict and value not in self.dict[key]:
+            if isinstance(value, list):
+                self.dict[key].extend(value)
+                return True
+
+            self.dict[key].append(value)
+            return True
+
+        return False
+
     def contains(self, key: str, value: str = None, is_regex: bool = False) -> bool:
         """Check if a key or value exists in the metadata.
 
@@ -313,6 +347,19 @@ class InlineMetadata:
             str: inline metadata
         """
         return f"InlineMetadata(inline_metadata={self.dict})"
+
+    def add(self, key: str, value: str | list[str] = None) -> bool:
+        """Add a key and value to the frontmatter.
+
+        Args:
+            key (str): Key to add.
+            value (str, optional): Value to add.
+
+        Returns:
+            bool: True if the metadata was added
+        """
+        # TODO: implement adding to inline metadata which requires knowing where in the note the metadata is to be added.  In addition, unlike frontmatter, it is not possible to have multiple values for a key.
+        pass
 
     def _grab_inline_metadata(self, file_content: str) -> dict[str, list[str]]:
         """Grab inline metadata from a note.

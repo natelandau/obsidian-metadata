@@ -7,6 +7,8 @@ from pathlib import Path
 
 import rich.repr
 import typer
+from rich.console import Console
+from rich.table import Table
 
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
@@ -14,6 +16,7 @@ from obsidian_metadata.models import (
     Frontmatter,
     InlineMetadata,
     InlineTags,
+    MetadataType,
     Patterns,
 )
 
@@ -60,6 +63,31 @@ class Note:
         yield "frontmatter", self.frontmatter
         yield "inline_tags", self.inline_tags
         yield "inline_metadata", self.inline_metadata
+
+    def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> bool:
+        """Adds metadata to the note.
+
+        Args:
+            area (MetadataType): Area to add metadata to.
+            key (str): Key to add.
+            value (str, optional): Value to add.
+
+        Returns:
+            bool: Whether the metadata was added.
+        """
+        if area is MetadataType.FRONTMATTER and self.frontmatter.add(key, value):
+            self.replace_frontmatter()
+            return True
+
+        if area is MetadataType.INLINE:
+            # TODO: implement adding to inline metadata
+            pass
+
+        if area is MetadataType.TAGS:
+            # TODO: implement adding to intext tags
+            pass
+
+        return False
 
     def append(self, string_to_append: str, allow_multiple: bool = False) -> None:
         """Appends a string to the end of a note.
@@ -225,11 +253,15 @@ class Note:
 
         diff = difflib.Differ()
         result = list(diff.compare(a, b))
+        table = Table(title=f"\nDiff of {self.note_path.name}", show_header=False, min_width=50)
+
         for line in result:
             if line.startswith("+"):
-                print(f"\033[92m{line}\033[0m")
+                table.add_row(line, style="green")
             elif line.startswith("-"):
-                print(f"\033[91m{line}\033[0m")
+                table.add_row(line, style="red")
+
+        Console().print(table)
 
     def sub(self, pattern: str, replacement: str, is_regex: bool = False) -> None:
         """Substitutes text within the note.

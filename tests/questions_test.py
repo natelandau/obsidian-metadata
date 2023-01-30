@@ -26,7 +26,6 @@ def test_validate_valid_regex() -> None:
     questions = Questions(vault=VAULT)
     assert questions._validate_valid_vault_regex(r".*\.md") is True
     assert "Invalid regex" in questions._validate_valid_vault_regex("[")
-    assert "Regex cannot be empty" in questions._validate_valid_vault_regex("")
     assert "Regex does not match paths" in questions._validate_valid_vault_regex(r"\d\d\d\w\d")
 
 

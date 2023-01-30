@@ -5,6 +5,7 @@ from pathlib import Path
 
 from obsidian_metadata._config import Config
 from obsidian_metadata.models import Vault
+from obsidian_metadata.models.enums import MetadataType
 from tests.helpers import Regex
 
 
@@ -155,7 +156,7 @@ def test_info(test_vault, capsys):
 
     captured = capsys.readouterr()
     assert captured.out == Regex(r"Vault +\│ /[\d\w]+")
-    assert captured.out == Regex(r"Notes being edited +\│ \d+")
+    assert captured.out == Regex(r"Notes in scope +\│ \d+")
     assert captured.out == Regex(r"Backup +\│ None")
 
 
@@ -168,6 +169,90 @@ def test_contains_inline_tag(test_vault) -> None:
 
     assert vault.contains_inline_tag("tag") is False
     assert vault.contains_inline_tag("intext_tag2") is True
+
+
+def test_add_metadata(test_vault) -> None:
+    """Test adding metadata to the vault."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+
+    assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key") == 3
+    assert vault.metadata.dict == {
+        "Inline Tags": [
+            "ignored_file_tag2",
+            "inline_tag_bottom1",
+            "inline_tag_bottom2",
+            "inline_tag_top1",
+            "inline_tag_top2",
+            "intext_tag1",
+            "intext_tag2",
+            "shared_tag",
+        ],
+        "author": ["author name"],
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "date_created": ["2022-12-22"],
+        "emoji_📅_key": ["emoji_📅_key_value"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "ignored_frontmatter": ["ignore_me"],
+        "intext_key": ["intext_value"],
+        "new_key": [],
+        "shared_key1": ["shared_key1_value"],
+        "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "frontmatter_tag3",
+            "ignored_file_tag1",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+        "type": ["article", "note"],
+    }
+    assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key2", "new_key2_value") == 3
+    assert vault.metadata.dict == {
+        "Inline Tags": [
+            "ignored_file_tag2",
+            "inline_tag_bottom1",
+            "inline_tag_bottom2",
+            "inline_tag_top1",
+            "inline_tag_top2",
+            "intext_tag1",
+            "intext_tag2",
+            "shared_tag",
+        ],
+        "author": ["author name"],
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "date_created": ["2022-12-22"],
+        "emoji_📅_key": ["emoji_📅_key_value"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "ignored_frontmatter": ["ignore_me"],
+        "intext_key": ["intext_value"],
+        "new_key": [],
+        "new_key2": ["new_key2_value"],
+        "shared_key1": ["shared_key1_value"],
+        "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "frontmatter_tag3",
+            "ignored_file_tag1",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+        "type": ["article", "note"],
+    }
 
 
 def test_contains_metadata(test_vault) -> None:

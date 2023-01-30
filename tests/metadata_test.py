@@ -222,6 +222,71 @@ def test_frontmatter_contains() -> None:
     assert frontmatter.contains("key", r"\w\d_", is_regex=True) is True
 
 
+def test_frontmatter_add() -> None:
+    """Test frontmatter add."""
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+
+    assert frontmatter.add("frontmatter_Key1") is False
+    assert frontmatter.add("added_key") is True
+    assert frontmatter.dict == {
+        "added_key": [],
+        "frontmatter_Key1": ["frontmatter_Key1_value"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key1": ["shared_key1_value"],
+        "tags": ["tag_1", "tag_2", "📅/tag_3"],
+    }
+
+    assert frontmatter.add("added_key", "added_value") is True
+    assert frontmatter.dict == {
+        "added_key": ["added_value"],
+        "frontmatter_Key1": ["frontmatter_Key1_value"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key1": ["shared_key1_value"],
+        "tags": ["tag_1", "tag_2", "📅/tag_3"],
+    }
+
+    assert frontmatter.add("added_key", "added_value_2") is True
+    assert frontmatter.dict == {
+        "added_key": ["added_value", "added_value_2"],
+        "frontmatter_Key1": ["frontmatter_Key1_value"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key1": ["shared_key1_value"],
+        "tags": ["tag_1", "tag_2", "📅/tag_3"],
+    }
+
+    assert frontmatter.add("added_key", ["added_value_3", "added_value_4"]) is True
+    assert frontmatter.dict == {
+        "added_key": ["added_value", "added_value_2", "added_value_3", "added_value_4"],
+        "frontmatter_Key1": ["frontmatter_Key1_value"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key1": ["shared_key1_value"],
+        "tags": ["tag_1", "tag_2", "📅/tag_3"],
+    }
+
+    assert frontmatter.add("added_key2", ["added_value_1", "added_value_2"]) is True
+    assert frontmatter.dict == {
+        "added_key": ["added_value", "added_value_2", "added_value_3", "added_value_4"],
+        "added_key2": ["added_value_1", "added_value_2"],
+        "frontmatter_Key1": ["frontmatter_Key1_value"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key1": ["shared_key1_value"],
+        "tags": ["tag_1", "tag_2", "📅/tag_3"],
+    }
+
+    assert frontmatter.add("added_key3", "added_value_1") is True
+    assert frontmatter.dict == {
+        "added_key": ["added_value", "added_value_2", "added_value_3", "added_value_4"],
+        "added_key2": ["added_value_1", "added_value_2"],
+        "added_key3": ["added_value_1"],
+        "frontmatter_Key1": ["frontmatter_Key1_value"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key1": ["shared_key1_value"],
+        "tags": ["tag_1", "tag_2", "📅/tag_3"],
+    }
+
+    assert frontmatter.add("added_key3", "added_value_1") is False
+
+
 def test_frontmatter_rename() -> None:
     """Test frontmatter rename."""
     frontmatter = Frontmatter(FRONTMATTER_CONTENT)

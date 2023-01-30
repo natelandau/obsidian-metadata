@@ -17,13 +17,6 @@ class Patterns:
         re.MULTILINE | re.X,
     )
 
-    frontmatt_block_with_separators: Pattern[str] = re.compile(
-        r"^\s*(?P<frontmatter>---.*?---)", flags=re.DOTALL
-    )
-    frontmatt_block_no_separators: Pattern[str] = re.compile(
-        r"^\s*---(?P<frontmatter>.*?)---", flags=re.DOTALL
-    )
-    # This pattern will return a tuple of 4 values, two will be empty and will need to be stripped before processing further
     find_inline_metadata: Pattern[str] = re.compile(
         r"""                                    # First look for in-text key values
         (?:^\[| \[)                             # Find key with starting bracket
@@ -37,5 +30,13 @@ class Patterns:
         re.X | re.MULTILINE,
     )
 
-    validate_tag_text: Pattern[str] = re.compile(r"[ \|,;:\*\(\)\[\]\\\.\n#&]")
+    frontmatt_block_with_separators: Pattern[str] = re.compile(
+        r"^\s*(?P<frontmatter>---.*?---)", flags=re.DOTALL
+    )
+    frontmatt_block_no_separators: Pattern[str] = re.compile(
+        r"^\s*---(?P<frontmatter>.*?)---", flags=re.DOTALL
+    )
+    # This pattern will return a tuple of 4 values, two will be empty and will need to be stripped before processing further
+
     validate_key_text: Pattern[str] = re.compile(r"[^-_\w\d\/\*\u263a-\U0001f645]")
+    validate_tag_text: Pattern[str] = re.compile(r"[ \|,;:\*\(\)\[\]\\\.\n#&]")

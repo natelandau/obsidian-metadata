@@ -29,16 +29,6 @@ class Application:
         self.dry_run = dry_run
         self.questions = Questions()
 
-    def load_vault(self, path_filter: str = None) -> None:
-        """Load the vault.
-
-        Args:
-            path_filter (str, optional): Regex to filter notes by path.
-        """
-        self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run, path_filter=path_filter)
-        log.info(f"Indexed {self.vault.num_notes()} notes from {self.vault.vault_path}")
-        self.questions = Questions(vault=self.vault)
-
     def application_main(self) -> None:
         """Questions for the main application."""
         self.load_vault()
@@ -253,7 +243,33 @@ class Application:
             case _:
                 return
 
-    ###########################################################################
+    def commit_changes(self) -> bool:
+        """Write all changes to disk.
+
+        Returns:
+            True if changes were committed, False otherwise.
+        """
+        changed_notes = self.vault.get_changed_notes()
+
+        if len(changed_notes) == 0:
+            print("\n")
+            alerts.notice("No changes to commit.\n")
+            return False
+
+        backup = questionary.confirm("Create backup before committing changes").ask()
+        if backup is None:
+            return False
+        if backup:
+            self.vault.backup()
+
+        if questionary.confirm(f"Commit {len(changed_notes)} changed files to disk?").ask():
+
+            self.vault.write()
+            alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
+            return True
+
+        return False
+
     def delete_inline_tag(self) -> None:
         """Delete an inline tag."""
         tag = self.questions.ask_existing_inline_tag(question="Which tag would you like to delete?")
@@ -306,6 +322,16 @@ class Application:
         )
 
         return
+
+    def load_vault(self, path_filter: str = None) -> None:
+        """Load the vault.
+
+        Args:
+            path_filter (str, optional): Regex to filter notes by path.
+        """
+        self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run, path_filter=path_filter)
+        log.info(f"Indexed {self.vault.num_notes()} notes from {self.vault.vault_path}")
+        self.questions = Questions(vault=self.vault)
 
     def rename_key(self) -> None:
         """Renames a key in the vault."""
@@ -406,30 +432,3 @@ class Application:
             if note_to_review is None or note_to_review == "return":
                 break
             changed_notes[note_to_review].print_diff()
-
-    def commit_changes(self) -> bool:
-        """Write all changes to disk.
-
-        Returns:
-            True if changes were committed, False otherwise.
-        """
-        changed_notes = self.vault.get_changed_notes()
-
-        if len(changed_notes) == 0:
-            print("\n")
-            alerts.notice("No changes to commit.\n")
-            return False
-
-        backup = questionary.confirm("Create backup before committing changes").ask()
-        if backup is None:
-            return False
-        if backup:
-            self.vault.backup()
-
-        if questionary.confirm(f"Commit {len(changed_notes)} changed files to disk?").ask():
-
-            self.vault.write()
-            alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
-            return True
-
-        return False

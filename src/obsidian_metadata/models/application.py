@@ -65,12 +65,9 @@ class Application:
 
     def application_add_metadata(self) -> None:
         """Add metadata."""
-        help_text = """
-        USAGE    | Add Metadata
-                   [dim]Add new metadata to your vault. Currently only supports
-                   adding to the frontmatter of a note.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage(
+            "Add new metadata to your vault. Currently only supports adding to the frontmatter of a note."
+        )
 
         area = self.questions.ask_area()
         match area:
@@ -103,13 +100,9 @@ class Application:
 
     def application_filter(self) -> None:
         """Filter notes."""
-        help_text = """
-        USAGE    | Filter Notes
-                   [dim]Enter a regex to filter notes by path. This allows you to
-                   specify a subset of notes to update. Leave empty to include
-                   all markdown files.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage(
+            "Enter a regex to filter notes by path. This allows you to specify a subset of notes to update. Leave empty to include all markdown files."
+        )
 
         choices = [
             {"name": "Apply regex filter", "value": "apply_filter"},
@@ -145,12 +138,9 @@ class Application:
 
     def application_inspect_metadata(self) -> None:
         """View metadata."""
-        help_text = """
-        USAGE    | View Metadata
-                   [dim]Inspect the metadata in your vault. Note, uncommitted
-                   changes will be reflected in these reports[/]
-        """
-        print(dedent(help_text))
+        alerts.usage(
+            "Inspect the metadata in your vault. Note, uncommitted changes will be reflected in these reports"
+        )
 
         choices = [
             {"name": "View all metadata", "value": "all_metadata"},
@@ -166,11 +156,7 @@ class Application:
 
     def application_vault(self) -> None:
         """Vault actions."""
-        help_text = """
-        USAGE    | Vault Actions
-                   [dim]Create or delete a backup of your vault.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage("Create or delete a backup of your vault.")
 
         choices = [
             {"name": "Backup vault", "value": "backup_vault"},
@@ -189,12 +175,7 @@ class Application:
                     return
 
     def application_delete_metadata(self) -> None:
-        help_text = """
-        USAGE    | Delete Metadata
-                   [dim]Delete either a key and all associated values,
-                   or a specific value.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage("Delete either a key and all associated values, or a specific value.")
 
         choices = [
             {"name": "Delete key", "value": "delete_key"},
@@ -217,11 +198,7 @@ class Application:
 
     def application_rename_metadata(self) -> None:
         """Rename metadata."""
-        help_text = """
-        USAGE    | Rename Metadata
-                   [dim]Select the type of metadata to rename.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage("Select the type of metadata to rename.")
 
         choices = [
             {"name": "Rename key", "value": "rename_key"},

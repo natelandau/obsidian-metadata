@@ -64,13 +64,13 @@ class Questions:
         """
         self.style = questionary.Style(
             [
-                ("qmark", "fg:#808080 bold"),
-                ("question", "bold"),
+                ("qmark", "fg:#729fcf bold"),
+                ("question", "fg:#729fcf bold"),
                 ("separator", "fg:#808080"),
                 ("instruction", "fg:#808080"),
-                ("highlighted", "fg:#c0c0c0 bold reverse"),
+                ("highlighted", "fg:#729fcf bold underline"),
                 ("text", ""),
-                ("pointer", "bold"),
+                ("pointer", "fg:#729fcf bold"),
             ]
         )
         self.vault = vault

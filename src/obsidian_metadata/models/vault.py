@@ -94,9 +94,11 @@ class Vault:
         ) as progress:
             progress.add_task(description="Processing notes...", total=None)
             for _note in self.notes:
-                self.metadata.add_metadata(_note.frontmatter.dict)
-                self.metadata.add_metadata(_note.inline_metadata.dict)
-                self.metadata.add_metadata({_note.inline_tags.metadata_key: _note.inline_tags.list})
+                self.metadata.index_metadata(_note.frontmatter.dict)
+                self.metadata.index_metadata(_note.inline_metadata.dict)
+                self.metadata.index_metadata(
+                    {_note.inline_tags.metadata_key: _note.inline_tags.list}
+                )
 
     def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> int:
         """Add metadata to all notes in the vault.

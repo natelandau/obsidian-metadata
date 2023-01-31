@@ -69,7 +69,7 @@ def test_vault_metadata(capsys) -> None:
     vm = VaultMetadata()
     assert vm.dict == {}
 
-    vm.add_metadata(METADATA)
+    vm.index_metadata(METADATA)
     assert vm.dict == {
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
@@ -97,7 +97,7 @@ def test_vault_metadata(capsys) -> None:
     assert captured.out == Regex(r"│ frontmatter_Key1 +│ author name +│")
 
     new_metadata = {"added_key": ["added_value"], "frontmatter_Key2": ["new_value"]}
-    vm.add_metadata(new_metadata)
+    vm.index_metadata(new_metadata)
     assert vm.dict == {
         "added_key": ["added_value"],
         "frontmatter_Key1": ["author name"],
@@ -115,7 +115,7 @@ def test_vault_metadata(capsys) -> None:
 def test_vault_metadata_contains() -> None:
     """Test contains method."""
     vm = VaultMetadata()
-    vm.add_metadata(METADATA)
+    vm.index_metadata(METADATA)
     assert vm.dict == {
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
@@ -141,7 +141,7 @@ def test_vault_metadata_contains() -> None:
 def test_vault_metadata_delete() -> None:
     """Test delete method."""
     vm = VaultMetadata()
-    vm.add_metadata(METADATA)
+    vm.index_metadata(METADATA)
     assert vm.dict == {
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
@@ -165,7 +165,7 @@ def test_vault_metadata_delete() -> None:
 def test_vault_metadata_rename() -> None:
     """Test rename method."""
     vm = VaultMetadata()
-    vm.add_metadata(METADATA)
+    vm.index_metadata(METADATA)
     assert vm.dict == {
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],

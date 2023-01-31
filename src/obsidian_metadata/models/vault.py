@@ -28,7 +28,13 @@ class Vault:
         notes (list[Note]): List of all notes in the vault.
     """
 
-    def __init__(self, config: VaultConfig, dry_run: bool = False, path_filter: str = None):
+    def __init__(
+        self,
+        config: VaultConfig,
+        dry_run: bool = False,
+        path_filter: str = None,
+        metadata_filter: dict[str, list[str]] = None,
+    ):
         self.vault_path: Path = config.path
         self.dry_run: bool = dry_run
         self.backup_path: Path = self.vault_path.parent / f"{self.vault_path.name}.bak"
@@ -38,7 +44,8 @@ class Vault:
             self.exclude_paths.append(Path(self.vault_path / p))
 
         self.path_filter = path_filter
-        self.note_paths = self._find_markdown_notes(path_filter)
+        self.metadata_filter = metadata_filter
+        self.all_note_paths = self._find_markdown_notes()
 
         with Progress(
             SpinnerColumn(),
@@ -46,9 +53,10 @@ class Vault:
             transient=True,
         ) as progress:
             progress.add_task(description="Processing notes...", total=None)
-            self.notes: list[Note] = [
-                Note(note_path=p, dry_run=self.dry_run) for p in self.note_paths
+            self.all_notes: list[Note] = [
+                Note(note_path=p, dry_run=self.dry_run) for p in self.all_note_paths
             ]
+            self.notes_in_scope = self._filter_notes(path_filter=self.path_filter)
 
         self._rebuild_vault_metadata()
 
@@ -57,32 +65,46 @@ class Vault:
         yield "vault_path", self.vault_path
         yield "dry_run", self.dry_run
         yield "backup_path", self.backup_path
-        yield "num_notes", self.num_notes()
+        yield "num_notes", len(self.all_notes)
+        yield "num_notes_in_scope", len(self.notes_in_scope)
         yield "exclude_paths", self.exclude_paths
 
-    def _find_markdown_notes(self, path_filter: str = None) -> list[Path]:
-        """Build list of all markdown files in the vault.
+    def _filter_notes(
+        self, path_filter: str = None, metadata_filter: dict[str, list[str]] = None
+    ) -> list[Note]:
+        """Filter notes by path and metadata.
 
         Args:
             path_filter (str, optional): Regex to filter notes by path.
+            metadata_filter (dict, optional): Metadata to filter notes by.
+
+        Returns:
+            list[Note]: List of notes matching the filters.
+        """
+        notes_list = self.all_notes.copy()
+        if path_filter is not None:
+            for _note in self.all_notes:
+                if not re.search(path_filter, str(_note.note_path.relative_to(self.vault_path))):
+                    notes_list.remove(_note)
+
+        if metadata_filter is not None:
+            pass
+
+        return notes_list
+
+    def _find_markdown_notes(self) -> list[Path]:
+        """Build list of all markdown files in the vault.
 
         Returns:
             list[Path]: List of paths to all matching files in the vault.
 
         """
-        notes_list = [
+        return [
             p.resolve()
             for p in self.vault_path.glob("**/*")
             if p.suffix in [".md", ".MD", ".markdown", ".MARKDOWN"]
             and not any(item in p.parents for item in self.exclude_paths)
         ]
-
-        if path_filter is not None:
-            notes_list = [
-                p for p in notes_list if re.search(path_filter, str(p.relative_to(self.vault_path)))
-            ]
-
-        return notes_list
 
     def _rebuild_vault_metadata(self) -> None:
         """Rebuild vault metadata."""
@@ -93,7 +115,7 @@ class Vault:
             transient=True,
         ) as progress:
             progress.add_task(description="Processing notes...", total=None)
-            for _note in self.notes:
+            for _note in self.notes_in_scope:
                 self.metadata.index_metadata(_note.frontmatter.dict)
                 self.metadata.index_metadata(_note.inline_metadata.dict)
                 self.metadata.index_metadata(
@@ -113,7 +135,7 @@ class Vault:
         """
         num_changed = 0
 
-        for _note in self.notes:
+        for _note in self.notes_in_scope:
             if _note.add_metadata(area, key, value):
                 num_changed += 1
 
@@ -155,7 +177,7 @@ class Vault:
         Returns:
             bool: True if tag is found in vault.
         """
-        return any(_note.contains_inline_tag(tag) for _note in self.notes)
+        return any(_note.contains_inline_tag(tag) for _note in self.notes_in_scope)
 
     def contains_metadata(self, key: str, value: str = None, is_regex: bool = False) -> bool:
         """Check if vault contains the given metadata.
@@ -195,7 +217,7 @@ class Vault:
         """
         num_changed = 0
 
-        for _note in self.notes:
+        for _note in self.notes_in_scope:
             if _note.delete_inline_tag(tag):
                 num_changed += 1
 
@@ -216,7 +238,7 @@ class Vault:
         """
         num_changed = 0
 
-        for _note in self.notes:
+        for _note in self.notes_in_scope:
             if _note.delete_metadata(key, value):
                 num_changed += 1
 
@@ -232,7 +254,7 @@ class Vault:
             list[Note]: List of notes that have changes.
         """
         changed_notes = []
-        for _note in self.notes:
+        for _note in self.notes_in_scope:
             if _note.has_changes():
                 changed_notes.append(_note)
 
@@ -247,7 +269,7 @@ class Vault:
             table.add_row("Backup path", str(self.backup_path))
         else:
             table.add_row("Backup", "None")
-        table.add_row("Notes in scope", str(self.num_notes()))
+        table.add_row("Notes in scope", str(len(self.notes_in_scope)))
         table.add_row("Notes excluded from scope", str(self.num_excluded_notes()))
         table.add_row("Active path filter", str(self.path_filter))
         table.add_row("Notes with updates", str(len(self.get_changed_notes())))
@@ -257,26 +279,13 @@ class Vault:
     def list_editable_notes(self) -> None:
         """Print a list of notes within the scope that are being edited."""
         table = Table(title="Notes in current scope", show_header=False, box=box.HORIZONTALS)
-        for _n, _note in enumerate(self.notes, start=1):
+        for _n, _note in enumerate(self.notes_in_scope, start=1):
             table.add_row(str(_n), str(_note.note_path.relative_to(self.vault_path)))
         Console().print(table)
 
     def num_excluded_notes(self) -> int:
         """Count number of excluded notes."""
-        excluded_notes = [
-            p.resolve()
-            for p in self.vault_path.glob("**/*")
-            if p.suffix in [".md", ".MD", ".markdown", ".MARKDOWN"] and p not in self.note_paths
-        ]
-        return len(excluded_notes)
-
-    def num_notes(self) -> int:
-        """Number of notes in the vault.
-
-        Returns:
-            int: Number of notes in the vault.
-        """
-        return len(self.notes)
+        return len(self.all_notes) - len(self.notes_in_scope)
 
     def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> int:
         """Renames a key or key-value pair in the note's metadata.
@@ -293,7 +302,7 @@ class Vault:
         """
         num_changed = 0
 
-        for _note in self.notes:
+        for _note in self.notes_in_scope:
             if _note.rename_metadata(key, value_1, value_2):
                 num_changed += 1
 
@@ -314,7 +323,7 @@ class Vault:
         """
         num_changed = 0
 
-        for _note in self.notes:
+        for _note in self.notes_in_scope:
             if _note.rename_inline_tag(old_tag, new_tag):
                 num_changed += 1
 
@@ -327,6 +336,6 @@ class Vault:
         """Write changes to the vault."""
         log.debug("Writing changes to vault...")
         if self.dry_run is False:
-            for _note in self.notes:
+            for _note in self.notes_in_scope:
                 log.trace(f"writing to {_note.note_path}")
                 _note.write()

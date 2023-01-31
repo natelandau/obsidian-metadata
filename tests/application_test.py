@@ -25,7 +25,7 @@ def test_instantiate_application(test_application) -> None:
     assert app.config.name == "command_line_vault"
     assert app.config.exclude_paths == [".git", ".obsidian"]
     assert app.dry_run is False
-    assert app.vault.num_notes() == 13
+    assert len(app.vault.all_notes) == 13
 
 
 def test_abort(test_application, mocker, capsys) -> None:
@@ -202,7 +202,7 @@ def test_delete_value(test_application, mocker, capsys) -> None:
     )
 
 
-def test_filter_notes_filter(test_application, mocker, capsys) -> None:
+def test_filter_notes(test_application, mocker, capsys) -> None:
     """Test renaming a key."""
     app = test_application
     app.load_vault()

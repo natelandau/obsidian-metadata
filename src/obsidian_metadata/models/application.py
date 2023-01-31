@@ -130,13 +130,11 @@ class Application:
 
                     self.load_vault(path_filter=path_filter)
 
-                    total_notes = self.vault.num_notes() + self.vault.num_excluded_notes()
-
                     if path_filter is None:
-                        alerts.success(f"Loaded all {total_notes} total notes")
+                        alerts.success(f"Loaded all {len(self.vault.all_notes)} total notes")
                     else:
                         alerts.success(
-                            f"Loaded {self.vault.num_notes()} notes from {total_notes} total notes"
+                            f"Loaded {len(self.vault.notes_in_scope)} notes from {len(self.vault.all_notes)} total notes"
                         )
 
                 case "list_notes":
@@ -331,7 +329,7 @@ class Application:
             path_filter (str, optional): Regex to filter notes by path.
         """
         self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run, path_filter=path_filter)
-        log.info(f"Indexed {self.vault.num_notes()} notes from {self.vault.vault_path}")
+        log.info(f"Indexed {len(self.vault.notes_in_scope)} notes from {self.vault.vault_path}")
         self.questions = Questions(vault=self.vault)
 
     def rename_key(self) -> None:

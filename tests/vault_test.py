@@ -20,7 +20,7 @@ def test_vault_creation(test_vault):
     assert vault.backup_path == Path(f"{vault_path}.bak")
     assert vault.dry_run is False
     assert str(vault.exclude_paths[0]) == Regex(r".*\.git")
-    assert vault.num_notes() == 3
+    assert len(vault.all_notes) == 3
 
     assert vault.metadata.dict == {
         "Inline Tags": [
@@ -65,15 +65,15 @@ def test_get_filtered_notes(sample_vault) -> None:
     config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
     vault_config = config.vaults[0]
     vault = Vault(config=vault_config, path_filter="front")
-
-    assert vault.num_notes() == 4
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 4
 
     vault_path = sample_vault
     config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
     vault_config = config.vaults[0]
     vault2 = Vault(config=vault_config, path_filter="mixed")
-
-    assert vault2.num_notes() == 1
+    assert len(vault.all_notes) == 13
+    assert len(vault2.notes_in_scope) == 1
 
 
 def test_backup(test_vault, capsys):

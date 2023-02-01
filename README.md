@@ -22,36 +22,46 @@ Run `obsidian-metadata` from the command line to invoke the script.  Add `--help
 Obsidian-metadata provides a menu of sub-commands.
 
 **Vault Actions**
+Create or delete a backup of your vault.
 - Backup:        Create a backup of the vault.
 - Delete Backup: Delete a backup of the vault.
 
 **Inspect Metadata**
+Inspect the metadata in your vault.
 - View all metadata in the vault
 
 **Filter Notes in Scope**:
-Limit the scope of notes to be processed with a regex.
-- Apply regex:          Set a regex to limit scope
-- List notes in scope:  List notes that will be processed.
+Limit the scope of notes to be processed with one or more filters.
+- Path filter (regex):      Limit scope based on the path or filename
+- Metadata Filter:          Limit scope based on a key or key/value pair
+- Tag Filter:               Limit scope based on an in-text tag
+- List and Clear Filters    List all current filters and clear one or all
+- List notes in scope:      List notes that will be processed.
 
 **Add Metadata**
+Add new metadata to your vault.
 - Add metadata to the frontmatter
 - Add to inline metadata (Not yet implemented)
 - Add to inline tag (Not yet implemented)
 
 **Rename Metadata**
+Rename either a key and all associated values, a specific value within a key. or an in-text tag.
 - Rename a key
 - Rename a value
 - rename an inline tag
 
 **Delete Metadata**
+Delete either a key and all associated values, or a specific value.
 - Delete a key and associated values
 - Delete a value from a key
 - Delete an inline tag
 
 **Review Changes**
+Prior to committing changes, review all changes that will be made.
 - View a diff of the changes that will be made
 
 **Commit Changes**
+Write the changes to disk. This step is not undoable.
 - Commit changes to the vault
 
 ### Configuration

@@ -44,6 +44,13 @@ def test_notice(capsys):
     assert captured.out == "NOTICE   | This prints in notice\n"
 
 
+def test_alerts_debug(capsys):
+    """Test debug."""
+    alerts.debug("This prints in debug")
+    captured = capsys.readouterr()
+    assert captured.out == "DEBUG    | This prints in debug\n"
+
+
 def test_usage(capsys):
     """Test usage."""
     alerts.usage("This prints in usage")

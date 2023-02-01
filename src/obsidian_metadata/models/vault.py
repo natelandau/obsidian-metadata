@@ -2,6 +2,7 @@
 
 import re
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
 import rich.repr
@@ -15,6 +16,16 @@ from obsidian_metadata._config import VaultConfig
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata.models import MetadataType, Note, VaultMetadata
+
+
+@dataclass
+class VaultFilter:
+    """Vault filters."""
+
+    path_filter: str = None
+    key_filter: str = None
+    value_filter: str = None
+    tag_filter: str = None
 
 
 @rich.repr.auto
@@ -32,8 +43,7 @@ class Vault:
         self,
         config: VaultConfig,
         dry_run: bool = False,
-        path_filter: str = None,
-        metadata_filter: dict[str, list[str]] = None,
+        filters: list[VaultFilter] = [],
     ):
         self.vault_path: Path = config.path
         self.dry_run: bool = dry_run
@@ -43,8 +53,7 @@ class Vault:
         for p in config.exclude_paths:
             self.exclude_paths.append(Path(self.vault_path / p))
 
-        self.path_filter = path_filter
-        self.metadata_filter = metadata_filter
+        self.filters = filters
         self.all_note_paths = self._find_markdown_notes()
 
         with Progress(
@@ -56,7 +65,7 @@ class Vault:
             self.all_notes: list[Note] = [
                 Note(note_path=p, dry_run=self.dry_run) for p in self.all_note_paths
             ]
-            self.notes_in_scope = self._filter_notes(path_filter=self.path_filter)
+            self.notes_in_scope = self._filter_notes()
 
         self._rebuild_vault_metadata()
 
@@ -69,26 +78,33 @@ class Vault:
         yield "num_notes_in_scope", len(self.notes_in_scope)
         yield "exclude_paths", self.exclude_paths
 
-    def _filter_notes(
-        self, path_filter: str = None, metadata_filter: dict[str, list[str]] = None
-    ) -> list[Note]:
-        """Filter notes by path and metadata.
-
-        Args:
-            path_filter (str, optional): Regex to filter notes by path.
-            metadata_filter (dict, optional): Metadata to filter notes by.
+    def _filter_notes(self) -> list[Note]:
+        """Filter notes by path and metadata using the filters defined in self.filters.
 
         Returns:
             list[Note]: List of notes matching the filters.
         """
         notes_list = self.all_notes.copy()
-        if path_filter is not None:
-            for _note in self.all_notes:
-                if not re.search(path_filter, str(_note.note_path.relative_to(self.vault_path))):
-                    notes_list.remove(_note)
 
-        if metadata_filter is not None:
-            pass
+        for _filter in self.filters:
+            if _filter.path_filter is not None:
+                notes_list = [
+                    n
+                    for n in notes_list
+                    if re.search(_filter.path_filter, str(n.note_path.relative_to(self.vault_path)))
+                ]
+
+            if _filter.tag_filter is not None:
+                notes_list = [n for n in notes_list if n.contains_inline_tag(_filter.tag_filter)]
+
+            if _filter.key_filter is not None and _filter.value_filter is not None:
+                notes_list = [
+                    n
+                    for n in notes_list
+                    if n.contains_metadata(_filter.key_filter, _filter.value_filter)
+                ]
+            if _filter.key_filter is not None and _filter.value_filter is None:
+                notes_list = [n for n in notes_list if n.contains_metadata(_filter.key_filter)]
 
         return notes_list
 
@@ -271,8 +287,8 @@ class Vault:
             table.add_row("Backup", "None")
         table.add_row("Notes in scope", str(len(self.notes_in_scope)))
         table.add_row("Notes excluded from scope", str(self.num_excluded_notes()))
-        table.add_row("Active path filter", str(self.path_filter))
-        table.add_row("Notes with updates", str(len(self.get_changed_notes())))
+        table.add_row("Active filters", str(len(self.filters)))
+        table.add_row("Notes with changes", str(len(self.get_changed_notes())))
 
         Console().print(table)
 

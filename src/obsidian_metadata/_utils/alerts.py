@@ -77,6 +77,15 @@ def usage(msg: str, width: int = 80) -> None:
             print(f"[dim]         | {line}")
 
 
+def debug(msg: str) -> None:
+    """Print a debug message without using logging.
+
+    Args:
+        msg: Message to print
+    """
+    print(f"[blue]DEBUG    | {msg}[/blue]")
+
+
 def dim(msg: str) -> None:
     """Print a message in dimmed color.
 

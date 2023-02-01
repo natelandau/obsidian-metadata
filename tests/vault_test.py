@@ -4,7 +4,7 @@
 from pathlib import Path
 
 from obsidian_metadata._config import Config
-from obsidian_metadata.models import Vault
+from obsidian_metadata.models import Vault, VaultFilter
 from obsidian_metadata.models.enums import MetadataType
 from tests.helpers import Regex
 
@@ -20,7 +20,7 @@ def test_vault_creation(test_vault):
     assert vault.backup_path == Path(f"{vault_path}.bak")
     assert vault.dry_run is False
     assert str(vault.exclude_paths[0]) == Regex(r".*\.git")
-    assert vault.num_notes() == 3
+    assert len(vault.all_notes) == 3
 
     assert vault.metadata.dict == {
         "Inline Tags": [
@@ -64,16 +64,36 @@ def test_get_filtered_notes(sample_vault) -> None:
     vault_path = sample_vault
     config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
     vault_config = config.vaults[0]
-    vault = Vault(config=vault_config, path_filter="front")
 
-    assert vault.num_notes() == 4
+    filters = [VaultFilter(path_filter="front")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 4
 
-    vault_path = sample_vault
-    config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault2 = Vault(config=vault_config, path_filter="mixed")
+    filters = [VaultFilter(path_filter="mixed")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 1
 
-    assert vault2.num_notes() == 1
+    filters = [VaultFilter(key_filter="on_one_note")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 1
+
+    filters = [VaultFilter(key_filter="type", value_filter="book")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 10
+
+    filters = [VaultFilter(tag_filter="brunch")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 1
+
+    filters = [VaultFilter(tag_filter="brunch"), VaultFilter(path_filter="inbox")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 0
 
 
 def test_backup(test_vault, capsys):

@@ -5,10 +5,12 @@ from typing import Any
 
 import questionary
 from rich import print
-from textwrap import dedent
+from rich import box
+from rich.console import Console
+from rich.table import Table
 from obsidian_metadata._config import VaultConfig
 from obsidian_metadata._utils.alerts import logger as log
-from obsidian_metadata.models import Patterns, Vault
+from obsidian_metadata.models import Patterns, Vault, VaultFilter
 from obsidian_metadata._utils import alerts
 from obsidian_metadata.models.questions import Questions
 from obsidian_metadata.models.enums import MetadataType
@@ -28,10 +30,11 @@ class Application:
         self.config = config
         self.dry_run = dry_run
         self.questions = Questions()
+        self.filters: list[VaultFilter] = []
 
     def application_main(self) -> None:
         """Questions for the main application."""
-        self.load_vault()
+        self._load_vault()
 
         while True:
             self.vault.info()
@@ -65,12 +68,9 @@ class Application:
 
     def application_add_metadata(self) -> None:
         """Add metadata."""
-        help_text = """
-        USAGE    | Add Metadata
-                   [dim]Add new metadata to your vault. Currently only supports
-                   adding to the frontmatter of a note.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage(
+            "Add new metadata to your vault. Currently only supports adding to the frontmatter of a note."
+        )
 
         area = self.questions.ask_area()
         match area:
@@ -103,41 +103,109 @@ class Application:
 
     def application_filter(self) -> None:
         """Filter notes."""
-        help_text = """
-        USAGE    | Filter Notes
-                   [dim]Enter a regex to filter notes by path. This allows you to
-                   specify a subset of notes to update. Leave empty to include
-                   all markdown files.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage("Limit the scope of notes to be processed with one or more filters.")
 
         choices = [
-            {"name": "Apply regex filter", "value": "apply_filter"},
+            {"name": "Apply new regex path filter", "value": "apply_path_filter"},
+            {"name": "Apply new metadata filter", "value": "apply_metadata_filter"},
+            {"name": "Apply new in-text tag filter", "value": "apply_tag_filter"},
+            {"name": "List and clear filters", "value": "list_filters"},
             {"name": "List notes in scope", "value": "list_notes"},
             questionary.Separator(),
             {"name": "Back", "value": "back"},
         ]
         while True:
             match self.questions.ask_selection(choices=choices, question="Select an action"):
-                case "apply_filter":
+                case "apply_path_filter":
 
-                    path_filter = self.questions.ask_filter_path()
-                    if path_filter is None:
+                    path = self.questions.ask_filter_path()
+                    if path is None or path == "":
                         return
 
-                    if path_filter == "":
-                        path_filter = None
+                    self.filters.append(VaultFilter(path_filter=path))
+                    self._load_vault()
 
-                    self.load_vault(path_filter=path_filter)
+                case "apply_metadata_filter":
+                    key = self.questions.ask_existing_key()
+                    if key is None:
+                        return
 
-                    total_notes = self.vault.num_notes() + self.vault.num_excluded_notes()
-
-                    if path_filter is None:
-                        alerts.success(f"Loaded all {total_notes} total notes")
+                    questions2 = Questions(vault=self.vault, key=key)
+                    value = questions2.ask_existing_value(
+                        question="Enter the value for the metadata filter",
+                    )
+                    if value is None:
+                        return
+                    if value == "":
+                        self.filters.append(VaultFilter(key_filter=key))
                     else:
-                        alerts.success(
-                            f"Loaded {self.vault.num_notes()} notes from {total_notes} total notes"
-                        )
+                        self.filters.append(VaultFilter(key_filter=key, value_filter=value))
+                    self._load_vault()
+
+                case "apply_tag_filter":
+                    tag = self.questions.ask_existing_inline_tag()
+                    if tag is None or tag == "":
+                        return
+
+                    self.filters.append(VaultFilter(tag_filter=tag))
+                    self._load_vault()
+
+                case "list_filters":
+                    if len(self.filters) == 0:
+                        alerts.notice("No filters have been applied")
+                        return
+
+                    print("")
+                    table = Table(
+                        "Opt",
+                        "Filter",
+                        "Type",
+                        title="Current Filters",
+                        show_header=False,
+                        box=box.HORIZONTALS,
+                    )
+                    for _n, filter in enumerate(self.filters, start=1):
+                        if filter.path_filter is not None:
+                            table.add_row(
+                                str(_n),
+                                f"Path regex: [tan bold]{filter.path_filter}",
+                                end_section=bool(_n == len(self.filters)),
+                            )
+                        elif filter.tag_filter is not None:
+                            table.add_row(
+                                str(_n),
+                                f"Tag filter: [tan bold]{filter.tag_filter}",
+                                end_section=bool(_n == len(self.filters)),
+                            )
+                        elif filter.key_filter is not None and filter.value_filter is None:
+                            table.add_row(
+                                str(_n),
+                                f"Key filter: [tan bold]{filter.key_filter}",
+                                end_section=bool(_n == len(self.filters)),
+                            )
+                        elif filter.key_filter is not None and filter.value_filter is not None:
+                            table.add_row(
+                                str(_n),
+                                f"Key/Value : [tan bold]{filter.key_filter}={filter.value_filter}",
+                                end_section=bool(_n == len(self.filters)),
+                            )
+                    table.add_row(f"{len(self.filters) + 1}", "Clear All")
+                    table.add_row(f"{len(self.filters) + 2}", "Return to Main Menu")
+                    Console().print(table)
+
+                    num = self.questions.ask_number(
+                        question="Enter the number of the filter to clear"
+                    )
+                    if num is None:
+                        return
+                    if int(num) <= len(self.filters):
+                        self.filters.pop(int(num) - 1)
+                        self._load_vault()
+                        return
+                    if int(num) == len(self.filters) + 1:
+                        self.filters = []
+                        self._load_vault()
+                        return
 
                 case "list_notes":
                     self.vault.list_editable_notes()
@@ -147,12 +215,9 @@ class Application:
 
     def application_inspect_metadata(self) -> None:
         """View metadata."""
-        help_text = """
-        USAGE    | View Metadata
-                   [dim]Inspect the metadata in your vault. Note, uncommitted
-                   changes will be reflected in these reports[/]
-        """
-        print(dedent(help_text))
+        alerts.usage(
+            "Inspect the metadata in your vault. Note, uncommitted changes will be reflected in these reports"
+        )
 
         choices = [
             {"name": "View all metadata", "value": "all_metadata"},
@@ -168,11 +233,7 @@ class Application:
 
     def application_vault(self) -> None:
         """Vault actions."""
-        help_text = """
-        USAGE    | Vault Actions
-                   [dim]Create or delete a backup of your vault.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage("Create or delete a backup of your vault.")
 
         choices = [
             {"name": "Backup vault", "value": "backup_vault"},
@@ -191,12 +252,7 @@ class Application:
                     return
 
     def application_delete_metadata(self) -> None:
-        help_text = """
-        USAGE    | Delete Metadata
-                   [dim]Delete either a key and all associated values,
-                   or a specific value.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage("Delete either a key and all associated values, or a specific value.")
 
         choices = [
             {"name": "Delete key", "value": "delete_key"},
@@ -219,11 +275,7 @@ class Application:
 
     def application_rename_metadata(self) -> None:
         """Rename metadata."""
-        help_text = """
-        USAGE    | Rename Metadata
-                   [dim]Select the type of metadata to rename.[/]
-        """
-        print(dedent(help_text))
+        alerts.usage("Select the type of metadata to rename.")
 
         choices = [
             {"name": "Rename key", "value": "rename_key"},
@@ -324,14 +376,17 @@ class Application:
 
         return
 
-    def load_vault(self, path_filter: str = None) -> None:
-        """Load the vault.
+    def _load_vault(self) -> None:
+        """Load the vault."""
 
-        Args:
-            path_filter (str, optional): Regex to filter notes by path.
-        """
-        self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run, path_filter=path_filter)
-        log.info(f"Indexed {self.vault.num_notes()} notes from {self.vault.vault_path}")
+        if len(self.filters) == 0:
+            self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run)
+        else:
+            self.vault = Vault(config=self.config, dry_run=self.dry_run, filters=self.filters)
+
+        alerts.success(
+            f"Loaded {len(self.vault.notes_in_scope)} notes from {len(self.vault.all_notes)} total notes"
+        )
         self.questions = Questions(vault=self.vault)
 
     def rename_key(self) -> None:

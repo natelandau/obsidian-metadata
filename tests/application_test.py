@@ -19,19 +19,19 @@ from tests.helpers import Regex
 def test_instantiate_application(test_application) -> None:
     """Test application."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
 
     assert app.dry_run is False
     assert app.config.name == "command_line_vault"
     assert app.config.exclude_paths == [".git", ".obsidian"]
     assert app.dry_run is False
-    assert app.vault.num_notes() == 13
+    assert len(app.vault.all_notes) == 13
 
 
 def test_abort(test_application, mocker, capsys) -> None:
     """Test renaming a key."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         return_value="abort",
@@ -45,7 +45,7 @@ def test_abort(test_application, mocker, capsys) -> None:
 def test_add_metadata_frontmatter_success(test_application, mocker, capsys) -> None:
     """Test adding new metadata to the vault."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["add_metadata", KeyError],
@@ -72,7 +72,7 @@ def test_add_metadata_frontmatter_success(test_application, mocker, capsys) -> N
 def test_delete_inline_tag(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["delete_metadata", KeyError],
@@ -113,7 +113,7 @@ def test_delete_inline_tag(test_application, mocker, capsys) -> None:
 def test_delete_key(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["delete_metadata", KeyError],
@@ -156,7 +156,7 @@ def test_delete_key(test_application, mocker, capsys) -> None:
 def test_delete_value(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["delete_metadata", KeyError],
@@ -202,17 +202,17 @@ def test_delete_value(test_application, mocker, capsys) -> None:
     )
 
 
-def test_filter_notes_filter(test_application, mocker, capsys) -> None:
+def test_filter_notes(test_application, mocker, capsys) -> None:
     """Test renaming a key."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["filter_notes", KeyError],
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_selection",
-        side_effect=["apply_filter", "list_notes", "back"],
+        side_effect=["apply_path_filter", "list_notes", "back"],
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_filter_path",
@@ -232,25 +232,61 @@ def test_filter_notes_filter(test_application, mocker, capsys) -> None:
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_selection",
-        side_effect=["apply_filter", "list_notes", "back"],
+        side_effect=["apply_metadata_filter", "list_notes", "back"],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_filter_path",
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
+        return_value="on_one_note",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_value",
         return_value="",
     )
-
     with pytest.raises(KeyError):
         app.application_main()
     captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\| Loaded all.*\d+.*total notes", re.DOTALL)
+    assert captured.out == Regex(r"SUCCESS +\| Loaded.*1.*notes from.*\d+.*total", re.DOTALL)
+    assert "02 inline/inline 2.md" in captured.out
+    assert "03 mixed/mixed 1.md" not in captured.out
+
+
+def test_filter_clear(test_application, mocker, capsys) -> None:
+    """Test clearing filters."""
+    app = test_application
+    app._load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["filter_notes", "filter_notes", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["apply_metadata_filter", "list_filters", "list_notes", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_key",
+        return_value="on_one_note",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_value",
+        return_value="",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_number",
+        return_value="1",
+    )
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
     assert "02 inline/inline 2.md" in captured.out
     assert "03 mixed/mixed 1.md" in captured.out
+    assert "01 frontmatter/frontmatter 4.md" in captured.out
+    assert "04 no metadata/no_metadata_1.md " in captured.out
 
 
 def test_inspect_metadata_all(test_application, mocker, capsys) -> None:
     """Test backing up a vault."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["inspect_metadata", KeyError],
@@ -269,7 +305,7 @@ def test_inspect_metadata_all(test_application, mocker, capsys) -> None:
 def test_rename_inline_tag(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["rename_metadata", KeyError],
@@ -318,7 +354,7 @@ def test_rename_inline_tag(test_application, mocker, capsys) -> None:
 def test_rename_key(test_application, mocker, capsys) -> None:
     """Test renaming a key."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["rename_metadata", KeyError],
@@ -367,7 +403,7 @@ def test_rename_key(test_application, mocker, capsys) -> None:
 def test_rename_value_fail(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["rename_metadata", KeyError],
@@ -425,7 +461,7 @@ def test_rename_value_fail(test_application, mocker, capsys) -> None:
 def test_review_no_changes(test_application, mocker, capsys) -> None:
     """Review changes when no changes to vault."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["review_changes", KeyError],
@@ -439,7 +475,7 @@ def test_review_no_changes(test_application, mocker, capsys) -> None:
 def test_review_changes(test_application, mocker, capsys) -> None:
     """Review changes when no changes to vault."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["rename_metadata", "review_changes", KeyError],
@@ -471,7 +507,7 @@ def test_review_changes(test_application, mocker, capsys) -> None:
 def test_vault_backup(test_application, mocker, capsys) -> None:
     """Test backing up a vault."""
     app = test_application
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["vault_actions", KeyError],
@@ -492,7 +528,7 @@ def test_vault_delete(test_application, mocker, capsys, tmp_path) -> None:
     app = test_application
     backup_path = Path(tmp_path / "application.bak")
     backup_path.mkdir()
-    app.load_vault()
+    app._load_vault()
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
         side_effect=["vault_actions", KeyError],

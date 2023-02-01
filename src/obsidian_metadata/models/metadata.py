@@ -31,8 +31,8 @@ class VaultMetadata:
         """Representation of all metadata."""
         return str(self.dict)
 
-    def add_metadata(self, metadata: dict[str, list[str]]) -> None:
-        """Add metadata to the vault. Takes a dictionary as input and merges it with the existing metadata.  Does not overwrite existing keys.
+    def index_metadata(self, metadata: dict[str, list[str]]) -> None:
+        """Index pre-existing metadata in the vault. Takes a dictionary as input and merges it with the existing metadata.  Does not overwrite existing keys.
 
         Args:
             metadata (dict): Metadata to add.

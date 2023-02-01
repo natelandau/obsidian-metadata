@@ -1,6 +1,7 @@
 """Logging and alerts."""
 import sys
 from pathlib import Path
+from textwrap import wrap
 
 import rich.repr
 import typer
@@ -60,6 +61,29 @@ def info(msg: str) -> None:
         msg: Message to print
     """
     print(f"INFO     | {msg}")
+
+
+def usage(msg: str, width: int = 80) -> None:
+    """Print a usage message without using logging.
+
+    Args:
+        msg: Message to print
+        width (optional): Width of the message
+    """
+    for _n, line in enumerate(wrap(msg, width=width)):
+        if _n == 0:
+            print(f"[dim]USAGE    | {line}")
+        else:
+            print(f"[dim]         | {line}")
+
+
+def debug(msg: str) -> None:
+    """Print a debug message without using logging.
+
+    Args:
+        msg: Message to print
+    """
+    print(f"[blue]DEBUG    | {msg}[/blue]")
 
 
 def dim(msg: str) -> None:

@@ -60,6 +60,14 @@ def test_validate_new_tag() -> None:
     assert questions._validate_new_tag("new_tag") is True
 
 
+def test_validate_number() -> None:
+    """Test number validation."""
+    questions = Questions(vault=VAULT)
+    assert "Must be an integer" in questions._validate_number("test")
+    assert "Must be an integer" in questions._validate_number("1.1")
+    assert questions._validate_number("1") is True
+
+
 def test_validate_existing_inline_tag() -> None:
     """Test existing tag validation."""
     questions = Questions(vault=VAULT)
@@ -80,12 +88,10 @@ def test_validate_key_exists_regex() -> None:
 def test_validate_value() -> None:
     """Test value validation."""
     questions = Questions(vault=VAULT)
-    assert questions._validate_value("test") is True
-    assert "Value cannot be empty" in questions._validate_value("")
 
+    assert questions._validate_value("test") is True
     questions2 = Questions(vault=VAULT, key="frontmatter_Key1")
     assert questions2._validate_value("test") == "frontmatter_Key1:test does not exist"
-    assert "Value cannot be empty" in questions2._validate_value("")
     assert questions2._validate_value("author name") is True
 
 

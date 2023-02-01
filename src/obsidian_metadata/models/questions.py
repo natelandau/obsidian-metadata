@@ -64,13 +64,13 @@ class Questions:
         """
         self.style = questionary.Style(
             [
-                ("qmark", "fg:#808080 bold"),
-                ("question", "bold"),
+                ("qmark", "fg:#729fcf bold"),
+                ("question", "fg:#729fcf bold"),
                 ("separator", "fg:#808080"),
                 ("instruction", "fg:#808080"),
-                ("highlighted", "fg:#c0c0c0 bold reverse"),
+                ("highlighted", "fg:#729fcf bold underline"),
                 ("text", ""),
-                ("pointer", "bold"),
+                ("pointer", "fg:#729fcf bold"),
             ]
         )
         self.vault = vault
@@ -174,6 +174,20 @@ class Questions:
 
         return True
 
+    def _validate_number(self, text: str) -> bool | str:
+        """Validate a number.
+
+        Args:
+            text (str): The number to validate.
+
+        Returns:
+            bool | str: True if the number is valid, otherwise a string with the error message.
+        """
+        if not text.isdigit():
+            return "Must be an integer"
+
+        return True
+
     def _validate_valid_vault_regex(self, text: str) -> bool | str:
         """Validates a valid regex.
 
@@ -202,8 +216,8 @@ class Questions:
         Returns:
             bool | str: True if the value is valid, otherwise a string with the error message.
         """
-        if len(text) < 1:
-            return "Value cannot be empty"
+        if len(text) == 0:
+            return True
 
         if self.key is not None and not self.vault.metadata.contains(self.key, text):
             return f"{self.key}:{text} does not exist"
@@ -406,6 +420,19 @@ class Questions:
         """
         return questionary.text(
             question, validate=self._validate_new_value, style=self.style, qmark="INPUT    |"
+        ).ask()
+
+    def ask_number(self, question: str = "Enter a number") -> int:
+        """Ask the user for a number.
+
+        Args:
+            question (str, optional): The question to ask. Defaults to "Enter a number".
+
+        Returns:
+            int: A number.
+        """
+        return questionary.text(
+            question, validate=self._validate_number, style=self.style, qmark="INPUT    |"
         ).ask()
 
     def ask_selection(

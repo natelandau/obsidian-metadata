@@ -44,6 +44,36 @@ def test_notice(capsys):
     assert captured.out == "NOTICE   | This prints in notice\n"
 
 
+def test_alerts_debug(capsys):
+    """Test debug."""
+    alerts.debug("This prints in debug")
+    captured = capsys.readouterr()
+    assert captured.out == "DEBUG    | This prints in debug\n"
+
+
+def test_usage(capsys):
+    """Test usage."""
+    alerts.usage("This prints in usage")
+    captured = capsys.readouterr()
+    assert captured.out == "USAGE    | This prints in usage\n"
+
+    alerts.usage(
+        "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"
+    )
+    captured = capsys.readouterr()
+    assert "USAGE    | Lorem ipsum dolor sit amet" in captured.out
+    assert "         | incididunt ut labore et dolore magna aliqua" in captured.out
+
+    alerts.usage(
+        "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
+        width=20,
+    )
+    captured = capsys.readouterr()
+    assert "USAGE    | Lorem ipsum dolor" in captured.out
+    assert "         | sit amet," in captured.out
+    assert "         | adipisicing elit," in captured.out
+
+
 def test_info(capsys):
     """Test info."""
     alerts.info("This prints in info")

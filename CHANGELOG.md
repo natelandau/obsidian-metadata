@@ -1,3 +1,10 @@
+## v0.4.0 (2023-02-02)
+
+### Feat
+
+- export metadata (#14)
+- **app**: limit scope of notes with one or more filters (#13)
+
 ## v0.3.0 (2023-01-30)
 
 ### Feat

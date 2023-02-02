@@ -18,6 +18,15 @@ from obsidian_metadata.models.vault import Vault
 
 PATTERNS = Patterns()
 
+# Reset the default style of the questionary prompts qmark
+questionary.prompts.checkbox.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.common.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.confirm.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.confirm.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.path.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.select.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.text.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+
 
 class Questions:
     """Class for asking questions to the user and validating responses with questionary."""
@@ -64,13 +73,13 @@ class Questions:
         """
         self.style = questionary.Style(
             [
-                ("qmark", "fg:#729fcf bold"),
-                ("question", "fg:#729fcf bold"),
+                ("qmark", "bold"),
+                ("question", "bold"),
                 ("separator", "fg:#808080"),
                 ("instruction", "fg:#808080"),
-                ("highlighted", "fg:#729fcf bold underline"),
+                ("highlighted", "bold underline"),
                 ("text", ""),
-                ("pointer", "fg:#729fcf bold"),
+                ("pointer", "bold"),
             ]
         )
         self.vault = vault

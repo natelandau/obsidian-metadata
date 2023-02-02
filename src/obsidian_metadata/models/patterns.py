@@ -1,8 +1,9 @@
 """Regexes for parsing frontmatter and note content."""
 
-import re
 from dataclasses import dataclass
-from typing import Pattern
+
+import regex as re
+from regex import Pattern
 
 
 @dataclass
@@ -11,8 +12,9 @@ class Patterns:
 
     find_inline_tags: Pattern[str] = re.compile(
         r"""
-        (?:^|[ \|_,;:\*\(\)\[\]\\\.])     # Before tag is start of line or separator
-        \#([^ \|,;:\*\(\)\[\]\\\.\n#&]+)  # Match tag until separator or end of line
+        (?:^|[ \|_,;:\*\)\[\]\\\.]|(?<!\])\()   # Before tag is start of line or separator
+        (?<!\/\/[\w\d_\.\(\)\/&_-]+)                # Before tag is not a link
+        \#([^ \|,;:\*\(\)\[\]\\\.\n#&]+)        # Match tag until separator or end of line
         """,
         re.MULTILINE | re.X,
     )

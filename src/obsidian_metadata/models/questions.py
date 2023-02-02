@@ -18,6 +18,15 @@ from obsidian_metadata.models.vault import Vault
 
 PATTERNS = Patterns()
 
+# Reset the default style of the questionary prompts qmark
+questionary.prompts.checkbox.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.common.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.confirm.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.confirm.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.path.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.select.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+questionary.prompts.text.DEFAULT_STYLE = questionary.Style([("qmark", "")])
+
 
 class Questions:
     """Class for asking questions to the user and validating responses with questionary."""
@@ -64,13 +73,13 @@ class Questions:
         """
         self.style = questionary.Style(
             [
-                ("qmark", "fg:#729fcf bold"),
-                ("question", "fg:#729fcf bold"),
+                ("qmark", "bold"),
+                ("question", "bold"),
                 ("separator", "fg:#808080"),
                 ("instruction", "fg:#808080"),
-                ("highlighted", "fg:#729fcf bold underline"),
+                ("highlighted", "bold underline"),
                 ("text", ""),
-                ("pointer", "fg:#729fcf bold"),
+                ("pointer", "bold"),
             ]
         )
         self.vault = vault
@@ -85,7 +94,7 @@ class Questions:
         if len(text) < 1:
             return "Tag cannot be empty"
 
-        if not self.vault.contains_inline_tag(text):
+        if not self.vault.metadata.contains(area=MetadataType.TAGS, value=text):
             return f"'{text}' does not exist as a tag in the vault"
 
         return True
@@ -99,7 +108,7 @@ class Questions:
         if len(text) < 1:
             return "Key cannot be empty"
 
-        if not self.vault.metadata.contains(text):
+        if not self.vault.metadata.contains(area=MetadataType.KEYS, key=text):
             return f"'{text}' does not exist as a key in the vault"
 
         return True
@@ -118,7 +127,7 @@ class Questions:
         except re.error as error:
             return f"Invalid regex: {error}"
 
-        if not self.vault.metadata.contains(text, is_regex=True):
+        if not self.vault.metadata.contains(area=MetadataType.KEYS, key=text, is_regex=True):
             return f"'{text}' does not exist as a key in the vault"
 
         return True
@@ -169,7 +178,9 @@ class Questions:
         if len(text) < 1:
             return "Value cannot be empty"
 
-        if self.key is not None and self.vault.metadata.contains(self.key, text):
+        if self.key is not None and self.vault.metadata.contains(
+            area=MetadataType.ALL, key=self.key, value=text
+        ):
             return f"{self.key}:{text} already exists"
 
         return True
@@ -219,7 +230,9 @@ class Questions:
         if len(text) == 0:
             return True
 
-        if self.key is not None and not self.vault.metadata.contains(self.key, text):
+        if self.key is not None and not self.vault.metadata.contains(
+            area=MetadataType.ALL, key=self.key, value=text
+        ):
             return f"{self.key}:{text} does not exist"
 
         return True
@@ -241,10 +254,41 @@ class Questions:
         except re.error as error:
             return f"Invalid regex: {error}"
 
-        if self.key is not None and not self.vault.metadata.contains(self.key, text, is_regex=True):
+        if self.key is not None and not self.vault.metadata.contains(
+            area=MetadataType.ALL, key=self.key, value=text, is_regex=True
+        ):
             return f"No values in {self.key} match regex: {text}"
 
         return True
+
+    def ask_application_main(self) -> str:  # pragma: no cover
+        """Selectable list for the main application interface.
+
+        Args:
+            style (questionary.Style): The style to use for the question.
+
+        Returns:
+            str: The selected application.
+        """
+        return questionary.select(
+            "What do you want to do?",
+            choices=[
+                {"name": "Vault Actions", "value": "vault_actions"},
+                {"name": "Inspect Metadata", "value": "inspect_metadata"},
+                {"name": "Filter Notes in Scope", "value": "filter_notes"},
+                {"name": "Add Metadata", "value": "add_metadata"},
+                {"name": "Rename Metadata", "value": "rename_metadata"},
+                {"name": "Delete Metadata", "value": "delete_metadata"},
+                questionary.Separator("-------------------------------"),
+                {"name": "Review Changes", "value": "review_changes"},
+                {"name": "Commit Changes", "value": "commit_changes"},
+                questionary.Separator("-------------------------------"),
+                {"name": "Quit", "value": "abort"},
+            ],
+            use_shortcuts=False,
+            style=self.style,
+            qmark="INPUT    |",
+        ).ask()
 
     def ask_area(self) -> MetadataType | str:  # pragma: no cover
         """Ask the user for the metadata area to work on.
@@ -361,35 +405,6 @@ class Questions:
             qmark="INPUT    |",
         ).ask()
 
-    def ask_application_main(self) -> str:  # pragma: no cover
-        """Selectable list for the main application interface.
-
-        Args:
-            style (questionary.Style): The style to use for the question.
-
-        Returns:
-            str: The selected application.
-        """
-        return questionary.select(
-            "What do you want to do?",
-            choices=[
-                {"name": "Vault Actions", "value": "vault_actions"},
-                {"name": "Inspect Metadata", "value": "inspect_metadata"},
-                {"name": "Filter Notes in Scope", "value": "filter_notes"},
-                {"name": "Add Metadata", "value": "add_metadata"},
-                {"name": "Rename Metadata", "value": "rename_metadata"},
-                {"name": "Delete Metadata", "value": "delete_metadata"},
-                questionary.Separator("-------------------------------"),
-                {"name": "Review Changes", "value": "review_changes"},
-                {"name": "Commit Changes", "value": "commit_changes"},
-                questionary.Separator("-------------------------------"),
-                {"name": "Quit", "value": "abort"},
-            ],
-            use_shortcuts=False,
-            style=self.style,
-            qmark="INPUT    |",
-        ).ask()
-
     def ask_new_key(self, question: str = "New key name") -> str:  # pragma: no cover
         """Ask the user for a new metadata key.
 
@@ -422,7 +437,7 @@ class Questions:
             question, validate=self._validate_new_value, style=self.style, qmark="INPUT    |"
         ).ask()
 
-    def ask_number(self, question: str = "Enter a number") -> int:
+    def ask_number(self, question: str = "Enter a number") -> int:  # pragma: no cover
         """Ask the user for a number.
 
         Args:
@@ -434,6 +449,17 @@ class Questions:
         return questionary.text(
             question, validate=self._validate_number, style=self.style, qmark="INPUT    |"
         ).ask()
+
+    def ask_path(self, question: str = "Enter a path") -> str:  # pragma: no cover
+        """Ask the user for a path.
+
+        Args:
+            question (str, optional): The question to ask. Defaults to "Enter a path".
+
+        Returns:
+            str: A path.
+        """
+        return questionary.path(question, style=self.style, qmark="INPUT    |").ask()
 
     def ask_selection(
         self, choices: list[Any], question: str = "Select an option"

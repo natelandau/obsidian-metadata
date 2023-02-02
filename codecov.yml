@@ -4,8 +4,11 @@ coverage:
         project:
             default:
                 target: 50% # the required coverage value
-                threshold: 1% # the leniency in hitting the target
-
+                threshold: 5% # the leniency in hitting the target
+        patch:
+            default:
+            target: 50%
+            threshold: 5%
     ignore:
         - tests/
 

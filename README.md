@@ -1,15 +1,18 @@
 [![PyPI version](https://badge.fury.io/py/obsidian-metadata.svg)](https://badge.fury.io/py/obsidian-metadata) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/obsidian-metadata) [![Python Code Checker](https://github.com/natelandau/obsidian-metadata/actions/workflows/python-code-checker.yml/badge.svg)](https://github.com/natelandau/obsidian-metadata/actions/workflows/python-code-checker.yml) [![codecov](https://codecov.io/gh/natelandau/obsidian-metadata/branch/main/graph/badge.svg?token=3F2R43SSX4)](https://codecov.io/gh/natelandau/obsidian-metadata)
+
 # obsidian-metadata
+
 A script to make batch updates to metadata in an Obsidian vault. No changes are
- made to the Vault until they are explicitly committed.
+made to the Vault until they are explicitly committed.
 
 [![asciicast](https://asciinema.org/a/555789.svg)](https://asciinema.org/a/555789)
 
 ## Important Disclaimer
-**It is strongly recommended that you back up your vault prior to committing changes.** This script makes changes directly to the markdown files in your vault. Once the changes are committed, there is no ability to recreate the original information unless you have a backup.  Follow the instructions in the script to create a backup of your vault if needed.  The author of this script is not responsible for any data loss that may occur. Use at your own risk.
 
+**It is strongly recommended that you back up your vault prior to committing changes.** This script makes changes directly to the markdown files in your vault. Once the changes are committed, there is no ability to recreate the original information unless you have a backup. Follow the instructions in the script to create a backup of your vault if needed. The author of this script is not responsible for any data loss that may occur. Use at your own risk.
 
 ## Install
+
 Requires Python v3.10 or above.
 
 ```bash
@@ -17,55 +20,75 @@ pip install obsidian-metadata
 ```
 
 ## Usage
-Run `obsidian-metadata` from the command line to invoke the script.  Add `--help` to view additional options.
 
-Obsidian-metadata provides a menu of sub-commands.
+### CLI Commands
+
+-   `--config-file`: Specify a custom configuration file location
+-   `--dry-run`: Make no destructive changes
+-   `--export-csv`: Specify a path and create a CSV export of all metadata
+-   `--export-json`: Specify a path and create a JSON export of all metadata
+-   `--help`: Shows interactive help and exits
+-   `--log-file`: Specify a log file location
+-   `--log-to-file`: Will log to a file
+-   `--vault-path`: Specify a path to an Obsidian Vault
+-   `--verbose`: Set verbosity level (0=WARN, 1=INFO, 2=DEBUG, 3=TRACE)
+-   `--version`: Prints the version number and exits
+
+### Running the script
+
+Once installed, run `obsidian-metadata` in your terminal to enter an interactive menu of sub-commands.
 
 **Vault Actions**
-Create or delete a backup of your vault.
-- Backup:        Create a backup of the vault.
-- Delete Backup: Delete a backup of the vault.
+
+-   Backup: Create a backup of the vault.
+-   Delete Backup: Delete a backup of the vault.
 
 **Inspect Metadata**
-Inspect the metadata in your vault.
-- View all metadata in the vault
 
-**Filter Notes in Scope**:
-Limit the scope of notes to be processed with one or more filters.
-- Path filter (regex):      Limit scope based on the path or filename
-- Metadata Filter:          Limit scope based on a key or key/value pair
-- Tag Filter:               Limit scope based on an in-text tag
-- List and Clear Filters    List all current filters and clear one or all
-- List notes in scope:      List notes that will be processed.
+-   View all metadata in the vault
+-   View all metadata in the vault
+-   View all frontmatter
+-   View all inline metadata
+-   View all inline tags
+-   Export all metadata to CSV or JSON file
 
-**Add Metadata**
-Add new metadata to your vault.
-- Add metadata to the frontmatter
-- Add to inline metadata (Not yet implemented)
-- Add to inline tag (Not yet implemented)
+**Filter Notes in Scope**: Limit the scope of notes to be processed with one or more filters.
 
-**Rename Metadata**
-Rename either a key and all associated values, a specific value within a key. or an in-text tag.
-- Rename a key
-- Rename a value
-- rename an inline tag
+-   Path filter (regex): Limit scope based on the path or filename
+-   Metadata Filter: Limit scope based on a key or key/value pair
+-   Tag Filter: Limit scope based on an in-text tag
+-   List and Clear Filters List all current filters and clear one or all
+-   List notes in scope: List notes that will be processed.
 
-**Delete Metadata**
-Delete either a key and all associated values, or a specific value.
-- Delete a key and associated values
-- Delete a value from a key
-- Delete an inline tag
+**Add Metadata**: Add new metadata to your vault.
 
-**Review Changes**
-Prior to committing changes, review all changes that will be made.
-- View a diff of the changes that will be made
+-   Add metadata to the frontmatter
+-   Add to inline metadata (Not yet implemented)
+-   Add to inline tag (Not yet implemented)
 
-**Commit Changes**
-Write the changes to disk. This step is not undoable.
-- Commit changes to the vault
+**Rename Metadata**: Rename either a key and all associated values, a specific value within a key. or an in-text tag.
+
+-   Rename a key
+-   Rename a value
+-   rename an inline tag
+
+**Delete Metadata**: Delete either a key and all associated values, or a specific value.
+
+-   Delete a key and associated values
+-   Delete a value from a key
+-   Delete an inline tag
+
+**Review Changes**: Prior to committing changes, review all changes that will be made.
+
+-   View a diff of the changes that will be made
+
+**Commit Changes**: Write the changes to disk. This step is not undoable.
+
+-   Commit changes to the vault
 
 ### Configuration
-`obsidian-metadata` requires a configuration file at `~/.obsidian_metadata.toml`.  On first run, this file will be created.  You can specify a new location for the configuration file with the `--config-file` option.
+
+`obsidian-metadata` requires a configuration file at `~/.obsidian_metadata.toml`. On first run, this file will be created. You can specify a new location for the configuration file with the `--config-file` option.
 
 To add additional vaults, copy the default section and add the appropriate information. The script will prompt you to select a vault if multiple exist in the configuration file
 
@@ -86,7 +109,6 @@ Below is an example with two vaults.
 ```
 
 To bypass the configuration file and specify a vault to use at runtime use the `--vault-path` option.
-
 
 # Contributing
 

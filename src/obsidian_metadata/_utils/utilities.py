@@ -8,101 +8,6 @@ import typer
 from obsidian_metadata.__version__ import __version__
 
 
-def dict_values_to_lists_strings(dictionary: dict, strip_null_values: bool = False) -> dict:
-    """Converts all values in a dictionary to lists of strings.
-
-    Args:
-        dictionary (dict): Dictionary to convert
-        strip_null (bool): Whether to strip null values
-
-    Returns:
-        dict: Dictionary with all values converted to lists of strings
-
-        {key: sorted(new_dict[key]) for key in sorted(new_dict)}
-    """
-    new_dict = {}
-
-    if strip_null_values:
-        for key, value in dictionary.items():
-            if isinstance(value, list):
-                new_dict[key] = sorted([str(item) for item in value if item is not None])
-            elif isinstance(value, dict):
-                new_dict[key] = dict_values_to_lists_strings(value)  # type: ignore[assignment]
-            elif value is None or value == "None" or value == "":
-                new_dict[key] = []
-            else:
-                new_dict[key] = [str(value)]
-
-        return new_dict
-
-    for key, value in dictionary.items():
-        if isinstance(value, list):
-            new_dict[key] = sorted([str(item) for item in value])
-        elif isinstance(value, dict):
-            new_dict[key] = dict_values_to_lists_strings(value)  # type: ignore[assignment]
-        else:
-            new_dict[key] = [str(value)]
-
-    return new_dict
-
-
-def remove_markdown_sections(
-    text: str,
-    strip_codeblocks: bool = False,
-    strip_inlinecode: bool = False,
-    strip_frontmatter: bool = False,
-) -> str:
-    """Strip markdown sections from text.
-
-    Args:
-        text (str): Text to remove code blocks from
-        strip_codeblocks (bool, optional): Strip code blocks. Defaults to False.
-        strip_inlinecode (bool, optional): Strip inline code. Defaults to False.
-        strip_frontmatter (bool, optional): Strip frontmatter. Defaults to False.
-
-    Returns:
-        str: Text without code blocks
-    """
-    if strip_codeblocks:
-        text = re.sub(r"`{3}.*?`{3}", "", text, flags=re.DOTALL)
-
-    if strip_inlinecode:
-        text = re.sub(r"`.*?`", "", text)
-
-    if strip_frontmatter:
-        text = re.sub(r"^\s*---.*?---", "", text, flags=re.DOTALL)
-
-    return text  # noqa: RET504
-
-
-def version_callback(value: bool) -> None:
-    """Print version and exit."""
-    if value:
-        print(f"{__package__.split('.')[0]}: v{__version__}")
-        raise typer.Exit()
-
-
-def docstring_parameter(*sub: Any) -> Any:
-    """Decorator to replace variables within docstrings.
-
-    Args:
-        sub (Any): Replacement variables
-
-    Usage:
-        @docstring_parameter("foo", "bar")
-        def foo():
-            '''This is a {0} docstring with {1} variables.'''
-
-    """
-
-    def dec(obj: Any) -> Any:
-        """Format object."""
-        obj.__doc__ = obj.__doc__.format(*sub)
-        return obj
-
-    return dec
-
-
 def clean_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
     """Clean up a dictionary by markdown formatting from keys and values.
 
@@ -155,3 +60,126 @@ def dict_contains(
         return any(found_keys)
 
     return key in dictionary and value in dictionary[key]
+
+
+def dict_values_to_lists_strings(dictionary: dict, strip_null_values: bool = False) -> dict:
+    """Converts all values in a dictionary to lists of strings.
+
+    Args:
+        dictionary (dict): Dictionary to convert
+        strip_null (bool): Whether to strip null values
+
+    Returns:
+        dict: Dictionary with all values converted to lists of strings
+
+        {key: sorted(new_dict[key]) for key in sorted(new_dict)}
+    """
+    new_dict = {}
+
+    if strip_null_values:
+        for key, value in dictionary.items():
+            if isinstance(value, list):
+                new_dict[key] = sorted([str(item) for item in value if item is not None])
+            elif isinstance(value, dict):
+                new_dict[key] = dict_values_to_lists_strings(value)  # type: ignore[assignment]
+            elif value is None or value == "None" or value == "":
+                new_dict[key] = []
+            else:
+                new_dict[key] = [str(value)]
+
+        return new_dict
+
+    for key, value in dictionary.items():
+        if isinstance(value, list):
+            new_dict[key] = sorted([str(item) for item in value])
+        elif isinstance(value, dict):
+            new_dict[key] = dict_values_to_lists_strings(value)  # type: ignore[assignment]
+        else:
+            new_dict[key] = [str(value)]
+
+    return new_dict
+
+
+def docstring_parameter(*sub: Any) -> Any:
+    """Decorator to replace variables within docstrings.
+
+    Args:
+        sub (Any): Replacement variables
+
+    Usage:
+        @docstring_parameter("foo", "bar")
+        def foo():
+            '''This is a {0} docstring with {1} variables.'''
+
+    """
+
+    def dec(obj: Any) -> Any:
+        """Format object."""
+        obj.__doc__ = obj.__doc__.format(*sub)
+        return obj
+
+    return dec
+
+
+def merge_dictionaries(dict1: dict, dict2: dict) -> dict:
+    """Merge two dictionaries.
+
+    Args:
+        dict1 (dict): First dictionary.
+        dict2 (dict): Second dictionary.
+
+    Returns:
+        dict: Merged dictionary.
+    """
+    for k, v in dict2.items():
+        if k in dict1:
+            if isinstance(v, list):
+                dict1[k].extend(v)
+        else:
+            dict1[k] = v
+
+    for k, v in dict1.items():
+        if isinstance(v, list):
+            dict1[k] = sorted(set(v))
+        elif isinstance(v, dict):  # pragma: no cover
+            for kk, vv in v.items():
+                if isinstance(vv, list):
+                    v[kk] = sorted(set(vv))
+
+    return dict(sorted(dict1.items()))
+
+
+def remove_markdown_sections(
+    text: str,
+    strip_codeblocks: bool = False,
+    strip_inlinecode: bool = False,
+    strip_frontmatter: bool = False,
+) -> str:
+    """Strip markdown sections from text.
+
+    Args:
+        text (str): Text to remove code blocks from
+        strip_codeblocks (bool, optional): Strip code blocks. Defaults to False.
+        strip_inlinecode (bool, optional): Strip inline code. Defaults to False.
+        strip_frontmatter (bool, optional): Strip frontmatter. Defaults to False.
+
+    Returns:
+        str: Text without code blocks
+    """
+    if strip_codeblocks:
+        text = re.sub(r"`{3}.*?`{3}", "", text, flags=re.DOTALL)
+
+    if strip_inlinecode:
+        text = re.sub(r"`.*?`", "", text)
+
+    if strip_frontmatter:
+        text = re.sub(r"^\s*---.*?---", "", text, flags=re.DOTALL)
+
+    return text  # noqa: RET504
+
+
+def version_callback(value: bool) -> None:
+    """Print version and exit."""
+    if value:
+        print(f"{__package__.split('.')[0]}: v{__version__}")
+        raise typer.Exit()

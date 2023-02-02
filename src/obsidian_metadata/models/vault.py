@@ -1,10 +1,11 @@
 """Obsidian vault representation."""
 
+import csv
 import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-
+import json
 import rich.repr
 from rich import box
 from rich.console import Console
@@ -46,6 +47,7 @@ class Vault:
         filters: list[VaultFilter] = [],
     ):
         self.vault_path: Path = config.path
+        self.name = self.vault_path.name
         self.dry_run: bool = dry_run
         self.backup_path: Path = self.vault_path.parent / f"{self.vault_path.name}.bak"
         self.exclude_paths: list[Path] = []
@@ -132,10 +134,15 @@ class Vault:
         ) as progress:
             progress.add_task(description="Processing notes...", total=None)
             for _note in self.notes_in_scope:
-                self.metadata.index_metadata(_note.frontmatter.dict)
-                self.metadata.index_metadata(_note.inline_metadata.dict)
                 self.metadata.index_metadata(
-                    {_note.inline_tags.metadata_key: _note.inline_tags.list}
+                    area=MetadataType.FRONTMATTER, metadata=_note.frontmatter.dict
+                )
+                self.metadata.index_metadata(
+                    area=MetadataType.INLINE, metadata=_note.inline_metadata.dict
+                )
+                self.metadata.index_metadata(
+                    area=MetadataType.TAGS,
+                    metadata=_note.inline_tags.list,
                 )
 
     def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> int:
@@ -183,33 +190,21 @@ class Vault:
 
         alerts.success(f"Vault backed up to: {self.backup_path}")
 
-    def contains_inline_tag(self, tag: str, is_regex: bool = False) -> bool:
-        """Check if vault contains the given inline tag.
+    def commit_changes(self) -> None:
+        """Commit changes by writing to disk."""
+        log.debug("Writing changes to vault...")
+        if self.dry_run:
+            for _note in self.notes_in_scope:
+                if _note.has_changes():
+                    alerts.dryrun(
+                        f"writing changes to {_note.note_path.relative_to(self.vault_path)}"
+                    )
+            return
 
-        Args:
-            tag (str): Tag to check for.
-            is_regex (bool, optional): Whether to use regex to match tag.
-
-        Returns:
-            bool: True if tag is found in vault.
-        """
-        return any(_note.contains_inline_tag(tag) for _note in self.notes_in_scope)
-
-    def contains_metadata(self, key: str, value: str = None, is_regex: bool = False) -> bool:
-        """Check if vault contains the given metadata.
-
-        Args:
-            key (str): Key to check for. If value is None, will check vault for key.
-            value (str, optional): Value to check for.
-            is_regex (bool, optional): Whether to use regex to match key/value.
-
-        Returns:
-            bool: True if tag is found in vault.
-        """
-        if value is None:
-            return self.metadata.contains(key, is_regex=is_regex)
-
-        return self.metadata.contains(key, value, is_regex=is_regex)
+        for _note in self.notes_in_scope:
+            if _note.has_changes():
+                log.trace(f"writing to {_note.note_path}")
+                _note.write()
 
     def delete_backup(self) -> None:
         """Delete the vault backup."""
@@ -348,10 +343,44 @@ class Vault:
 
         return num_changed
 
-    def write(self) -> None:
-        """Write changes to the vault."""
-        log.debug("Writing changes to vault...")
-        if self.dry_run is False:
-            for _note in self.notes_in_scope:
-                log.trace(f"writing to {_note.note_path}")
-                _note.write()
+    def export_metadata(self, path: str, format: str = "csv") -> None:
+        """Write metadata to a csv file.
+
+        Args:
+            path (Path): Path to write csv file to.
+            export_as (str, optional): Export as 'csv' or 'json'. Defaults to "csv".
+        """
+        export_file = Path(path).expanduser().resolve()
+
+        match format:  # noqa: E999
+            case "csv":
+                with open(export_file, "w", encoding="UTF8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Metadata Type", "Key", "Value"])
+
+                    for key, value in self.metadata.frontmatter.items():
+                        if isinstance(value, list):
+                            if len(value) > 0:
+                                for v in value:
+                                    writer.writerow(["frontmatter", key, v])
+                            else:
+                                writer.writerow(["frontmatter", key, v])
+
+                    for key, value in self.metadata.inline_metadata.items():
+                        if isinstance(value, list):
+                            if len(value) > 0:
+                                for v in value:
+                                    writer.writerow(["inline_metadata", key, v])
+                            else:
+                                writer.writerow(["frontmatter", key, v])
+                    for tag in self.metadata.tags:
+                        writer.writerow(["tags", "", f"{tag}"])
+            case "json":
+                dict_to_dump = {
+                    "frontmatter": self.metadata.dict,
+                    "inline_metadata": self.metadata.inline_metadata,
+                    "tags": self.metadata.tags,
+                }
+
+                with open(export_file, "w", encoding="UTF8") as f:
+                    json.dump(dict_to_dump, f, indent=4, ensure_ascii=False, sort_keys=True)

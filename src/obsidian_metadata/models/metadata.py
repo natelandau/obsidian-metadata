@@ -13,12 +13,14 @@ from obsidian_metadata._utils import (
     clean_dictionary,
     dict_contains,
     dict_values_to_lists_strings,
+    merge_dictionaries,
     remove_markdown_sections,
 )
 from obsidian_metadata.models import Patterns  # isort: ignore
+from obsidian_metadata.models.enums import MetadataType
 
 PATTERNS = Patterns()
-INLINE_TAG_KEY: str = "Inline Tags"
+INLINE_TAG_KEY: str = "inline_tag"
 
 
 class VaultMetadata:
@@ -26,50 +28,83 @@ class VaultMetadata:
 
     def __init__(self) -> None:
         self.dict: dict[str, list[str]] = {}
+        self.frontmatter: dict[str, list[str]] = {}
+        self.inline_metadata: dict[str, list[str]] = {}
+        self.tags: list[str] = []
 
     def __repr__(self) -> str:
         """Representation of all metadata."""
         return str(self.dict)
 
-    def index_metadata(self, metadata: dict[str, list[str]]) -> None:
+    def index_metadata(
+        self, area: MetadataType, metadata: dict[str, list[str]] | list[str]
+    ) -> None:
         """Index pre-existing metadata in the vault. Takes a dictionary as input and merges it with the existing metadata.  Does not overwrite existing keys.
 
         Args:
+            area (MetadataType): Type of metadata.
             metadata (dict): Metadata to add.
         """
-        existing_metadata = self.dict
+        if isinstance(metadata, dict):
+            new_metadata = clean_dictionary(metadata)
+            self.dict = merge_dictionaries(self.dict.copy(), new_metadata.copy())
 
-        new_metadata = clean_dictionary(metadata)
+        if area == MetadataType.FRONTMATTER:
+            self.frontmatter = merge_dictionaries(self.frontmatter.copy(), new_metadata.copy())
 
-        for k, v in new_metadata.items():
-            if k in existing_metadata:
-                if isinstance(v, list):
-                    existing_metadata[k].extend(v)
-            else:
-                existing_metadata[k] = v
+        if area == MetadataType.INLINE:
+            self.inline_metadata = merge_dictionaries(
+                self.inline_metadata.copy(), new_metadata.copy()
+            )
 
-        for k, v in existing_metadata.items():
-            if isinstance(v, list):
-                existing_metadata[k] = sorted(set(v))
-            elif isinstance(v, dict):
-                for kk, vv in v.items():
-                    if isinstance(vv, list):
-                        v[kk] = sorted(set(vv))
+        if area == MetadataType.TAGS and isinstance(metadata, list):
+            self.tags.extend(metadata)
+            self.tags = sorted({s.strip("#") for s in self.tags})
 
-        self.dict = dict(sorted(existing_metadata.items()))
-
-    def contains(self, key: str, value: str = None, is_regex: bool = False) -> bool:
+    def contains(
+        self, area: MetadataType, key: str = None, value: str = None, is_regex: bool = False
+    ) -> bool:
         """Check if a key and/or a value exists in the metadata.
 
         Args:
-            key (str): Key to check.
+            area (MetadataType): Type of metadata to check.
+            key (str, optional): Key to check.
             value (str, optional): Value to check.
             is_regex (bool, optional): Use regex to check. Defaults to False.
 
         Returns:
             bool: True if the key exists.
+
+        Raises:
+            ValueError: Key must be provided when checking for a key's existence.
+            ValueError: Value must be provided when checking for a tag's existence.
         """
-        return dict_contains(self.dict, key, value, is_regex)
+        if area != MetadataType.TAGS and key is None:
+            raise ValueError("Key must be provided when checking for a key's existence.")
+
+        match area:  # noqa: E999
+            case MetadataType.ALL:
+                if dict_contains(self.dict, key, value, is_regex):
+                    return True
+                if key is None and value is not None:
+                    if is_regex:
+                        return any(re.search(value, tag) for tag in self.tags)
+                    return value in self.tags
+
+            case MetadataType.FRONTMATTER:
+                return dict_contains(self.frontmatter, key, value, is_regex)
+            case MetadataType.INLINE:
+                return dict_contains(self.inline_metadata, key, value, is_regex)
+            case MetadataType.KEYS:
+                return dict_contains(self.dict, key, value, is_regex)
+            case MetadataType.TAGS:
+                if value is None:
+                    raise ValueError("Value must be provided when checking for a tag's existence.")
+                if is_regex:
+                    return any(re.search(value, tag) for tag in self.tags)
+                return value in self.tags
+
+        return False
 
     def delete(self, key: str, value_to_delete: str = None) -> bool:
         """Delete a key or a key's value from the metadata. Regex is supported to allow deleting more than one key or value.
@@ -99,37 +134,55 @@ class VaultMetadata:
 
         return False
 
-    def print_keys(self) -> None:
-        """Print all metadata keys."""
-        columns = Columns(
-            sorted(self.dict.keys()),
-            equal=True,
-            expand=True,
-            title="All metadata keys in Obsidian vault",
-        )
-        print(columns)
+    def print_metadata(self, area: MetadataType) -> None:
+        """Print metadata to the terminal.
 
-    def print_metadata(self) -> None:
-        """Print all metadata."""
-        table = Table(show_footer=False, show_lines=True)
-        table.add_column("Keys")
-        table.add_column("Values")
-        for key, value in sorted(self.dict.items()):
-            values: str | dict[str, list[str]] = (
-                "\n".join(sorted(value)) if isinstance(value, list) else value
+        Args:
+            area (MetadataType): Type of metadata to print
+        """
+        dict_to_print: dict[str, list[str]] = None
+        list_to_print: list[str] = None
+        match area:
+            case MetadataType.INLINE:
+                dict_to_print = self.inline_metadata.copy()
+                header = "All inline metadata"
+            case MetadataType.FRONTMATTER:
+                dict_to_print = self.frontmatter.copy()
+                header = "All frontmatter"
+            case MetadataType.TAGS:
+                list_to_print = []
+                for tag in self.tags:
+                    list_to_print.append(f"#{tag}")
+                header = "All inline tags"
+            case MetadataType.KEYS:
+                list_to_print = sorted(self.dict.keys())
+                header = "All Keys"
+            case MetadataType.ALL:
+                dict_to_print = self.dict.copy()
+                list_to_print = []
+                for tag in self.tags:
+                    list_to_print.append(f"#{tag}")
+                header = "All metadata"
+
+        if dict_to_print is not None:
+            table = Table(title=header, show_footer=False, show_lines=True)
+            table.add_column("Keys")
+            table.add_column("Values")
+            for key, value in sorted(dict_to_print.items()):
+                values: str | dict[str, list[str]] = (
+                    "\n".join(sorted(value)) if isinstance(value, list) else value
+                )
+                table.add_row(f"[bold]{key}[/]", str(values))
+            Console().print(table)
+
+        if list_to_print is not None:
+            columns = Columns(
+                sorted(list_to_print),
+                equal=True,
+                expand=True,
+                title=header if area != MetadataType.ALL else "All inline tags",
             )
-            table.add_row(f"[bold]{key}[/]", str(values))
-        Console().print(table)
-
-    def print_tags(self) -> None:
-        """Print all tags."""
-        columns = Columns(
-            sorted(self.dict["tags"]),
-            equal=True,
-            expand=True,
-            title="All tags in Obsidian vault",
-        )
-        print(columns)
+            print(columns)
 
     def rename(self, key: str, value_1: str, value_2: str = None) -> bool:
         """Replace a value in the frontmatter.

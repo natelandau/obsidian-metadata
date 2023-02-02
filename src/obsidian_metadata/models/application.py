@@ -2,7 +2,7 @@
 
 
 from typing import Any
-
+from pathlib import Path
 import questionary
 from rich import print
 from rich import box
@@ -55,11 +55,7 @@ class Application:
                 case "review_changes":
                     self.review_changes()
                 case "commit_changes":
-                    if self.commit_changes():
-                        break
-                    log.error("Commit failed. Please run with -vvv for more info.")
-                    break
-
+                    self.commit_changes()
                 case _:
                     break
 
@@ -221,13 +217,50 @@ class Application:
 
         choices = [
             {"name": "View all metadata", "value": "all_metadata"},
+            {"name": "View all frontmatter", "value": "all_frontmatter"},
+            {"name": "View all inline_metadata", "value": "all_inline"},
+            {"name": "View all keys", "value": "all_keys"},
+            {"name": "View all inline tags", "value": "all_tags"},
+            questionary.Separator(),
+            {"name": "Write all metadata to CSV", "value": "export_csv"},
+            {"name": "Write all metadata to JSON file", "value": "export_json"},
             questionary.Separator(),
             {"name": "Back", "value": "back"},
         ]
         while True:
             match self.questions.ask_selection(choices=choices, question="Select a vault action"):
                 case "all_metadata":
-                    self.vault.metadata.print_metadata()
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.ALL)
+                    print("")
+                case "all_frontmatter":
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.FRONTMATTER)
+                    print("")
+                case "all_inline":
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.INLINE)
+                    print("")
+                case "all_keys":
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.KEYS)
+                    print("")
+                case "all_tags":
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.TAGS)
+                    print("")
+                case "export_csv":
+                    path = self.questions.ask_path(question="Enter a path for the CSV file")
+                    if path is None:
+                        return
+                    self.vault.export_metadata(path=path, format="csv")
+                    alerts.success(f"Metadata written to {path}")
+                case "export_json":
+                    path = self.questions.ask_path(question="Enter a path for the JSON file")
+                    if path is None:
+                        return
+                    self.vault.export_metadata(path=path, format="json")
+                    alerts.success(f"Metadata written to {path}")
                 case _:
                     return
 
@@ -316,12 +349,13 @@ class Application:
             self.vault.backup()
 
         if questionary.confirm(f"Commit {len(changed_notes)} changed files to disk?").ask():
+            self.vault.commit_changes()
 
-            self.vault.write()
+        if not self.dry_run:
             alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
             return True
 
-        return False
+        return True
 
     def delete_inline_tag(self) -> None:
         """Delete an inline tag."""
@@ -388,6 +422,18 @@ class Application:
             f"Loaded {len(self.vault.notes_in_scope)} notes from {len(self.vault.all_notes)} total notes"
         )
         self.questions = Questions(vault=self.vault)
+
+    def noninteractive_export_csv(self, path: Path) -> None:
+        """Export the vault metadata to CSV."""
+        self._load_vault()
+        self.vault.export_metadata(format="json", path=str(path))
+        alerts.success(f"Exported metadata to {path}")
+
+    def noninteractive_export_json(self, path: Path) -> None:
+        """Export the vault metadata to JSON."""
+        self._load_vault()
+        self.vault.export_metadata(format="json", path=str(path))
+        alerts.success(f"Exported metadata to {path}")
 
     def rename_key(self) -> None:
         """Renames a key in the vault."""

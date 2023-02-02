@@ -5,7 +5,7 @@ import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-
+import json
 import rich.repr
 from rich import box
 from rich.console import Console
@@ -335,21 +335,44 @@ class Vault:
 
         return num_changed
 
-    def write_metadata_csv(self, path: str) -> None:
+    def export_metadata(self, path: str, format: str = "csv") -> None:
         """Write metadata to a csv file.
 
         Args:
             path (Path): Path to write csv file to.
+            export_as (str, optional): Export as 'csv' or 'json'. Defaults to "csv".
         """
-        csv_file = Path(path).expanduser().resolve()
-        with open(csv_file, "w", encoding="UTF8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["Key", "Value"])
+        export_file = Path(path).expanduser().resolve()
 
-            for key, value in self.metadata.dict.items():
-                if isinstance(value, list):
-                    if len(value) > 0:
-                        for v in value:
-                            writer.writerow([key, v])
-                    else:
-                        writer.writerow([key, v])
+        match format:  # noqa: E999
+            case "csv":
+                with open(export_file, "w", encoding="UTF8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Metadata Type", "Key", "Value"])
+
+                    for key, value in self.metadata.frontmatter.items():
+                        if isinstance(value, list):
+                            if len(value) > 0:
+                                for v in value:
+                                    writer.writerow(["frontmatter", key, v])
+                            else:
+                                writer.writerow(["frontmatter", key, v])
+
+                    for key, value in self.metadata.inline_metadata.items():
+                        if isinstance(value, list):
+                            if len(value) > 0:
+                                for v in value:
+                                    writer.writerow(["inline_metadata", key, v])
+                            else:
+                                writer.writerow(["frontmatter", key, v])
+                    for tag in self.metadata.tags:
+                        writer.writerow(["tags", "", f"{tag}"])
+            case "json":
+                dict_to_dump = {
+                    "frontmatter": self.metadata.dict,
+                    "inline_metadata": self.metadata.inline_metadata,
+                    "tags": self.metadata.tags,
+                }
+
+                with open(export_file, "w", encoding="UTF8") as f:
+                    json.dump(dict_to_dump, f, indent=4, ensure_ascii=False, sort_keys=True)

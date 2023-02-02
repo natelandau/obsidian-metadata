@@ -225,7 +225,9 @@ class Application:
             {"name": "View all inline_metadata", "value": "all_inline"},
             {"name": "View all keys", "value": "all_keys"},
             {"name": "View all inline tags", "value": "all_tags"},
-            {"name": "Write all metadata to CSV", "value": "write_csv"},
+            questionary.Separator(),
+            {"name": "Write all metadata to CSV", "value": "export_csv"},
+            {"name": "Write all metadata to JSON file", "value": "export_json"},
             questionary.Separator(),
             {"name": "Back", "value": "back"},
         ]
@@ -251,11 +253,17 @@ class Application:
                     print("")
                     self.vault.metadata.print_metadata(area=MetadataType.TAGS)
                     print("")
-                case "write_csv":
+                case "export_csv":
                     path = self.questions.ask_path(question="Enter a path for the CSV file")
                     if path is None:
                         return
-                    self.vault.write_metadata_csv(path=path)
+                    self.vault.export_metadata(path=path, format="csv")
+                    alerts.success(f"Metadata written to {path}")
+                case "export_json":
+                    path = self.questions.ask_path(question="Enter a path for the JSON file")
+                    if path is None:
+                        return
+                    self.vault.export_metadata(path=path, format="json")
                     alerts.success(f"Metadata written to {path}")
                 case _:
                     return

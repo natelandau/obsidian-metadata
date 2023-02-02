@@ -11,7 +11,7 @@
     name        = "obsidian-metadata"
     readme      = "README.md"
     repository  = "https://github.com/natelandau/obsidian-metadata"
-    version     = "0.3.0"
+    version     = "0.4.0"
 
     [tool.poetry.scripts] # https://python-poetry.org/docs/pyproject/#scripts
         obsidian-metadata = "obsidian_metadata.cli:app"
@@ -36,20 +36,19 @@
 
     [tool.poetry.group.dev.dependencies]
         absolufy-imports      = "^0.3.1"
-        black                 = "^22.12.0"
-        commitizen            = "^2.39.1"
-        coverage              = "^7.0.4"
+        black                 = "^23.1.0"
+        commitizen            = "^2.40.0"
+        coverage              = "^7.1.0"
         interrogate           = "^1.5.0"
         mypy                  = "^0.991"
         pdoc                  = "^12.3.1"
         pep8-naming           = "^0.13.3"
         poethepoet            = "^0.18.0"
-        pre-commit            = "^2.21.0"
+        pre-commit            = "^3.0.4"
         pysnooper             = "^1.1.1"
-        ruff                  = "^0.0.217"
+        ruff                  = "^0.0.240"
         typeguard             = "^2.13.3"
         types-python-dateutil = "^2.8.19.5"
-        types-pyyaml          = "^6.0.12.2"
         vulture               = "^2.7"
 
 [tool.ruff] # https://github.com/charliermarsh/ruff
@@ -141,9 +140,10 @@
 
 [tool.commitizen]
     bump_message = "bump(release): v$current_version → v$new_version"
+    changelog_incremental = true
     tag_format = "v$version"
     update_changelog_on_bump = true
-    version = "0.3.0"
+    version = "0.4.0"
     version_files = [
         "pyproject.toml:version",
         "src/obsidian_metadata/__version__.py:__version__",

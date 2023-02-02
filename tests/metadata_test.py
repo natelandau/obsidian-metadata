@@ -2,6 +2,9 @@
 """Test metadata.py."""
 from pathlib import Path
 
+import pytest
+
+from obsidian_metadata.models.enums import MetadataType
 from obsidian_metadata.models.metadata import (
     Frontmatter,
     InlineMetadata,
@@ -11,6 +14,7 @@ from obsidian_metadata.models.metadata import (
 from tests.helpers import Regex
 
 FILE_CONTENT: str = Path("tests/fixtures/test_vault/test1.md").read_text()
+TAG_LIST: list[str] = ["tag 1", "tag 2", "tag 3"]
 METADATA: dict[str, list[str]] = {
     "frontmatter_Key1": ["author name"],
     "frontmatter_Key2": ["note", "article"],
@@ -22,6 +26,7 @@ METADATA: dict[str, list[str]] = {
     "top_key3": ["top_key3_value"],
     "intext_key": ["intext_key_value"],
 }
+METADATA_2: dict[str, list[str]] = {"key1": ["value1"], "key2": ["value2", "value3"]}
 FRONTMATTER_CONTENT: str = """
 ---
 tags:
@@ -64,13 +69,28 @@ repeated_key:: repeated_key_value2
 """
 
 
-def test_vault_metadata(capsys) -> None:
+def test_vault_metadata() -> None:
     """Test VaultMetadata class."""
     vm = VaultMetadata()
     assert vm.dict == {}
 
-    vm.index_metadata(METADATA)
+    vm.index_metadata(area=MetadataType.FRONTMATTER, metadata=METADATA)
+    vm.index_metadata(area=MetadataType.INLINE, metadata=METADATA_2)
+    vm.index_metadata(area=MetadataType.TAGS, metadata=TAG_LIST)
     assert vm.dict == {
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "intext_key": ["intext_key_value"],
+        "key1": ["value1"],
+        "key2": ["value2", "value3"],
+        "shared_key1": ["shared_key1_value"],
+        "shared_key2": ["shared_key2_value"],
+        "tags": ["tag 1", "tag 2", "tag 3"],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value"],
+    }
+    assert vm.frontmatter == {
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "intext_key": ["intext_key_value"],
@@ -81,24 +101,28 @@ def test_vault_metadata(capsys) -> None:
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value"],
     }
-
-    vm.print_keys()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"frontmatter_Key1 +frontmatter_Key2 +intext_key")
-
-    vm.print_tags()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"tag 1 +tag 2 +tag 3")
-
-    vm.print_metadata()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"┃ Keys +┃ Values +┃")
-    assert captured.out == Regex(r"│ +│ tag 3 +│")
-    assert captured.out == Regex(r"│ frontmatter_Key1 +│ author name +│")
+    assert vm.inline_metadata == {"key1": ["value1"], "key2": ["value2", "value3"]}
+    assert vm.tags == ["tag 1", "tag 2", "tag 3"]
 
     new_metadata = {"added_key": ["added_value"], "frontmatter_Key2": ["new_value"]}
-    vm.index_metadata(new_metadata)
+    new_tags = ["tag 4", "tag 5"]
+    vm.index_metadata(area=MetadataType.FRONTMATTER, metadata=new_metadata)
+    vm.index_metadata(area=MetadataType.TAGS, metadata=new_tags)
     assert vm.dict == {
+        "added_key": ["added_value"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "new_value", "note"],
+        "intext_key": ["intext_key_value"],
+        "key1": ["value1"],
+        "key2": ["value2", "value3"],
+        "shared_key1": ["shared_key1_value"],
+        "shared_key2": ["shared_key2_value"],
+        "tags": ["tag 1", "tag 2", "tag 3"],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value"],
+    }
+    assert vm.frontmatter == {
         "added_key": ["added_value"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "new_value", "note"],
@@ -110,13 +134,73 @@ def test_vault_metadata(capsys) -> None:
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value"],
     }
+    assert vm.inline_metadata == {"key1": ["value1"], "key2": ["value2", "value3"]}
+    assert vm.tags == ["tag 1", "tag 2", "tag 3", "tag 4", "tag 5"]
+
+
+def test_vault_metadata_print(capsys) -> None:
+    """Test print_metadata method."""
+    vm = VaultMetadata()
+    vm.index_metadata(area=MetadataType.FRONTMATTER, metadata=METADATA)
+    vm.index_metadata(area=MetadataType.INLINE, metadata=METADATA_2)
+    vm.index_metadata(area=MetadataType.TAGS, metadata=TAG_LIST)
+
+    vm.print_metadata(area=MetadataType.ALL)
+    captured = capsys.readouterr()
+    assert "All metadata" in captured.out
+    assert "All inline tags" in captured.out
+    assert "┃ Keys             ┃ Values            ┃" in captured.out
+    assert "│ shared_key1      │ shared_key1_value │" in captured.out
+    assert captured.out == Regex("#tag 1 +#tag 2")
+
+    vm.print_metadata(area=MetadataType.FRONTMATTER)
+    captured = capsys.readouterr()
+    assert "All frontmatter" in captured.out
+    assert "┃ Keys             ┃ Values            ┃" in captured.out
+    assert "│ shared_key1      │ shared_key1_value │" in captured.out
+    assert "value1" not in captured.out
+
+    vm.print_metadata(area=MetadataType.INLINE)
+    captured = capsys.readouterr()
+    assert "All inline" in captured.out
+    assert "┃ Keys ┃ Values ┃" in captured.out
+    assert "shared_key1" not in captured.out
+    assert "│ key1 │ value1 │" in captured.out
+
+    vm.print_metadata(area=MetadataType.TAGS)
+    captured = capsys.readouterr()
+    assert "All inline tags " in captured.out
+    assert "┃ Keys             ┃ Values            ┃" not in captured.out
+    assert captured.out == Regex("#tag 1 +#tag 2")
+
+    vm.print_metadata(area=MetadataType.KEYS)
+    captured = capsys.readouterr()
+    assert "All Keys " in captured.out
+    assert "┃ Keys             ┃ Values            ┃" not in captured.out
+    assert captured.out != Regex("#tag 1 +#tag 2")
+    assert captured.out == Regex("frontmatter_Key1 +frontmatter_Key2")
 
 
 def test_vault_metadata_contains() -> None:
     """Test contains method."""
     vm = VaultMetadata()
-    vm.index_metadata(METADATA)
+    vm.index_metadata(area=MetadataType.FRONTMATTER, metadata=METADATA)
+    vm.index_metadata(area=MetadataType.INLINE, metadata=METADATA_2)
+    vm.index_metadata(area=MetadataType.TAGS, metadata=TAG_LIST)
     assert vm.dict == {
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "intext_key": ["intext_key_value"],
+        "key1": ["value1"],
+        "key2": ["value2", "value3"],
+        "shared_key1": ["shared_key1_value"],
+        "shared_key2": ["shared_key2_value"],
+        "tags": ["tag 1", "tag 2", "tag 3"],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value"],
+    }
+    assert vm.frontmatter == {
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "intext_key": ["intext_key_value"],
@@ -127,21 +211,47 @@ def test_vault_metadata_contains() -> None:
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value"],
     }
+    assert vm.inline_metadata == {"key1": ["value1"], "key2": ["value2", "value3"]}
+    assert vm.tags == ["tag 1", "tag 2", "tag 3"]
 
-    assert vm.contains("frontmatter_Key1") is True
-    assert vm.contains("frontmatter_Key2", "article") is True
-    assert vm.contains("frontmatter_Key3") is False
-    assert vm.contains("frontmatter_Key2", "no value") is False
-    assert vm.contains("1$", is_regex=True) is True
-    assert vm.contains("5$", is_regex=True) is False
-    assert vm.contains("tags", r"\d", is_regex=True) is True
-    assert vm.contains("tags", r"^\d", is_regex=True) is False
+    with pytest.raises(ValueError):
+        vm.contains(area=MetadataType.ALL, value="key1")
+
+    assert vm.contains(area=MetadataType.ALL, key="no_key") is False
+    assert vm.contains(area=MetadataType.ALL, key="key1") is True
+    assert vm.contains(area=MetadataType.ALL, key="frontmatter_Key2", value="article") is True
+    assert vm.contains(area=MetadataType.ALL, key="frontmatter_Key2", value="none") is False
+    assert vm.contains(area=MetadataType.ALL, key="1$", is_regex=True) is True
+    assert vm.contains(area=MetadataType.ALL, key=r"\d\d", is_regex=True) is False
+
+    assert vm.contains(area=MetadataType.FRONTMATTER, key="no_key") is False
+    assert vm.contains(area=MetadataType.FRONTMATTER, key="frontmatter_Key1") is True
+    assert (
+        vm.contains(area=MetadataType.FRONTMATTER, key="frontmatter_Key2", value="article") is True
+    )
+    assert vm.contains(area=MetadataType.FRONTMATTER, key="frontmatter_Key2", value="none") is False
+    assert vm.contains(area=MetadataType.FRONTMATTER, key="1$", is_regex=True) is True
+    assert vm.contains(area=MetadataType.FRONTMATTER, key=r"\d\d", is_regex=True) is False
+
+    assert vm.contains(area=MetadataType.INLINE, key="no_key") is False
+    assert vm.contains(area=MetadataType.INLINE, key="key1") is True
+    assert vm.contains(area=MetadataType.INLINE, key="key2", value="value3") is True
+    assert vm.contains(area=MetadataType.INLINE, key="key2", value="none") is False
+    assert vm.contains(area=MetadataType.INLINE, key="1$", is_regex=True) is True
+    assert vm.contains(area=MetadataType.INLINE, key=r"\d\d", is_regex=True) is False
+
+    assert vm.contains(area=MetadataType.TAGS, value="no_tag") is False
+    assert vm.contains(area=MetadataType.TAGS, value="tag 1") is True
+    assert vm.contains(area=MetadataType.TAGS, value=r"\w+ \d$", is_regex=True) is True
+    assert vm.contains(area=MetadataType.TAGS, value=r"\w+ \d\d$", is_regex=True) is False
+    with pytest.raises(ValueError):
+        vm.contains(area=MetadataType.TAGS, key="key1")
 
 
 def test_vault_metadata_delete() -> None:
     """Test delete method."""
     vm = VaultMetadata()
-    vm.index_metadata(METADATA)
+    vm.index_metadata(area=MetadataType.FRONTMATTER, metadata=METADATA)
     assert vm.dict == {
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
@@ -165,7 +275,7 @@ def test_vault_metadata_delete() -> None:
 def test_vault_metadata_rename() -> None:
     """Test rename method."""
     vm = VaultMetadata()
-    vm.index_metadata(METADATA)
+    vm.index_metadata(area=MetadataType.FRONTMATTER, metadata=METADATA)
     assert vm.dict == {
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],

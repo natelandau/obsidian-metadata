@@ -110,7 +110,7 @@ def test_validate_value_exists_regex() -> None:
 def test_validate_new_value() -> None:
     """Test new value validation."""
     questions = Questions(vault=VAULT, key="frontmatter_Key1")
-    assert questions._validate_new_value("new_value") is True
+    assert questions._validate_new_value("not_exists") is True
     assert "Value cannot be empty" in questions._validate_new_value("")
     assert (
         questions._validate_new_value("author name")

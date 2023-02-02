@@ -8,6 +8,7 @@ from obsidian_metadata._utils.utilities import (
     dict_contains,
     dict_values_to_lists_strings,
     docstring_parameter,
+    merge_dictionaries,
     remove_markdown_sections,
     version_callback,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "dict_values_to_lists_strings",
     "docstring_parameter",
     "LoggerManager",
+    "merge_dictionaries",
     "remove_markdown_sections",
     "vault_validation",
     "version_callback",

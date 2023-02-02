@@ -9,3 +9,5 @@ class MetadataType(Enum):
     FRONTMATTER = "Frontmatter"
     INLINE = "Inline Metadata"
     TAGS = "Inline Tags"
+    KEYS = "Metadata Keys Only"
+    ALL = "All Metadata"

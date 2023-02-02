@@ -134,10 +134,15 @@ class Vault:
         ) as progress:
             progress.add_task(description="Processing notes...", total=None)
             for _note in self.notes_in_scope:
-                self.metadata.index_metadata(_note.frontmatter.dict)
-                self.metadata.index_metadata(_note.inline_metadata.dict)
                 self.metadata.index_metadata(
-                    {_note.inline_tags.metadata_key: _note.inline_tags.list}
+                    area=MetadataType.FRONTMATTER, metadata=_note.frontmatter.dict
+                )
+                self.metadata.index_metadata(
+                    area=MetadataType.INLINE, metadata=_note.inline_metadata.dict
+                )
+                self.metadata.index_metadata(
+                    area=MetadataType.TAGS,
+                    metadata=_note.inline_tags.list,
                 )
 
     def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> int:
@@ -192,34 +197,6 @@ class Vault:
             for _note in self.notes_in_scope:
                 log.trace(f"writing to {_note.note_path}")
                 _note.write()
-
-    def contains_inline_tag(self, tag: str, is_regex: bool = False) -> bool:
-        """Check if vault contains the given inline tag.
-
-        Args:
-            tag (str): Tag to check for.
-            is_regex (bool, optional): Whether to use regex to match tag.
-
-        Returns:
-            bool: True if tag is found in vault.
-        """
-        return any(_note.contains_inline_tag(tag) for _note in self.notes_in_scope)
-
-    def contains_metadata(self, key: str, value: str = None, is_regex: bool = False) -> bool:
-        """Check if vault contains the given metadata.
-
-        Args:
-            key (str): Key to check for. If value is None, will check vault for key.
-            value (str, optional): Value to check for.
-            is_regex (bool, optional): Whether to use regex to match key/value.
-
-        Returns:
-            bool: True if tag is found in vault.
-        """
-        if value is None:
-            return self.metadata.contains(key, is_regex=is_regex)
-
-        return self.metadata.contains(key, value, is_regex=is_regex)
 
     def delete_backup(self) -> None:
         """Delete the vault backup."""

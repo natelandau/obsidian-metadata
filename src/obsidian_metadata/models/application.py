@@ -221,6 +221,10 @@ class Application:
 
         choices = [
             {"name": "View all metadata", "value": "all_metadata"},
+            {"name": "View all frontmatter", "value": "all_frontmatter"},
+            {"name": "View all inline_metadata", "value": "all_inline"},
+            {"name": "View all keys", "value": "all_keys"},
+            {"name": "View all inline tags", "value": "all_tags"},
             {"name": "Write all metadata to CSV", "value": "write_csv"},
             questionary.Separator(),
             {"name": "Back", "value": "back"},
@@ -228,7 +232,25 @@ class Application:
         while True:
             match self.questions.ask_selection(choices=choices, question="Select a vault action"):
                 case "all_metadata":
-                    self.vault.metadata.print_metadata()
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.ALL)
+                    print("")
+                case "all_frontmatter":
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.FRONTMATTER)
+                    print("")
+                case "all_inline":
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.INLINE)
+                    print("")
+                case "all_keys":
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.KEYS)
+                    print("")
+                case "all_tags":
+                    print("")
+                    self.vault.metadata.print_metadata(area=MetadataType.TAGS)
+                    print("")
                 case "write_csv":
                     path = self.questions.ask_path(question="Enter a path for the CSV file")
                     if path is None:

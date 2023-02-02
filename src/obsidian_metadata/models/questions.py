@@ -94,7 +94,7 @@ class Questions:
         if len(text) < 1:
             return "Tag cannot be empty"
 
-        if not self.vault.contains_inline_tag(text):
+        if not self.vault.metadata.contains(area=MetadataType.TAGS, value=text):
             return f"'{text}' does not exist as a tag in the vault"
 
         return True
@@ -108,7 +108,7 @@ class Questions:
         if len(text) < 1:
             return "Key cannot be empty"
 
-        if not self.vault.metadata.contains(text):
+        if not self.vault.metadata.contains(area=MetadataType.KEYS, key=text):
             return f"'{text}' does not exist as a key in the vault"
 
         return True
@@ -127,7 +127,7 @@ class Questions:
         except re.error as error:
             return f"Invalid regex: {error}"
 
-        if not self.vault.metadata.contains(text, is_regex=True):
+        if not self.vault.metadata.contains(area=MetadataType.KEYS, key=text, is_regex=True):
             return f"'{text}' does not exist as a key in the vault"
 
         return True
@@ -178,7 +178,9 @@ class Questions:
         if len(text) < 1:
             return "Value cannot be empty"
 
-        if self.key is not None and self.vault.metadata.contains(self.key, text):
+        if self.key is not None and self.vault.metadata.contains(
+            area=MetadataType.ALL, key=self.key, value=text
+        ):
             return f"{self.key}:{text} already exists"
 
         return True
@@ -228,7 +230,9 @@ class Questions:
         if len(text) == 0:
             return True
 
-        if self.key is not None and not self.vault.metadata.contains(self.key, text):
+        if self.key is not None and not self.vault.metadata.contains(
+            area=MetadataType.ALL, key=self.key, value=text
+        ):
             return f"{self.key}:{text} does not exist"
 
         return True
@@ -250,7 +254,9 @@ class Questions:
         except re.error as error:
             return f"Invalid regex: {error}"
 
-        if self.key is not None and not self.vault.metadata.contains(self.key, text, is_regex=True):
+        if self.key is not None and not self.vault.metadata.contains(
+            area=MetadataType.ALL, key=self.key, value=text, is_regex=True
+        ):
             return f"No values in {self.key} match regex: {text}"
 
         return True
@@ -431,7 +437,7 @@ class Questions:
             question, validate=self._validate_new_value, style=self.style, qmark="INPUT    |"
         ).ask()
 
-    def ask_number(self, question: str = "Enter a number") -> int:
+    def ask_number(self, question: str = "Enter a number") -> int:  # pragma: no cover
         """Ask the user for a number.
 
         Args:

@@ -193,8 +193,16 @@ class Vault:
     def commit_changes(self) -> None:
         """Commit changes by writing to disk."""
         log.debug("Writing changes to vault...")
-        if self.dry_run is False:
+        if self.dry_run:
             for _note in self.notes_in_scope:
+                if _note.has_changes():
+                    alerts.dryrun(
+                        f"writing changes to {_note.note_path.relative_to(self.vault_path)}"
+                    )
+            return
+
+        for _note in self.notes_in_scope:
+            if _note.has_changes():
                 log.trace(f"writing to {_note.note_path}")
                 _note.write()
 

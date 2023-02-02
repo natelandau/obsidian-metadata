@@ -392,6 +392,9 @@ class Note:
             typer.Exit: If the note's path is not found.
         """
         p = self.note_path if path is None else path
+        if self.dry_run:
+            log.trace(f"DRY RUN: Writing note {p} to disk")
+            return
 
         try:
             with open(p, "w") as f:

@@ -28,14 +28,28 @@ HELP_TEXT = """
 @app.command()
 @docstring_parameter(__package__)
 def main(
-    vault_path: Path = typer.Option(
-        None,
-        help="Path to Obsidian vault",
-        show_default=False,
-    ),
     config_file: Path = typer.Option(
         Path(Path.home() / f".{__package__}.toml"),
         help="Specify a custom path to a configuration file",
+        show_default=False,
+    ),
+    export_csv: Path = typer.Option(
+        None,
+        help="Exports all metadata to a specified CSV file and exits. (Will overwrite any existing file)",
+        show_default=False,
+        dir_okay=False,
+        file_okay=True,
+    ),
+    export_json: Path = typer.Option(
+        None,
+        help="Exports all metadata to a specified JSON file and exits. (Will overwrite any existing file)",
+        show_default=False,
+        dir_okay=False,
+        file_okay=True,
+    ),
+    vault_path: Path = typer.Option(
+        None,
+        help="Path to Obsidian vault",
         show_default=False,
     ),
     dry_run: bool = typer.Option(
@@ -89,6 +103,10 @@ def main(
     [bold underline]Inspect Metadata[/]
     Inspect the metadata in your vault.
         • View all metadata in the vault
+        • View all frontmatter
+        • View all inline metadata
+        • View all inline tags
+        • Export all metadata to CSV or JSON file
 
     [bold underline]Filter Notes in Scope[/]
     Limit the scope of notes to be processed with one or more filters.
@@ -164,6 +182,15 @@ def main(
 
         vault_to_use = next(vault for vault in config.vaults if vault.name == vault_name)
         application = Application(dry_run=dry_run, config=vault_to_use)
+
+    if export_json is not None:
+        path = Path(export_json).expanduser().resolve()
+        application.noninteractive_export_json(path)
+        raise typer.Exit(code=0)
+    if export_csv is not None:
+        path = Path(export_json).expanduser().resolve()
+        application.noninteractive_export_csv(path)
+        raise typer.Exit(code=0)
 
     application.application_main()
 

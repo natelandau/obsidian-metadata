@@ -20,12 +20,12 @@
         loguru      = "^0.6.0"
         python      = "^3.10"
         questionary = "^1.10.0"
+        regex       = "^2022.10.31"
         rich        = "^13.2.0"
         ruamel-yaml = "^0.17.21"
         shellingham = "^1.4.0"
         tomlkit     = "^0.11.6"
         typer       = "^0.7.0"
-    regex = "^2022.10.31"
 
     [tool.poetry.group.test.dependencies]
         pytest                 = "^7.2.0"
@@ -207,7 +207,7 @@
         help = "Lint this package"
 
         [[tool.poe.tasks.lint.sequence]]
-            shell = "ruff --extend-ignore=I001,D301 src/ tests/"
+            shell = "ruff --extend-ignore=I001,D301,D401,PLR2004,PLR0913 src/ tests/"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "black --check src/ tests/"

@@ -55,11 +55,7 @@ class Application:
                 case "review_changes":
                     self.review_changes()
                 case "commit_changes":
-                    if self.commit_changes():
-                        break
-                    log.error("Commit failed. Please run with -vvv for more info.")
-                    break
-
+                    self.commit_changes()
                 case _:
                     break
 
@@ -353,12 +349,13 @@ class Application:
             self.vault.backup()
 
         if questionary.confirm(f"Commit {len(changed_notes)} changed files to disk?").ask():
-
             self.vault.commit_changes()
+
+        if not self.dry_run:
             alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
             return True
 
-        return False
+        return True
 
     def delete_inline_tag(self) -> None:
         """Delete an inline tag."""
@@ -425,6 +422,18 @@ class Application:
             f"Loaded {len(self.vault.notes_in_scope)} notes from {len(self.vault.all_notes)} total notes"
         )
         self.questions = Questions(vault=self.vault)
+
+    def noninteractive_export_csv(self, path: Path) -> None:
+        """Export the vault metadata to CSV."""
+        self._load_vault()
+        self.vault.export_metadata(format="json", path=str(path))
+        alerts.success(f"Exported metadata to {path}")
+
+    def noninteractive_export_json(self, path: Path) -> None:
+        """Export the vault metadata to JSON."""
+        self._load_vault()
+        self.vault.export_metadata(format="json", path=str(path))
+        alerts.success(f"Exported metadata to {path}")
 
     def rename_key(self) -> None:
         """Renames a key in the vault."""

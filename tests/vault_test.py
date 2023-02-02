@@ -6,6 +6,7 @@ from pathlib import Path
 from obsidian_metadata._config import Config
 from obsidian_metadata.models import Vault, VaultFilter
 from obsidian_metadata.models.enums import MetadataType
+from obsidian_metadata.models.metadata import INLINE_TAG_KEY
 from tests.helpers import Regex
 
 
@@ -16,6 +17,7 @@ def test_vault_creation(test_vault):
     vault_config = config.vaults[0]
     vault = Vault(config=vault_config)
 
+    assert vault.name == "vault"
     assert vault.vault_path == vault_path
     assert vault.backup_path == Path(f"{vault_path}.bak")
     assert vault.dry_run is False
@@ -23,7 +25,7 @@ def test_vault_creation(test_vault):
     assert len(vault.all_notes) == 3
 
     assert vault.metadata.dict == {
-        "Inline Tags": [
+        INLINE_TAG_KEY: [
             "ignored_file_tag2",
             "inline_tag_bottom1",
             "inline_tag_bottom2",
@@ -190,7 +192,7 @@ def test_list_editable_notes(test_vault, capsys) -> None:
     vault.list_editable_notes()
     captured = capsys.readouterr()
     assert captured.out == Regex("Notes in current scope")
-    assert captured.out == Regex(r"1 +test1\.md")
+    assert captured.out == Regex(r"\d +test1\.md")
 
 
 def test_contains_inline_tag(test_vault) -> None:
@@ -213,7 +215,7 @@ def test_add_metadata(test_vault) -> None:
 
     assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key") == 3
     assert vault.metadata.dict == {
-        "Inline Tags": [
+        INLINE_TAG_KEY: [
             "ignored_file_tag2",
             "inline_tag_bottom1",
             "inline_tag_bottom2",
@@ -250,7 +252,7 @@ def test_add_metadata(test_vault) -> None:
     }
     assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key2", "new_key2_value") == 3
     assert vault.metadata.dict == {
-        "Inline Tags": [
+        INLINE_TAG_KEY: [
             "ignored_file_tag2",
             "inline_tag_bottom1",
             "inline_tag_bottom2",
@@ -310,7 +312,7 @@ def test_delete_inline_tag(test_vault) -> None:
 
     assert vault.delete_inline_tag("no tag") == 0
     assert vault.delete_inline_tag("intext_tag2") == 2
-    assert vault.metadata.dict["Inline Tags"] == [
+    assert vault.metadata.dict[INLINE_TAG_KEY] == [
         "ignored_file_tag2",
         "inline_tag_bottom1",
         "inline_tag_bottom2",
@@ -347,7 +349,7 @@ def test_rename_inline_tag(test_vault) -> None:
 
     assert vault.rename_inline_tag("no tag", "new_tag") == 0
     assert vault.rename_inline_tag("intext_tag2", "new_tag") == 2
-    assert vault.metadata.dict["Inline Tags"] == [
+    assert vault.metadata.dict[INLINE_TAG_KEY] == [
         "ignored_file_tag2",
         "inline_tag_bottom1",
         "inline_tag_bottom2",

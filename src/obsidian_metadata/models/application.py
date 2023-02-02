@@ -2,7 +2,7 @@
 
 
 from typing import Any
-
+from pathlib import Path
 import questionary
 from rich import print
 from rich import box
@@ -221,6 +221,7 @@ class Application:
 
         choices = [
             {"name": "View all metadata", "value": "all_metadata"},
+            {"name": "Write all metadata to CSV", "value": "write_csv"},
             questionary.Separator(),
             {"name": "Back", "value": "back"},
         ]
@@ -228,6 +229,12 @@ class Application:
             match self.questions.ask_selection(choices=choices, question="Select a vault action"):
                 case "all_metadata":
                     self.vault.metadata.print_metadata()
+                case "write_csv":
+                    path = self.questions.ask_path(question="Enter a path for the CSV file")
+                    if path is None:
+                        return
+                    self.vault.write_metadata_csv(path=path)
+                    alerts.success(f"Metadata written to {path}")
                 case _:
                     return
 
@@ -317,7 +324,7 @@ class Application:
 
         if questionary.confirm(f"Commit {len(changed_notes)} changed files to disk?").ask():
 
-            self.vault.write()
+            self.vault.commit_changes()
             alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
             return True
 

@@ -18,7 +18,7 @@ from obsidian_metadata._utils import (
 from obsidian_metadata.models import Patterns  # isort: ignore
 
 PATTERNS = Patterns()
-INLINE_TAG_KEY: str = "Inline Tags"
+INLINE_TAG_KEY: str = "in_text_tag"
 
 
 class VaultMetadata:

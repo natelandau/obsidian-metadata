@@ -1,5 +1,6 @@
 """Obsidian vault representation."""
 
+import csv
 import re
 import shutil
 from dataclasses import dataclass
@@ -46,6 +47,7 @@ class Vault:
         filters: list[VaultFilter] = [],
     ):
         self.vault_path: Path = config.path
+        self.name = self.vault_path.name
         self.dry_run: bool = dry_run
         self.backup_path: Path = self.vault_path.parent / f"{self.vault_path.name}.bak"
         self.exclude_paths: list[Path] = []
@@ -182,6 +184,14 @@ class Vault:
             shutil.copytree(self.vault_path, self.backup_path)
 
         alerts.success(f"Vault backed up to: {self.backup_path}")
+
+    def commit_changes(self) -> None:
+        """Commit changes by writing to disk."""
+        log.debug("Writing changes to vault...")
+        if self.dry_run is False:
+            for _note in self.notes_in_scope:
+                log.trace(f"writing to {_note.note_path}")
+                _note.write()
 
     def contains_inline_tag(self, tag: str, is_regex: bool = False) -> bool:
         """Check if vault contains the given inline tag.
@@ -348,10 +358,21 @@ class Vault:
 
         return num_changed
 
-    def write(self) -> None:
-        """Write changes to the vault."""
-        log.debug("Writing changes to vault...")
-        if self.dry_run is False:
-            for _note in self.notes_in_scope:
-                log.trace(f"writing to {_note.note_path}")
-                _note.write()
+    def write_metadata_csv(self, path: str) -> None:
+        """Write metadata to a csv file.
+
+        Args:
+            path (Path): Path to write csv file to.
+        """
+        csv_file = Path(path).expanduser().resolve()
+        with open(csv_file, "w", encoding="UTF8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Key", "Value"])
+
+            for key, value in self.metadata.dict.items():
+                if isinstance(value, list):
+                    if len(value) > 0:
+                        for v in value:
+                            writer.writerow([key, v])
+                    else:
+                        writer.writerow([key, v])

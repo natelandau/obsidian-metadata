@@ -246,6 +246,35 @@ class Questions:
 
         return True
 
+    def ask_application_main(self) -> str:  # pragma: no cover
+        """Selectable list for the main application interface.
+
+        Args:
+            style (questionary.Style): The style to use for the question.
+
+        Returns:
+            str: The selected application.
+        """
+        return questionary.select(
+            "What do you want to do?",
+            choices=[
+                {"name": "Vault Actions", "value": "vault_actions"},
+                {"name": "Inspect Metadata", "value": "inspect_metadata"},
+                {"name": "Filter Notes in Scope", "value": "filter_notes"},
+                {"name": "Add Metadata", "value": "add_metadata"},
+                {"name": "Rename Metadata", "value": "rename_metadata"},
+                {"name": "Delete Metadata", "value": "delete_metadata"},
+                questionary.Separator("-------------------------------"),
+                {"name": "Review Changes", "value": "review_changes"},
+                {"name": "Commit Changes", "value": "commit_changes"},
+                questionary.Separator("-------------------------------"),
+                {"name": "Quit", "value": "abort"},
+            ],
+            use_shortcuts=False,
+            style=self.style,
+            qmark="INPUT    |",
+        ).ask()
+
     def ask_area(self) -> MetadataType | str:  # pragma: no cover
         """Ask the user for the metadata area to work on.
 
@@ -361,35 +390,6 @@ class Questions:
             qmark="INPUT    |",
         ).ask()
 
-    def ask_application_main(self) -> str:  # pragma: no cover
-        """Selectable list for the main application interface.
-
-        Args:
-            style (questionary.Style): The style to use for the question.
-
-        Returns:
-            str: The selected application.
-        """
-        return questionary.select(
-            "What do you want to do?",
-            choices=[
-                {"name": "Vault Actions", "value": "vault_actions"},
-                {"name": "Inspect Metadata", "value": "inspect_metadata"},
-                {"name": "Filter Notes in Scope", "value": "filter_notes"},
-                {"name": "Add Metadata", "value": "add_metadata"},
-                {"name": "Rename Metadata", "value": "rename_metadata"},
-                {"name": "Delete Metadata", "value": "delete_metadata"},
-                questionary.Separator("-------------------------------"),
-                {"name": "Review Changes", "value": "review_changes"},
-                {"name": "Commit Changes", "value": "commit_changes"},
-                questionary.Separator("-------------------------------"),
-                {"name": "Quit", "value": "abort"},
-            ],
-            use_shortcuts=False,
-            style=self.style,
-            qmark="INPUT    |",
-        ).ask()
-
     def ask_new_key(self, question: str = "New key name") -> str:  # pragma: no cover
         """Ask the user for a new metadata key.
 
@@ -434,6 +434,17 @@ class Questions:
         return questionary.text(
             question, validate=self._validate_number, style=self.style, qmark="INPUT    |"
         ).ask()
+
+    def ask_path(self, question: str = "Enter a path") -> str:  # pragma: no cover
+        """Ask the user for a path.
+
+        Args:
+            question (str, optional): The question to ask. Defaults to "Enter a path".
+
+        Returns:
+            str: A path.
+        """
+        return questionary.path(question, style=self.style, qmark="INPUT    |").ask()
 
     def ask_selection(
         self, choices: list[Any], question: str = "Select an option"

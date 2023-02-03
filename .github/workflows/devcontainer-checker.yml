@@ -8,6 +8,8 @@ on:
         paths:
             - ".devcontainer/**"
             - ".github/workflows/devcontainer-checker.yml"
+        branches:
+            - main
     push:
         paths:
             - ".devcontainer/**"

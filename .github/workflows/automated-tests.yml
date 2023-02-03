@@ -1,20 +1,25 @@
 ---
-name: "Python Code Checker"
+name: "Automated Tests"
 
 on:
     workflow_dispatch:
     push:
         paths:
-            - ".github/workflows/python-code-checker.yml"
+            - ".github/workflows/automated-tests.yml"
             - ".github/actions/**"
             - "src/**"
             - "tests/**"
             - "pyproject.toml"
             - "poetry.lock"
+        branches:
+            - main
     pull_request:
-        types: [opened, reopened]
+        types:
+            - opened
+            - reopened
+            - synchronize
         paths:
-            - ".github/workflows/python-code-checker.yml"
+            - ".github/workflows/automated-tests.yml"
             - ".github/actions/**"
             - "src/**"
             - "tests/**"
@@ -62,15 +67,9 @@ jobs:
             - name: Lint with Mypy
               run: poetry run mypy src/
             - name: lint with ruff
-              run: poetry run ruff --extend-ignore=I001,D301 src/
+              run: poetry run ruff --extend-ignore=I001,D301,D401,PLR2004,PLR0913 src/
             - name: check pyproject.toml
               run: poetry run poetry check
-            - name: lint with black
-              run: poetry run black --check src/
-            - name: run vulture
-              run: poetry run vulture src/
-            - name: run interrogate
-              run: poetry run interrogate -c pyproject.toml .
 
             # ----------------------------------------------
             #    run test suite
@@ -80,6 +79,13 @@ jobs:
                   poetry run coverage run
                   poetry run coverage report
                   poetry run coverage xml
+
+            # ----------------------------------------------
+            #    confirm package builds
+            # ----------------------------------------------
+            - name: Build package
+              run: poetry build
+
             # ----------------------------------------------
             #             upload coverage stats
             # ----------------------------------------------

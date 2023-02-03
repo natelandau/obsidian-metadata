@@ -58,22 +58,35 @@ jobs:
                   echo $TAG
                   echo $PROJECT_VERSION
                   if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
-
-            # ----------------------------------------------
-            # Generate release notes
-            # ----------------------------------------------
-
-            - name: Release Notes
-              run: git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:* %h %s' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+                  echo "current_tag=refs/tags/${TAG}" >> $GITHUB_ENV
 
             # ----------------------------------------------
             # Test and then build the package
             # ----------------------------------------------
+
             - name: run poetry build
               run: |
                   poetry run poetry check
                   poetry run coverage run
                   poetry build
+            # ----------------------------------------------
+            # Generate release notes
+            # ----------------------------------------------
+
+            # - name: Release Notes
+            #   run: git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:* %h %s' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+
+            - name: Export tag name to env variable
+              run: |
+                  TAG=$(git describe HEAD --tags --abbrev=0)
+                   echo "CURRENT_TAG=refs/tags/${TAG}" >> $GITHUB_ENV
+
+            - name: Get notes
+              id: generate_notes
+              uses: anmarkoulis/commitizen-changelog-reader@master
+              with:
+                  tag_name: ${{ env.CURRENT_TAG }}
+                  changelog: CHANGELOG.md
 
             # ----------------------------------------------
             # Build draft release (Note: Will need to manually publish)
@@ -82,7 +95,8 @@ jobs:
             - name: Create Release Draft
               uses: softprops/action-gh-release@v1
               with:
-                  body_path: ".github/RELEASE-TEMPLATE.md"
+                  #   body_path: ".github/RELEASE-TEMPLATE.md"
+                  body: ${{join(fromJson(steps.generate_notes.outputs.notes).notes, '')}}
                   draft: true
                   files: |
                       dist/*-${{env.PROJECT_VERSION}}-py3-none-any.whl

@@ -1,5 +1,6 @@
 """Logging and alerts."""
 import sys
+from enum import Enum
 from pathlib import Path
 from textwrap import wrap
 
@@ -7,6 +8,28 @@ import rich.repr
 import typer
 from loguru import logger
 from rich import print
+
+
+class LogLevel(Enum):
+    """Enum for log levels."""
+
+    TRACE = 5
+    DEBUG = 10
+    INFO = 20
+    SUCCESS = 25
+    WARNING = 30
+    ERROR = 40
+    CRITICAL = 50
+    EXCEPTION = 60
+
+
+class VerboseLevel(Enum):
+    """Enum for verbose levels."""
+
+    WARN = 0
+    INFO = 1
+    DEBUG = 2
+    TRACE = 3
 
 
 def dryrun(msg: str) -> None:
@@ -151,7 +174,7 @@ class LoggerManager:
             print("No log file specified")
             raise typer.Exit(1)
 
-        if self.verbosity >= 3:
+        if self.verbosity >= VerboseLevel.TRACE.value:
             logger.remove()
             logger.add(
                 sys.stderr,
@@ -161,7 +184,7 @@ class LoggerManager:
                 diagnose=True,
             )
             self.log_level = 5
-        elif self.verbosity == 2:
+        elif self.verbosity == VerboseLevel.DEBUG.value:
             logger.remove()
             logger.add(
                 sys.stderr,
@@ -171,7 +194,7 @@ class LoggerManager:
                 diagnose=True,
             )
             self.log_level = 10
-        elif self.verbosity == 1:
+        elif self.verbosity == VerboseLevel.INFO.value:
             logger.remove()
             logger.add(
                 sys.stderr,
@@ -214,7 +237,7 @@ class LoggerManager:
         Returns:
             bool: True if the current log level is TRACE or lower, False otherwise.
         """
-        if self.log_level <= 5:
+        if self.log_level <= LogLevel.TRACE.value:
             if msg:
                 print(msg)
             return True
@@ -229,7 +252,7 @@ class LoggerManager:
         Returns:
             bool: True if the current log level is DEBUG or lower, False otherwise.
         """
-        if self.log_level <= 10:
+        if self.log_level <= LogLevel.DEBUG.value:
             if msg:
                 print(msg)
             return True
@@ -244,7 +267,7 @@ class LoggerManager:
         Returns:
             bool: True if the current log level is INFO or lower, False otherwise.
         """
-        if self.log_level <= 20:
+        if self.log_level <= LogLevel.INFO.value:
             if msg:
                 print(msg)
             return True
@@ -259,7 +282,7 @@ class LoggerManager:
         Returns:
             bool: True if the current log level is default or lower, False otherwise.
         """
-        if self.log_level <= 30:
+        if self.log_level <= LogLevel.WARNING.value:
             if msg:
                 print(msg)
             return True

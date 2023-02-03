@@ -65,7 +65,7 @@ class Note:
         yield "inline_metadata", self.inline_metadata
 
     def _delete_inline_metadata(self, key: str, value: str = None) -> None:
-        """Deletes an inline metadata key/value pair from the text of the note. This method does not remove the key/value from the metadata attribute of the note.
+        """Delete an inline metadata key/value pair from the text of the note. This method does not remove the key/value from the metadata attribute of the note.
 
         Args:
             key (str): Key to delete.
@@ -74,7 +74,7 @@ class Note:
         all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
         stripped_null_values = [tuple(filter(None, x)) for x in all_results]
 
-        for (_k, _v) in stripped_null_values:
+        for _k, _v in stripped_null_values:
             if re.search(key, _k):
                 if value is None:
                     _k = re.escape(_k)
@@ -88,7 +88,7 @@ class Note:
                     self.sub(rf"({_k}::) ?{_v}", r"\1", is_regex=True)
 
     def _rename_inline_metadata(self, key: str, value_1: str, value_2: str = None) -> None:
-        """Replaces the inline metadata in the note with the current inline metadata object.
+        """Replace the inline metadata in the note with the current inline metadata object.
 
         Args:
             key (str): Key to rename.
@@ -99,7 +99,7 @@ class Note:
         all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
         stripped_null_values = [tuple(filter(None, x)) for x in all_results]
 
-        for (_k, _v) in stripped_null_values:
+        for _k, _v in stripped_null_values:
             if re.search(key, _k):
                 if value_2 is None:
                     if re.search(rf"{key}[^\w\d_-]+", _k):
@@ -118,7 +118,7 @@ class Note:
                         self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
 
     def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> bool:
-        """Adds metadata to the note.
+        """Add metadata to the note.
 
         Args:
             area (MetadataType): Area to add metadata to.
@@ -143,7 +143,7 @@ class Note:
         return False
 
     def append(self, string_to_append: str, allow_multiple: bool = False) -> None:
-        """Appends a string to the end of a note.
+        """Append a string to the end of a note.
 
         Args:
             string_to_append (str): String to append to the note.
@@ -156,7 +156,7 @@ class Note:
                 self.file_content += f"\n{string_to_append}"
 
     def commit_changes(self) -> None:
-        """Commits changes to the note to disk."""
+        """Commit changes to the note to disk."""
         # TODO: rewrite frontmatter if it has changed
         pass
 
@@ -198,7 +198,7 @@ class Note:
         return False
 
     def delete_inline_tag(self, tag: str) -> bool:
-        """Deletes an inline tag from the `inline_tags` attribute AND removes the tag from the text of the note if it exists.
+        """Delete an inline tag from the `inline_tags` attribute AND removes the tag from the text of the note if it exists.
 
         Args:
             tag (str): Tag to delete.
@@ -220,7 +220,7 @@ class Note:
         return False
 
     def delete_metadata(self, key: str, value: str = None) -> bool:
-        """Deletes a key or key-value pair from the note's metadata. Regex is supported.
+        """Delete a key or key-value pair from the note's metadata. Regex is supported.
 
         If no value is provided, will delete an entire key.
 
@@ -253,7 +253,7 @@ class Note:
         return False
 
     def has_changes(self) -> bool:
-        """Checks if the note has been updated.
+        """Check if the note has been updated.
 
         Returns:
             bool: Whether the note has been updated.
@@ -273,11 +273,11 @@ class Note:
         return False
 
     def print_note(self) -> None:
-        """Prints the note to the console."""
+        """Print the note to the console."""
         print(self.file_content)
 
     def print_diff(self) -> None:
-        """Prints a diff of the note's original state and it's new state."""
+        """Print a diff of the note's original state and it's new state."""
         a = self.original_file_content.splitlines()
         b = self.file_content.splitlines()
 
@@ -294,7 +294,7 @@ class Note:
         Console().print(table)
 
     def replace_frontmatter(self, sort_keys: bool = False) -> None:
-        """Replaces the frontmatter in the note with the current frontmatter object."""
+        """Replace the frontmatter in the note with the current frontmatter object."""
         try:
             current_frontmatter = PATTERNS.frontmatt_block_with_separators.search(
                 self.file_content
@@ -316,7 +316,7 @@ class Note:
         self.sub(current_frontmatter, new_frontmatter, is_regex=True)
 
     def rename_inline_tag(self, tag_1: str, tag_2: str) -> bool:
-        """Renames an inline tag from the note ONLY if it's not in the metadata as well.
+        """Rename an inline tag from the note ONLY if it's not in the metadata as well.
 
         Args:
             tag_1 (str): Tag to rename.
@@ -336,7 +336,7 @@ class Note:
         return False
 
     def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> bool:
-        """Renames a key or key-value pair in the note's metadata.
+        """Rename a key or key-value pair in the note's metadata.
 
         If no value is provided, will rename an entire key.
 
@@ -383,7 +383,7 @@ class Note:
         self.file_content = re.sub(pattern, replacement, self.file_content, re.MULTILINE)
 
     def write(self, path: Path = None) -> None:
-        """Writes the note's content to disk.
+        """Write the note's content to disk.
 
         Args:
             path (Path): Path to write the note to. Defaults to the note's path.

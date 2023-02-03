@@ -36,7 +36,7 @@ class ConfigQuestions:
 
     @staticmethod
     def _validate_valid_dir(path: str) -> bool | str:
-        """Validates a valid directory.
+        """Validate a valid directory.
 
         Returns:
             bool | str: True if the path is valid, otherwise a string with the error message.
@@ -55,7 +55,6 @@ class Config:
     """Representation of a configuration file."""
 
     def __init__(self, config_path: Path = None, vault_path: Path = None) -> None:
-
         if vault_path is None:
             self.config_path: Path = self._validate_config_path(Path(config_path))
             self.config: dict[str, Any] = self._load_config()

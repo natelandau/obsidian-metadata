@@ -63,7 +63,7 @@ def dict_contains(
 
 
 def dict_values_to_lists_strings(dictionary: dict, strip_null_values: bool = False) -> dict:
-    """Converts all values in a dictionary to lists of strings.
+    """Convert all values in a dictionary to lists of strings.
 
     Args:
         dictionary (dict): Dictionary to convert
@@ -101,7 +101,7 @@ def dict_values_to_lists_strings(dictionary: dict, strip_null_values: bool = Fal
 
 
 def docstring_parameter(*sub: Any) -> Any:
-    """Decorator to replace variables within docstrings.
+    """Replace variables within docstrings.
 
     Args:
         sub (Any): Replacement variables

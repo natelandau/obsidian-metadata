@@ -1,6 +1,5 @@
 """obsidian-metadata CLI."""
 
-
 from pathlib import Path
 from typing import Optional
 
@@ -84,7 +83,7 @@ def main(
         None, "--version", help="Print version and exit", callback=version_callback, is_eager=True
     ),
 ) -> None:
-    r"""A script to make batch updates to metadata in an Obsidian vault. No changes are made to the Vault until they are explicitly committed.
+    r"""Make batch updates to metadata in an Obsidian vault. No changes are made to the Vault until they are explicitly committed.
 
     [bold] [/]
     [bold underline]It is strongly recommended that you back up your vault prior to committing changes.[/] This script makes changes directly to the markdown files in your vault. Once the changes are committed, there is no ability to recreate the original information unless you have a backup.  Follow the instructions in the script to create a backup of your vault if needed.  The author of this script is not responsible for any data loss that may occur. Use at your own risk.

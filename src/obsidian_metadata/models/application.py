@@ -113,7 +113,6 @@ class Application:
         while True:
             match self.questions.ask_selection(choices=choices, question="Select an action"):
                 case "apply_path_filter":
-
                     path = self.questions.ask_filter_path()
                     if path is None or path == "":
                         return

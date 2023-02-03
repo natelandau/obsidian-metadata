@@ -50,7 +50,7 @@ class Questions:
 
     @staticmethod
     def _validate_valid_dir(path: str) -> bool | str:
-        """Validates a valid directory.
+        """Validate a valid directory.
 
         Returns:
             bool | str: True if the path is valid, otherwise a string with the error message.
@@ -86,7 +86,7 @@ class Questions:
         self.key = key
 
     def _validate_existing_inline_tag(self, text: str) -> bool | str:
-        """Validates an existing inline tag.
+        """Validate an existing inline tag.
 
         Returns:
             bool | str: True if the tag is valid, otherwise a string with the error message.
@@ -100,7 +100,7 @@ class Questions:
         return True
 
     def _validate_key_exists(self, text: str) -> bool | str:
-        """Validates a valid key.
+        """Validate a valid key.
 
         Returns:
             bool | str: True if the key is valid, otherwise a string with the error message.
@@ -114,7 +114,7 @@ class Questions:
         return True
 
     def _validate_key_exists_regex(self, text: str) -> bool | str:
-        """Validates a valid key.
+        """Validate a valid key.
 
         Returns:
             bool | str: True if the key is valid, otherwise a string with the error message.
@@ -200,7 +200,7 @@ class Questions:
         return True
 
     def _validate_valid_vault_regex(self, text: str) -> bool | str:
-        """Validates a valid regex.
+        """Validate a valid regex.
 
         Returns:
             bool | str: True if the regex is valid, otherwise a string with the error message.
@@ -262,7 +262,7 @@ class Questions:
         return True
 
     def ask_application_main(self) -> str:  # pragma: no cover
-        """Selectable list for the main application interface.
+        """List for the main application interface.
 
         Args:
             style (questionary.Style): The style to use for the question.

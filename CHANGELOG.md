@@ -2,38 +2,48 @@
 
 ### Feat
 
-- export metadata (#14)
-- **app**: limit scope of notes with one or more filters (#13)
+-   export metadata (#14)
+
+    -   export metadata to CSV
+    -   export metadata to JSON
+    -   export CSV or JSON from command line
+
+-   limit scope of notes with one or more filters (#13)
+
+### Fix
+
+-   do not count in-page links as tags
+-   improve terminal colors of questions
 
 ## v0.3.0 (2023-01-30)
 
 ### Feat
 
-- **application**: add new metadata to frontmatter (#9)
+-   **application**: add new metadata to frontmatter (#9)
 
 ### Fix
 
-- **application**: improve ux (#10)
+-   **application**: improve ux (#10)
 
 ## v0.2.0 (2023-01-25)
 
 ### Feat
 
-- **configuration**: support multiple vaults in the configuration file (#6)
+-   **configuration**: support multiple vaults in the configuration file (#6)
 
 ### Refactor
 
-- **application**: refactor questions to separate class (#7)
+-   **application**: refactor questions to separate class (#7)
 
 ## v0.1.1 (2023-01-23)
 
 ### Fix
 
-- **notes**: diff now prints values in the form `[value]`
-- **application**: exit after committing changes
+-   **notes**: diff now prints values in the form `[value]`
+-   **application**: exit after committing changes
 
 ## v0.1.0 (2023-01-22)
 
 ### Feat
 
-- initial application release
+-   initial application release

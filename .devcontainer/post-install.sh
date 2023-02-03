@@ -54,7 +54,7 @@ _mainScript_() {
     echo ""
     header "Installing shfmt"
     if ! command -v shfmt &>/dev/null; then
-        _execute_ "curl -sS https://webi.sh/shfmt | sh"
+        _execute_ -pv "curl -sS https://webi.sh/shfmt | sh"
     fi
 
     REPOS=(

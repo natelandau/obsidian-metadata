@@ -56,7 +56,7 @@ shared_key1: 'shared_key1_value'
 """
 
 
-def test_top_of_note():
+def test_top_with_header():
     """Test identifying the top of a note."""
     pattern = Patterns()
 
@@ -111,9 +111,9 @@ shared_key1: 'shared_key1_value'
     """
     no_fm_result = '### Header\'s number 3 [📅] "+$2.00" 🤷'
 
-    assert pattern.top_of_note.search(no_fm_or_header).group("top") == ""
-    assert pattern.top_of_note.search(fm_and_header).group("top") == fm_and_header_result
-    assert pattern.top_of_note.search(no_fm).group("top") == no_fm_result
+    assert pattern.top_with_header.search(no_fm_or_header).group("top") == ""
+    assert pattern.top_with_header.search(fm_and_header).group("top") == fm_and_header_result
+    assert pattern.top_with_header.search(no_fm).group("top") == no_fm_result
 
 
 def test_find_inline_tags():

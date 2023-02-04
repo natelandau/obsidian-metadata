@@ -5,7 +5,7 @@ from pathlib import Path
 
 from obsidian_metadata._config import Config
 from obsidian_metadata.models import Vault, VaultFilter
-from obsidian_metadata.models.enums import MetadataType
+from obsidian_metadata.models.enums import InsertLocation, MetadataType
 from tests.helpers import Regex
 
 
@@ -18,6 +18,7 @@ def test_vault_creation(test_vault):
 
     assert vault.name == "vault"
     assert vault.vault_path == vault_path
+    assert vault.insert_location == InsertLocation.BOTTOM
     assert vault.backup_path == Path(f"{vault_path}.bak")
     assert vault.dry_run is False
     assert str(vault.exclude_paths[0]) == Regex(r".*\.git")

@@ -32,7 +32,13 @@ class Patterns:
         re.X | re.MULTILINE,
     )
 
-    top_of_note: Pattern[str] = re.compile(
+    frontmatter_block: Pattern[str] = re.compile(r"^\s*(?P<frontmatter>---.*?---)", flags=re.DOTALL)
+    frontmatt_block_strip_separators: Pattern[str] = re.compile(
+        r"^\s*---(?P<frontmatter>.*?)---", flags=re.DOTALL
+    )
+    # This pattern will return a tuple of 4 values, two will be empty and will need to be stripped before processing further
+
+    top_with_header: Pattern[str] = re.compile(
         r"""^\s*                                        # Start of note
         (?P<top>                                        # Capture the top of the note
             (---.*?---)?                                # Frontmatter, if it exists
@@ -51,12 +57,6 @@ class Patterns:
         """,
         flags=re.DOTALL | re.X,
     )
-
-    frontmatter_block: Pattern[str] = re.compile(r"^\s*(?P<frontmatter>---.*?---)", flags=re.DOTALL)
-    frontmatt_block_strip_separators: Pattern[str] = re.compile(
-        r"^\s*---(?P<frontmatter>.*?)---", flags=re.DOTALL
-    )
-    # This pattern will return a tuple of 4 values, two will be empty and will need to be stripped before processing further
 
     validate_key_text: Pattern[str] = re.compile(r"[^-_\w\d\/\*\u263a-\U0001f999]")
     validate_tag_text: Pattern[str] = re.compile(r"[ \|,;:\*\(\)\[\]\\\.\n#&]")

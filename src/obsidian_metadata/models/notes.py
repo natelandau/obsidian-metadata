@@ -9,14 +9,13 @@ import rich.repr
 import typer
 from rich.console import Console
 from rich.table import Table
-
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata.models import (
     Frontmatter,
     InlineMetadata,
     InlineTags,
-    MetadataLocation,
+    InsertLocation,
     MetadataType,
     Patterns,
 )
@@ -123,14 +122,14 @@ class Note:
         area: MetadataType,
         key: str,
         value: str | list[str] = None,
-        location: MetadataLocation = MetadataLocation.BOTTOM,
+        location: InsertLocation = None,
     ) -> bool:
         """Add metadata to the note if it does not already exist.
 
         Args:
             area (MetadataType): Area to add metadata to.
             key (str): Key to add.
-            location (MetadataLocation, optional): Location to add inline metadata and tags. Defaults to MetadataLocation.BOTTOM.
+            location (InsertLocation, optional): Location to add inline metadata and tags.
             value (str, optional): Value to add.
 
         Returns:
@@ -143,10 +142,7 @@ class Note:
         try:
             if area is MetadataType.INLINE and self.inline_metadata.add(key, value):
                 line = f"{key}:: " if value is None else f"{key}:: {value}"
-                if location == MetadataLocation.TOP:
-                    self.prepend(line)
-                elif location == MetadataLocation.BOTTOM:
-                    self.append(line)
+                self.insert(new_string=line, location=location)
                 return True
 
         except ValueError as e:
@@ -158,18 +154,6 @@ class Note:
             pass
 
         return False
-
-    def append(self, new_string: str, allow_multiple: bool = False) -> None:
-        """Append a string to the end of a note.
-
-        Args:
-            new_string (str): String to append to the note.
-            allow_multiple (bool): Whether to allow appending the string if it already exists in the note.
-        """
-        if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
-            return
-
-        self.file_content += f"\n{new_string}"
 
     def contains_inline_tag(self, tag: str, is_regex: bool = False) -> bool:
         """Check if a note contains the specified inline tag.
@@ -283,29 +267,52 @@ class Note:
 
         return False
 
-    def prepend(self, new_string: str, allow_multiple: bool = False) -> None:
-        """Prepend a string to the beginning of a note.
+    def insert(
+        self,
+        new_string: str,
+        location: InsertLocation,
+        allow_multiple: bool = False,
+    ) -> None:
+        """Insert a string at the top of a note.
 
         Args:
-            new_string (str): String to prepend to the note.
-            allow_multiple (bool): Whether to allow prepending the string if it already exists in the note.
+            new_string (str): String to insert at the top of the note.
+            allow_multiple (bool): Whether to allow inserting the string if it already exists in the note.
+            location (InsertLocation): Location to insert the string.
         """
         if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
             return
 
-        try:
-            current_frontmatter = PATTERNS.frontmatter_block.search(self.file_content).group(
-                "frontmatter"
-            )
-        except AttributeError:
-            current_frontmatter = None
+        match location:  # noqa: E999
+            case InsertLocation.BOTTOM:
+                self.file_content += f"\n{new_string}"
+            case InsertLocation.TOP:
+                try:
+                    top = PATTERNS.frontmatter_block.search(self.file_content).group("frontmatter")
+                except AttributeError:
+                    top = ""
 
-        if current_frontmatter is None:
-            self.file_content = f"{new_string}\n{self.file_content}"
-        else:
-            new_string = f"{current_frontmatter}\n{new_string}"
-            current_frontmatter = re.escape(current_frontmatter)
-            self.sub(current_frontmatter, new_string, is_regex=True)
+                if top == "":
+                    self.file_content = f"{new_string}\n{self.file_content}"
+                else:
+                    new_string = f"{top}\n{new_string}"
+                    top = re.escape(top)
+                    self.sub(top, new_string, is_regex=True)
+            case InsertLocation.AFTER_TITLE:
+                try:
+                    top = PATTERNS.top_with_header.search(self.file_content).group("top")
+                except AttributeError:
+                    top = ""
+
+                if top == "":
+                    self.file_content = f"{new_string}\n{self.file_content}"
+                else:
+                    new_string = f"{top}\n{new_string}"
+                    top = re.escape(top)
+                    self.sub(top, new_string, is_regex=True)
+            case _:
+                raise ValueError(f"Invalid location: {location}")
+        pass
 
     def print_note(self) -> None:
         """Print the note to the console."""

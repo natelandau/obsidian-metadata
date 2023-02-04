@@ -49,6 +49,7 @@ def test_multiple_vaults_okay() -> None:
     assert config.config == {
         "Sample Vault": {
             "exclude_paths": [".git", ".obsidian", "ignore_folder"],
+            "insert_location": "top",
             "path": "tests/fixtures/sample_vault",
         },
         "Test Vault": {
@@ -74,6 +75,7 @@ def test_single_vault() -> None:
         "Test Vault": {
             "exclude_paths": [".git", ".obsidian", "ignore_folder"],
             "path": "tests/fixtures/test_vault",
+            "insert_location": "BOTTOM",
         }
     }
     assert len(config.vaults) == 1
@@ -104,7 +106,14 @@ def test_no_config_no_vault(tmp_path, mocker) -> None:
         path = "{str(fake_vault)}"
 
         # Folders within the vault to ignore when indexing metadata
-        exclude_paths = [".git", ".obsidian"]"""
+        exclude_paths = [".git", ".obsidian"]
+
+        # Location to add metadata. One of:
+        #    TOP:            Directly after frontmatter.
+        #    AFTER_TITLE:    After a header following frontmatter.
+        #    BOTTOM:         The bottom of the note
+        insert_location = "BOTTOM\"
+        """
 
     assert config_file.exists() is True
     assert content == dedent(sample_config)
@@ -114,5 +123,6 @@ def test_no_config_no_vault(tmp_path, mocker) -> None:
         "Vault 1": {
             "path": str(fake_vault),
             "exclude_paths": [".git", ".obsidian"],
+            "insert_location": "BOTTOM",
         }
     }

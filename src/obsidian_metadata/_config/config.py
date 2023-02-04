@@ -18,6 +18,21 @@ class ConfigQuestions:
     """Questions to ask the user when creating a configuration file."""
 
     @staticmethod
+    def _validate_valid_dir(path: str) -> bool | str:
+        """Validate a valid directory.
+
+        Returns:
+            bool | str: True if the path is valid, otherwise a string with the error message.
+        """
+        path_to_validate: Path = Path(path).expanduser().resolve()
+        if not path_to_validate.exists():
+            return f"Path does not exist: {path_to_validate}"
+        if not path_to_validate.is_dir():
+            return f"Path is not a directory: {path_to_validate}"
+
+        return True
+
+    @staticmethod
     def ask_for_vault_path() -> Path:  # pragma: no cover
         """Ask the user for the path to their vault.
 
@@ -33,21 +48,6 @@ class ConfigQuestions:
             raise typer.Exit(code=1)
 
         return Path(vault_path).expanduser().resolve()
-
-    @staticmethod
-    def _validate_valid_dir(path: str) -> bool | str:
-        """Validate a valid directory.
-
-        Returns:
-            bool | str: True if the path is valid, otherwise a string with the error message.
-        """
-        path_to_validate: Path = Path(path).expanduser().resolve()
-        if not path_to_validate.exists():
-            return f"Path does not exist: {path_to_validate}"
-        if not path_to_validate.is_dir():
-            return f"Path is not a directory: {path_to_validate}"
-
-        return True
 
 
 @rich.repr.auto
@@ -65,7 +65,11 @@ class Config:
         else:
             self.config_path = None
             self.config = {
-                "command_line_vault": {"path": vault_path, "exclude_paths": [".git", ".obsidian"]}
+                "command_line_vault": {
+                    "path": vault_path,
+                    "exclude_paths": [".git", ".obsidian"],
+                    "insert_location": "BOTTOM",
+                }
             }
 
         try:
@@ -84,6 +88,15 @@ class Config:
         yield "config_path", self.config_path
         yield "vaults", self.vaults
 
+    def _load_config(self) -> dict[str, Any]:
+        """Load the configuration file."""
+        try:
+            with open(self.config_path, encoding="utf-8") as fp:
+                return tomlkit.load(fp)
+        except tomlkit.exceptions.TOMLKitError as e:
+            alerts.error(f"Could not parse '{self.config_path}'")
+            raise typer.Exit(code=1) from e
+
     def _validate_config_path(self, config_path: Path | None) -> Path:
         """Load the configuration path."""
         if config_path is None:
@@ -94,15 +107,6 @@ class Config:
             alerts.info(f"Created default configuration file at '{config_path}'")
 
         return config_path.expanduser().resolve()
-
-    def _load_config(self) -> dict[str, Any]:
-        """Load the configuration file."""
-        try:
-            with open(self.config_path, encoding="utf-8") as fp:
-                return tomlkit.load(fp)
-        except tomlkit.exceptions.TOMLKitError as e:
-            alerts.error(f"Could not parse '{self.config_path}'")
-            raise typer.Exit(code=1) from e
 
     def _write_default_config(self, path_to_config: Path) -> None:
         """Write the default configuration file when no config file is found."""
@@ -116,7 +120,14 @@ class Config:
             path = "{vault_path}"
 
             # Folders within the vault to ignore when indexing metadata
-            exclude_paths = [".git", ".obsidian"]"""
+            exclude_paths = [".git", ".obsidian"]
+
+            # Location to add metadata. One of:
+            #    TOP:            Directly after frontmatter.
+            #    AFTER_TITLE:    After a header following frontmatter.
+            #    BOTTOM:         The bottom of the note
+            insert_location = "BOTTOM"
+        """
 
         path_to_config.write_text(dedent(config_text))
 
@@ -140,7 +151,12 @@ class VaultConfig:
         try:
             self.exclude_paths = self.config["exclude_paths"]
         except KeyError:
-            self.exclude_paths = []
+            self.exclude_paths = [".git", ".obsidian"]
+
+        try:
+            self.insert_location = self.config["insert_location"]
+        except KeyError:
+            self.insert_location = "BOTTOM"
 
     def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover
         """Define rich representation of a vault config."""

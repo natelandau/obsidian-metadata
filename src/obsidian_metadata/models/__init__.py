@@ -1,6 +1,6 @@
 """Shared models."""
 from obsidian_metadata.models.enums import (
-    MetadataLocation,
+    InsertLocation,
     MetadataType,
 )
 
@@ -21,8 +21,8 @@ __all__ = [
     "Frontmatter",
     "InlineMetadata",
     "InlineTags",
+    "InsertLocation",
     "LoggerManager",
-    "MetadataLocation",
     "MetadataType",
     "Note",
     "Patterns",

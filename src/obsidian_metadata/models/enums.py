@@ -13,8 +13,15 @@ class MetadataType(Enum):
     ALL = "All Metadata"
 
 
-class MetadataLocation(Enum):
-    """Enum class for the location of metadata."""
+class InsertLocation(Enum):
+    """Location to add metadata to notes.
+
+    TOP:            Directly after frontmatter.
+    AFTER_TITLE:    After a header following frontmatter.
+    BOTTOM:         The bottom of the note
+
+    """
 
     TOP = "Top"
+    AFTER_TITLE = "Header"
     BOTTOM = "Bottom"

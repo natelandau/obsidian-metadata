@@ -32,6 +32,19 @@ class Application:
         self.questions = Questions()
         self.filters: list[VaultFilter] = []
 
+    def _load_vault(self) -> None:
+        """Load the vault."""
+
+        if len(self.filters) == 0:
+            self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run)
+        else:
+            self.vault = Vault(config=self.config, dry_run=self.dry_run, filters=self.filters)
+
+        alerts.success(
+            f"Loaded {len(self.vault.notes_in_scope)} notes from {len(self.vault.all_notes)} total notes"
+        )
+        self.questions = Questions(vault=self.vault)
+
     def application_main(self) -> None:
         """Questions for the main application."""
         self._load_vault()
@@ -427,19 +440,6 @@ class Application:
         )
 
         return
-
-    def _load_vault(self) -> None:
-        """Load the vault."""
-
-        if len(self.filters) == 0:
-            self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run)
-        else:
-            self.vault = Vault(config=self.config, dry_run=self.dry_run, filters=self.filters)
-
-        alerts.success(
-            f"Loaded {len(self.vault.notes_in_scope)} notes from {len(self.vault.all_notes)} total notes"
-        )
-        self.questions = Questions(vault=self.vault)
 
     def noninteractive_export_csv(self, path: Path) -> None:
         """Export the vault metadata to CSV."""

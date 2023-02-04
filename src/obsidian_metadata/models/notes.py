@@ -159,18 +159,17 @@ class Note:
 
         return False
 
-    def append(self, string_to_append: str, allow_multiple: bool = False) -> None:
+    def append(self, new_string: str, allow_multiple: bool = False) -> None:
         """Append a string to the end of a note.
 
         Args:
-            string_to_append (str): String to append to the note.
+            new_string (str): String to append to the note.
             allow_multiple (bool): Whether to allow appending the string if it already exists in the note.
         """
-        if allow_multiple:
-            self.file_content += f"\n{string_to_append}"
-        else:
-            if len(re.findall(re.escape(string_to_append), self.file_content)) == 0:
-                self.file_content += f"\n{string_to_append}"
+        if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
+            return
+
+        self.file_content += f"\n{new_string}"
 
     def contains_inline_tag(self, tag: str, is_regex: bool = False) -> bool:
         """Check if a note contains the specified inline tag.
@@ -284,18 +283,29 @@ class Note:
 
         return False
 
-    def prepend(self, string_to_prepend: str, allow_multiple: bool = False) -> None:
+    def prepend(self, new_string: str, allow_multiple: bool = False) -> None:
         """Prepend a string to the beginning of a note.
 
         Args:
-            string_to_prepend (str): String to prepend to the note.
+            new_string (str): String to prepend to the note.
             allow_multiple (bool): Whether to allow prepending the string if it already exists in the note.
         """
-        if allow_multiple:
-            self.file_content = f"{string_to_prepend}\n{self.file_content}"
+        if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
+            return
+
+        try:
+            current_frontmatter = PATTERNS.frontmatt_block_with_separators.search(
+                self.file_content
+            ).group("frontmatter")
+        except AttributeError:
+            current_frontmatter = None
+
+        if current_frontmatter is None:
+            self.file_content = f"{new_string}\n{self.file_content}"
         else:
-            if len(re.findall(re.escape(string_to_prepend), self.file_content)) == 0:
-                self.file_content = f"{string_to_prepend}\n{self.file_content}"
+            new_string = f"{current_frontmatter}\n{new_string}"
+            current_frontmatter = re.escape(current_frontmatter)
+            self.sub(current_frontmatter, new_string, is_regex=True)
 
     def print_note(self) -> None:
         """Print the note to the console."""

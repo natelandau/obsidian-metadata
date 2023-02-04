@@ -92,13 +92,13 @@ Lorem ipsum dolor sit amet.
 This is a test string.
 This is a test string.
     """
-    note.append(string_to_append=string)
+    note.append(new_string=string)
     assert note.file_content == correct_content.strip()
 
-    note.append(string_to_append=string)
+    note.append(new_string=string)
     assert note.file_content == correct_content.strip()
 
-    note.append(string_to_append=string, allow_multiple=True)
+    note.append(new_string=string, allow_multiple=True)
     assert note.file_content == correct_content2.strip()
 
 
@@ -294,13 +294,13 @@ def test_prepend(short_note) -> None:
 
     string = "This is a test string."
 
-    note.prepend(string_to_prepend=string)
+    note.prepend(new_string=string)
     assert note.file_content == "This is a test string.\nLorem ipsum dolor sit amet.\n"
 
-    note.prepend(string_to_prepend=string)
+    note.prepend(new_string=string)
     assert note.file_content == "This is a test string.\nLorem ipsum dolor sit amet.\n"
 
-    note.prepend(string_to_prepend=string, allow_multiple=True)
+    note.prepend(new_string=string, allow_multiple=True)
     assert (
         note.file_content
         == "This is a test string.\nThis is a test string.\nLorem ipsum dolor sit amet.\n"

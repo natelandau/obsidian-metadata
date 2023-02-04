@@ -91,140 +91,6 @@ def test_vault_creation(test_vault):
     }
 
 
-def test_get_filtered_notes(sample_vault) -> None:
-    """Test filtering notes."""
-    vault_path = sample_vault
-    config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-
-    filters = [VaultFilter(path_filter="front")]
-    vault = Vault(config=vault_config, filters=filters)
-    assert len(vault.all_notes) == 13
-    assert len(vault.notes_in_scope) == 4
-
-    filters = [VaultFilter(path_filter="mixed")]
-    vault = Vault(config=vault_config, filters=filters)
-    assert len(vault.all_notes) == 13
-    assert len(vault.notes_in_scope) == 1
-
-    filters = [VaultFilter(key_filter="on_one_note")]
-    vault = Vault(config=vault_config, filters=filters)
-    assert len(vault.all_notes) == 13
-    assert len(vault.notes_in_scope) == 1
-
-    filters = [VaultFilter(key_filter="type", value_filter="book")]
-    vault = Vault(config=vault_config, filters=filters)
-    assert len(vault.all_notes) == 13
-    assert len(vault.notes_in_scope) == 10
-
-    filters = [VaultFilter(tag_filter="brunch")]
-    vault = Vault(config=vault_config, filters=filters)
-    assert len(vault.all_notes) == 13
-    assert len(vault.notes_in_scope) == 1
-
-    filters = [VaultFilter(tag_filter="brunch"), VaultFilter(path_filter="inbox")]
-    vault = Vault(config=vault_config, filters=filters)
-    assert len(vault.all_notes) == 13
-    assert len(vault.notes_in_scope) == 0
-
-
-def test_backup(test_vault, capsys):
-    """Test backing up the vault."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
-
-    vault.backup()
-
-    captured = capsys.readouterr()
-    assert Path(f"{vault_path}.bak").exists() is True
-    assert captured.out == Regex(r"SUCCESS +| backed up to")
-
-    vault.info()
-
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Backup path +\│[\s ]+/[\d\w]+")
-
-
-def test_backup_dryrun(test_vault, capsys):
-    """Test backing up the vault."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config, dry_run=True)
-
-    print(f"vault.dry_run: {vault.dry_run}")
-    vault.backup()
-
-    captured = capsys.readouterr()
-    assert vault.backup_path.exists() is False
-    assert captured.out == Regex(r"DRYRUN +| Backup up vault to")
-
-
-def test_delete_backup(test_vault, capsys):
-    """Test deleting the vault backup."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
-
-    vault.backup()
-    vault.delete_backup()
-
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Backup deleted")
-    assert vault.backup_path.exists() is False
-
-    vault.info()
-
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Backup +\│ None")
-
-
-def test_delete_backup_dryrun(test_vault, capsys):
-    """Test deleting the vault backup."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config, dry_run=True)
-
-    Path.mkdir(vault.backup_path)
-    vault.delete_backup()
-
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"DRYRUN +| Delete backup")
-    assert vault.backup_path.exists() is True
-
-
-def test_info(test_vault, capsys):
-    """Test printing vault information."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
-
-    vault.info()
-
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Vault +\│ /[\d\w]+")
-    assert captured.out == Regex(r"Notes in scope +\│ \d+")
-    assert captured.out == Regex(r"Backup +\│ None")
-
-
-def test_list_editable_notes(test_vault, capsys) -> None:
-    """Test listing editable notes."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
-
-    vault.list_editable_notes()
-    captured = capsys.readouterr()
-    assert captured.out == Regex("Notes in current scope")
-    assert captured.out == Regex(r"\d +test1\.md")
-
-
 def test_add_metadata(test_vault) -> None:
     """Test adding metadata to the vault."""
     vault_path = test_vault
@@ -328,6 +194,103 @@ def test_add_metadata(test_vault) -> None:
     }
 
 
+def test_backup(test_vault, capsys):
+    """Test backing up the vault."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+
+    vault.backup()
+
+    captured = capsys.readouterr()
+    assert Path(f"{vault_path}.bak").exists() is True
+    assert captured.out == Regex(r"SUCCESS +| backed up to")
+
+    vault.info()
+
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"Backup path +\│[\s ]+/[\d\w]+")
+
+
+def test_commit(test_vault, tmp_path):
+    """Test committing changes to content in the vault."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+    content = Path(f"{tmp_path}/vault/test1.md").read_text()
+    assert "new_key: new_key_value" not in content
+
+    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
+    vault.commit_changes()
+    assert "new_key: new_key_value" not in content
+
+
+def test_commit_dry_run(test_vault, tmp_path):
+    """Test committing changes to content in the vault in dry run mode."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config, dry_run=True)
+    content = Path(f"{tmp_path}/vault/test1.md").read_text()
+    assert "new_key: new_key_value" not in content
+
+    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
+    vault.commit_changes()
+    assert "new_key: new_key_value" not in content
+
+
+def test_backup_dryrun(test_vault, capsys):
+    """Test backing up the vault."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config, dry_run=True)
+
+    print(f"vault.dry_run: {vault.dry_run}")
+    vault.backup()
+
+    captured = capsys.readouterr()
+    assert vault.backup_path.exists() is False
+    assert captured.out == Regex(r"DRYRUN +| Backup up vault to")
+
+
+def test_delete_backup(test_vault, capsys):
+    """Test deleting the vault backup."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+
+    vault.backup()
+    vault.delete_backup()
+
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"Backup deleted")
+    assert vault.backup_path.exists() is False
+
+    vault.info()
+
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"Backup +\│ None")
+
+
+def test_delete_backup_dryrun(test_vault, capsys):
+    """Test deleting the vault backup."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config, dry_run=True)
+
+    Path.mkdir(vault.backup_path)
+    vault.delete_backup()
+
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"DRYRUN +| Delete backup")
+    assert vault.backup_path.exists() is True
+
+
 def test_delete_inline_tag(test_vault) -> None:
     """Test deleting an inline tag."""
     vault_path = test_vault
@@ -363,6 +326,97 @@ def test_delete_metadata(test_vault) -> None:
 
     assert vault.delete_metadata("top_key2") == 2
     assert "top_key2" not in vault.metadata.dict
+
+
+def test_export_csv(tmp_path, test_vault):
+    """Test exporting the vault to a CSV file."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+    export_file = Path(f"{tmp_path}/export.csv")
+
+    vault.export_metadata(path=export_file, format="csv")
+    assert export_file.exists() is True
+    assert "frontmatter,date_created,2022-12-22" in export_file.read_text()
+
+
+def test_export_json(tmp_path, test_vault):
+    """Test exporting the vault to a CSV file."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+    export_file = Path(f"{tmp_path}/export.json")
+
+    vault.export_metadata(path=export_file, format="json")
+    assert export_file.exists() is True
+    assert '"frontmatter": {' in export_file.read_text()
+
+
+def test_get_filtered_notes(sample_vault) -> None:
+    """Test filtering notes."""
+    vault_path = sample_vault
+    config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+
+    filters = [VaultFilter(path_filter="front")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 4
+
+    filters = [VaultFilter(path_filter="mixed")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 1
+
+    filters = [VaultFilter(key_filter="on_one_note")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 1
+
+    filters = [VaultFilter(key_filter="type", value_filter="book")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 10
+
+    filters = [VaultFilter(tag_filter="brunch")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 1
+
+    filters = [VaultFilter(tag_filter="brunch"), VaultFilter(path_filter="inbox")]
+    vault = Vault(config=vault_config, filters=filters)
+    assert len(vault.all_notes) == 13
+    assert len(vault.notes_in_scope) == 0
+
+
+def test_info(test_vault, capsys):
+    """Test printing vault information."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+
+    vault.info()
+
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"Vault +\│ /[\d\w]+")
+    assert captured.out == Regex(r"Notes in scope +\│ \d+")
+    assert captured.out == Regex(r"Backup +\│ None")
+
+
+def test_list_editable_notes(test_vault, capsys) -> None:
+    """Test listing editable notes."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+
+    vault.list_editable_notes()
+    captured = capsys.readouterr()
+    assert captured.out == Regex("Notes in current scope")
+    assert captured.out == Regex(r"\d +test1\.md")
 
 
 def test_rename_inline_tag(test_vault) -> None:

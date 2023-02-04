@@ -83,42 +83,21 @@ class Application:
 
         area = self.questions.ask_area()
         match area:
-            case MetadataType.FRONTMATTER:
+            case MetadataType.FRONTMATTER | MetadataType.INLINE:
                 key = self.questions.ask_new_key(question="Enter the key for the new metadata")
-                if key is None:
+                if key is None:  # pragma: no cover
                     return
 
                 value = self.questions.ask_new_value(
                     question="Enter the value for the new metadata"
                 )
-                if value is None:
+                if value is None:  # pragma: no cover
                     return
 
-                num_changed = self.vault.add_metadata(area, key, value)
-                if num_changed == 0:
-                    alerts.warning(f"No notes were changed")
-                    return
-
-                alerts.success(f"Added metadata to {num_changed} notes")
-
-            case MetadataType.INLINE:
-                key = self.questions.ask_new_key(question="Enter the key for the new metadata")
-                if key is None:
-                    return
-                value = self.questions.ask_new_value(
-                    question="Enter the value for the new metadata"
+                num_changed = self.vault.add_metadata(
+                    area=area, key=key, value=value, location=self.vault.insert_location
                 )
-                if value is None:
-                    return
-                location = self.questions.ask_metadata_location(
-                    question="Select a location within the note to add the metadata"
-                )
-                if location is None:
-                    return
-
-                num_changed = self.vault.add_metadata(area, key, value, location)
-
-                if num_changed == 0:
+                if num_changed == 0:  # pragma: no cover
                     alerts.warning(f"No notes were changed")
                     return
 
@@ -126,7 +105,7 @@ class Application:
 
             case MetadataType.TAGS:
                 alerts.warning(f"Adding metadata to {area} is not supported yet")
-            case _:
+            case _:  # pragma: no cover
                 return
 
     def application_filter(self) -> None:
@@ -146,7 +125,7 @@ class Application:
             match self.questions.ask_selection(choices=choices, question="Select an action"):
                 case "apply_path_filter":
                     path = self.questions.ask_filter_path()
-                    if path is None or path == "":
+                    if path is None or path == "":  # pragma: no cover
                         return
 
                     self.filters.append(VaultFilter(path_filter=path))
@@ -154,14 +133,14 @@ class Application:
 
                 case "apply_metadata_filter":
                     key = self.questions.ask_existing_key()
-                    if key is None:
+                    if key is None:  # pragma: no cover
                         return
 
                     questions2 = Questions(vault=self.vault, key=key)
                     value = questions2.ask_existing_value(
                         question="Enter the value for the metadata filter",
                     )
-                    if value is None:
+                    if value is None:  # pragma: no cover
                         return
                     if value == "":
                         self.filters.append(VaultFilter(key_filter=key))
@@ -334,7 +313,7 @@ class Application:
                 self.delete_value()
             case "delete_inline_tag":
                 self.delete_inline_tag()
-            case _:
+            case _:  # pragma: no cover
                 return
 
     def application_rename_metadata(self) -> None:
@@ -357,7 +336,7 @@ class Application:
                 self.rename_value()
             case "rename_inline_tag":
                 self.rename_inline_tag()
-            case _:
+            case _:  # pragma: no cover
                 return
 
     def commit_changes(self) -> bool:
@@ -405,7 +384,7 @@ class Application:
         key_to_delete = self.questions.ask_existing_keys_regex(
             question="Regex for the key(s) you'd like to delete?"
         )
-        if key_to_delete is None:
+        if key_to_delete is None:  # pragma: no cover
             return
 
         num_changed = self.vault.delete_metadata(key_to_delete)
@@ -422,12 +401,12 @@ class Application:
     def delete_value(self) -> None:
         """Delete a value from the vault."""
         key = self.questions.ask_existing_key(question="Which key contains the value to delete?")
-        if key is None:
+        if key is None:  # pragma: no cover
             return
 
         questions2 = Questions(vault=self.vault, key=key)
         value = questions2.ask_existing_value_regex(question="Regex for the value to delete")
-        if value is None:
+        if value is None:  # pragma: no cover
             return
 
         num_changed = self.vault.delete_metadata(key, value)
@@ -459,11 +438,11 @@ class Application:
         original_key = self.questions.ask_existing_key(
             question="Which key would you like to rename?"
         )
-        if original_key is None:
+        if original_key is None:  # pragma: no cover
             return
 
         new_key = self.questions.ask_new_key()
-        if new_key is None:
+        if new_key is None:  # pragma: no cover
             return
 
         num_changed = self.vault.rename_metadata(original_key, new_key)
@@ -479,11 +458,11 @@ class Application:
         """Rename an inline tag."""
 
         original_tag = self.questions.ask_existing_inline_tag(question="Which tag to rename?")
-        if original_tag is None:
+        if original_tag is None:  # pragma: no cover
             return
 
         new_tag = self.questions.ask_new_tag("New tag")
-        if new_tag is None:
+        if new_tag is None:  # pragma: no cover
             return
 
         num_changed = self.vault.rename_inline_tag(original_tag, new_tag)
@@ -499,16 +478,16 @@ class Application:
     def rename_value(self) -> None:
         """Rename a value in the vault."""
         key = self.questions.ask_existing_key(question="Which key contains the value to rename?")
-        if key is None:
+        if key is None:  # pragma: no cover
             return
 
         question_key = Questions(vault=self.vault, key=key)
         value = question_key.ask_existing_value(question="Which value would you like to rename?")
-        if value is None:
+        if value is None:  # pragma: no cover
             return
 
         new_value = question_key.ask_new_value()
-        if new_value is None:
+        if new_value is None:  # pragma: no cover
             return
 
         num_changes = self.vault.rename_metadata(key, value, new_value)
@@ -530,7 +509,7 @@ class Application:
         answer = self.questions.ask_confirm(
             question="View diffs of individual files?", default=False
         )
-        if not answer:
+        if not answer:  # pragma: no cover
             return
 
         choices: list[dict[str, Any] | questionary.Separator] = [questionary.Separator()]

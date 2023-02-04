@@ -40,16 +40,22 @@ def sample_note(tmp_path) -> Path:
 @pytest.fixture()
 def short_note(tmp_path) -> Path:
     """Fixture which creates a temporary short note file."""
-    source_file: Path = Path("tests/fixtures/short_textfile.md")
-    if not source_file.exists():
-        raise FileNotFoundError(f"Original file not found: {source_file}")
+    source_file1: Path = Path("tests/fixtures/short_textfile.md")
+    source_file2: Path = Path("tests/fixtures/no_metadata.md")
+    if not source_file1.exists():
+        raise FileNotFoundError(f"Original file not found: {source_file1}")
+    if not source_file2.exists():
+        raise FileNotFoundError(f"Original file not found: {source_file2}")
 
-    dest_file: Path = Path(tmp_path / source_file.name)
-    shutil.copy(source_file, dest_file)
-    yield dest_file
+    dest_file1: Path = Path(tmp_path / source_file1.name)
+    dest_file2: Path = Path(tmp_path / source_file2.name)
+    shutil.copy(source_file1, dest_file1)
+    shutil.copy(source_file2, dest_file2)
+    yield dest_file1, dest_file2
 
     # after test - remove fixtures
-    dest_file.unlink()
+    dest_file1.unlink()
+    dest_file2.unlink()
 
 
 @pytest.fixture()

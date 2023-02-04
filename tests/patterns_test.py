@@ -56,6 +56,66 @@ shared_key1: 'shared_key1_value'
 """
 
 
+def test_top_of_note():
+    """Test identifying the top of a note."""
+    pattern = Patterns()
+
+    no_fm_or_header = """
+
+
+Lorem ipsum dolor sit amet.
+
+# header 1
+---
+horizontal: rule
+---
+Lorem ipsum dolor sit amet.
+"""
+    fm_and_header: str = """
+---
+tags:
+  - tag_1
+  - tag_2
+  -
+  - 📅/tag_3
+frontmatter_Key1: "frontmatter_Key1_value"
+frontmatter_Key2: ["note", "article"]
+shared_key1: 'shared_key1_value'
+---
+
+# Header 1
+more content
+
+---
+horizontal: rule
+---
+"""
+    fm_and_header_result = """---
+tags:
+  - tag_1
+  - tag_2
+  -
+  - 📅/tag_3
+frontmatter_Key1: "frontmatter_Key1_value"
+frontmatter_Key2: ["note", "article"]
+shared_key1: 'shared_key1_value'
+---
+
+# Header 1"""
+    no_fm = """
+
+    ### Header's number 3 [📅] "+$2.00" 🤷
+    ---
+    horizontal: rule
+    ---
+    """
+    no_fm_result = '### Header\'s number 3 [📅] "+$2.00" 🤷'
+
+    assert pattern.top_of_note.search(no_fm_or_header).group("top") == ""
+    assert pattern.top_of_note.search(fm_and_header).group("top") == fm_and_header_result
+    assert pattern.top_of_note.search(no_fm).group("top") == no_fm_result
+
+
 def test_find_inline_tags():
     """Test find_inline_tags regex."""
     pattern = Patterns()
@@ -124,4 +184,5 @@ def test_validators():
     pattern = Patterns()
 
     assert pattern.validate_tag_text.search("test_tag") is None
+    assert pattern.validate_tag_text.search("#asdf").group(0) == "#"
     assert pattern.validate_tag_text.search("#asdf").group(0) == "#"

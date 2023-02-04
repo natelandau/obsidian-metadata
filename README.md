@@ -63,7 +63,7 @@ Once installed, run `obsidian-metadata` in your terminal to enter an interactive
 **Add Metadata**: Add new metadata to your vault.
 
 -   Add metadata to the frontmatter
--   Add to inline metadata (Not yet implemented)
+-   Add to inline metadata - Set `insert_location` in the config to control where the new metadata is inserted. (Default: Bottom)
 -   Add to inline tag (Not yet implemented)
 
 **Rename Metadata**: Rename either a key and all associated values, a specific value within a key. or an in-text tag.
@@ -103,9 +103,16 @@ Below is an example with two vaults.
     # Folders within the vault to ignore when indexing metadata
     exclude_paths = [".git", ".obsidian"]
 
+    # Location to add metadata. One of:
+    #    TOP:            Directly after frontmatter.
+    #    AFTER_TITLE:    After a header following frontmatter.
+    #    BOTTOM:         The bottom of the note
+    insert_location = "BOTTOM"
+
 ["Vault Two"]
     path = "/path/to/second_vault"
-    exclude_paths = [".git", ".obsidian"]
+    exclude_paths = [".git", ".obsidian", "daily_notes"]
+    insert_location = "AFTER_TITLE"
 ```
 
 To bypass the configuration file and specify a vault to use at runtime use the `--vault-path` option.

@@ -1,5 +1,9 @@
 """Shared models."""
-from obsidian_metadata.models.enums import MetadataType  # isort: skip
+from obsidian_metadata.models.enums import (
+    MetadataLocation,
+    MetadataType,
+)
+
 from obsidian_metadata.models.patterns import Patterns  # isort: skip
 from obsidian_metadata.models.metadata import (
     Frontmatter,
@@ -18,10 +22,11 @@ __all__ = [
     "InlineMetadata",
     "InlineTags",
     "LoggerManager",
+    "MetadataLocation",
     "MetadataType",
     "Note",
     "Patterns",
     "Vault",
-    "VaultMetadata",
     "VaultFilter",
+    "VaultMetadata",
 ]

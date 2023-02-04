@@ -16,7 +16,7 @@ from rich.table import Table
 from obsidian_metadata._config import VaultConfig
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
-from obsidian_metadata.models import MetadataType, Note, VaultMetadata
+from obsidian_metadata.models import MetadataType, MetadataLocation, Note, VaultMetadata
 
 
 @dataclass
@@ -145,8 +145,14 @@ class Vault:
                     metadata=_note.inline_tags.list,
                 )
 
-    def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> int:
-        """Add metadata to all notes in the vault.
+    def add_metadata(
+        self,
+        area: MetadataType,
+        key: str,
+        value: str | list[str] = None,
+        location: MetadataLocation = MetadataLocation.BOTTOM,
+    ) -> int:
+        """Add metadata to all notes in the vault which do not already contain it.
 
         Args:
             area (MetadataType): Area of metadata to add to.
@@ -159,7 +165,7 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.add_metadata(area, key, value):
+            if _note.add_metadata(area, key, value, location):
                 num_changed += 1
 
         if num_changed > 0:

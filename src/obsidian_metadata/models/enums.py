@@ -11,3 +11,10 @@ class MetadataType(Enum):
     TAGS = "Inline Tags"
     KEYS = "Metadata Keys Only"
     ALL = "All Metadata"
+
+
+class MetadataLocation(Enum):
+    """Enum class for the location of metadata."""
+
+    TOP = "Top"
+    BOTTOM = "Bottom"

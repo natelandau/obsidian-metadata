@@ -89,11 +89,30 @@ class Application:
                 alerts.success(f"Added metadata to {num_changed} notes")
 
             case MetadataType.INLINE:
-                alerts.warning(f"Adding metadata to {area} is not supported yet")
+                key = self.questions.ask_new_key(question="Enter the key for the new metadata")
+                if key is None:
+                    return
+                value = self.questions.ask_new_value(
+                    question="Enter the value for the new metadata"
+                )
+                if value is None:
+                    return
+                location = self.questions.ask_metadata_location(
+                    question="Select a location within the note to add the metadata"
+                )
+                if location is None:
+                    return
+
+                num_changed = self.vault.add_metadata(area, key, value, location)
+
+                if num_changed == 0:
+                    alerts.warning(f"No notes were changed")
+                    return
+
+                alerts.success(f"Added metadata to {num_changed} notes")
 
             case MetadataType.TAGS:
                 alerts.warning(f"Adding metadata to {area} is not supported yet")
-
             case _:
                 return
 

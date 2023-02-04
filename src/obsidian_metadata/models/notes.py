@@ -294,9 +294,9 @@ class Note:
             return
 
         try:
-            current_frontmatter = PATTERNS.frontmatt_block_with_separators.search(
-                self.file_content
-            ).group("frontmatter")
+            current_frontmatter = PATTERNS.frontmatter_block.search(self.file_content).group(
+                "frontmatter"
+            )
         except AttributeError:
             current_frontmatter = None
 
@@ -398,9 +398,9 @@ class Note:
     def update_frontmatter(self, sort_keys: bool = False) -> None:
         """Replace the frontmatter in the note with the current frontmatter object."""
         try:
-            current_frontmatter = PATTERNS.frontmatt_block_with_separators.search(
-                self.file_content
-            ).group("frontmatter")
+            current_frontmatter = PATTERNS.frontmatter_block.search(self.file_content).group(
+                "frontmatter"
+            )
         except AttributeError:
             current_frontmatter = None
 

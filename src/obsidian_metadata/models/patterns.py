@@ -32,10 +32,8 @@ class Patterns:
         re.X | re.MULTILINE,
     )
 
-    frontmatt_block_with_separators: Pattern[str] = re.compile(
-        r"^\s*(?P<frontmatter>---.*?---)", flags=re.DOTALL
-    )
-    frontmatt_block_no_separators: Pattern[str] = re.compile(
+    frontmatter_block: Pattern[str] = re.compile(r"^\s*(?P<frontmatter>---.*?---)", flags=re.DOTALL)
+    frontmatt_block_strip_separators: Pattern[str] = re.compile(
         r"^\s*---(?P<frontmatter>.*?)---", flags=re.DOTALL
     )
     # This pattern will return a tuple of 4 values, two will be empty and will need to be stripped before processing further

@@ -236,7 +236,7 @@ class Frontmatter:
             dict: Metadata from the note.
         """
         try:
-            frontmatter_block: str = PATTERNS.frontmatt_block_no_separators.search(
+            frontmatter_block: str = PATTERNS.frontmatt_block_strip_separators.search(
                 file_content
             ).group("frontmatter")
         except AttributeError:

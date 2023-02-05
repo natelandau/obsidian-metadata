@@ -3,14 +3,17 @@ name: "Dev Container Checker"
 
 on:
     workflow_dispatch:
-    pull_request:
-        types: [opened, reopened]
+    push:
         paths:
             - ".devcontainer/**"
             - ".github/workflows/devcontainer-checker.yml"
         branches:
             - main
-    push:
+    pull_request:
+        types:
+            - opened
+            - reopened
+            - synchronize
         paths:
             - ".devcontainer/**"
             - ".github/workflows/devcontainer-checker.yml"

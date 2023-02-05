@@ -2,11 +2,14 @@
 name: Commit Linter
 
 on:
-    pull_request:
-        types: [opened, reopened]
     push:
         branches:
             - main
+    pull_request:
+        types:
+            - opened
+            - reopened
+            - synchronize
 
 permissions: # added using https://github.com/step-security/secure-workflows
     contents: read

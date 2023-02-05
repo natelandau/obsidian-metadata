@@ -4,7 +4,7 @@
 import difflib
 import re
 from pathlib import Path
-
+import copy
 import rich.repr
 import typer
 from rich.console import Console
@@ -238,7 +238,9 @@ class Note:
 
         return False
 
-    def delete_metadata(self, key: str, value: str = None) -> bool:
+    def delete_metadata(
+        self, key: str, value: str = None, area: MetadataType = MetadataType.ALL
+    ) -> bool:
         """Delete a key or key-value pair from the note's metadata. Regex is supported.
 
         If no value is provided, will delete an entire key.
@@ -246,6 +248,7 @@ class Note:
         Args:
             key (str): Key to delete.
             value (str, optional): Value to delete.
+            area (MetadataType, optional): Area to delete metadata from. Defaults to MetadataType.ALL.
 
         Returns:
             bool: Whether the key or key-value pair was deleted.
@@ -253,17 +256,25 @@ class Note:
         changed_value: bool = False
 
         if value is None:
-            if self.frontmatter.delete(key):
+            if (
+                area == MetadataType.FRONTMATTER or area == MetadataType.ALL
+            ) and self.frontmatter.delete(key):
                 self.update_frontmatter()
                 changed_value = True
-            if self.inline_metadata.delete(key):
+            if (
+                area == MetadataType.INLINE or area == MetadataType.ALL
+            ) and self.inline_metadata.delete(key):
                 self._delete_inline_metadata(key, value)
                 changed_value = True
         else:
-            if self.frontmatter.delete(key, value):
+            if (
+                area == MetadataType.FRONTMATTER or area == MetadataType.ALL
+            ) and self.frontmatter.delete(key, value):
                 self.update_frontmatter()
                 changed_value = True
-            if self.inline_metadata.delete(key, value):
+            if (
+                area == MetadataType.INLINE or area == MetadataType.ALL
+            ) and self.inline_metadata.delete(key, value):
                 self._delete_inline_metadata(key, value)
                 changed_value = True
 
@@ -426,6 +437,88 @@ class Note:
 
         self.file_content = re.sub(pattern, replacement, self.file_content, re.MULTILINE)
 
+    def transpose_metadata(
+        self,
+        begin: MetadataType,
+        end: MetadataType,
+        key: str = None,
+        value: str | list[str] = None,
+        location: InsertLocation = InsertLocation.BOTTOM,
+    ) -> bool:
+        """Transpose metadata from one type to another.
+
+        Args:
+            begin (MetadataType): The type of metadata to transpose from.
+            end (MetadataType): The type of metadata to transpose to.
+            key (str, optional): The key to transpose. Defaults to None.
+            value (str | list[str], optional): The value to transpose. Defaults to None.
+
+        Returns:
+            bool: Whether the note was updated.
+        """
+        if (begin == MetadataType.FRONTMATTER or begin == MetadataType.INLINE) and (
+            end == MetadataType.FRONTMATTER or end == MetadataType.INLINE
+        ):
+            if begin == MetadataType.FRONTMATTER:
+                begin_dict = self.frontmatter.dict
+            else:
+                begin_dict = self.inline_metadata.dict
+
+            if begin_dict == {}:
+                return False
+
+            if key is None:  # Transpose all metadata when no key is provided
+                for _key, _value in begin_dict.items():
+                    self.add_metadata(key=_key, value=_value, area=end, location=location)
+                    self.delete_metadata(key=_key, area=begin)
+                return True
+
+            has_changes = False
+            temp_dict = copy.deepcopy(begin_dict)
+            for k, v in begin_dict.items():
+                if key == k:
+                    if value is None:
+                        self.add_metadata(key=k, value=v, area=end, location=location)
+                        self.delete_metadata(key=k, area=begin)
+                        return True
+
+                    if value == v:
+                        self.add_metadata(key=k, value=v, area=end, location=location)
+                        self.delete_metadata(key=k, area=begin)
+                        return True
+
+                    if isinstance(value, str):
+                        if value in v:
+                            self.add_metadata(key=k, value=value, area=end, location=location)
+                            self.delete_metadata(key=k, value=value, area=begin)
+                            return True
+                        else:
+                            return False
+
+                    if isinstance(value, list):
+                        for value_item in value:
+                            if value_item in v:
+                                self.add_metadata(
+                                    key=k, value=value_item, area=end, location=location
+                                )
+                                self.delete_metadata(key=k, value=value_item, area=begin)
+                                temp_dict[k].remove(value_item)
+                                has_changes = True
+
+                        if temp_dict[k] == []:
+                            self.delete_metadata(key=k, area=begin)
+
+                    if has_changes:
+                        return True
+                    else:
+                        return False
+
+        if begin == MetadataType.TAGS:
+            # TODO: Implement transposing to and from tags
+            pass
+
+        return False
+
     def update_frontmatter(self, sort_keys: bool = False) -> None:
         """Replace the frontmatter in the note with the current frontmatter object."""
         try:
@@ -439,13 +532,16 @@ class Note:
             return
 
         new_frontmatter = self.frontmatter.to_yaml(sort_keys=sort_keys)
-        new_frontmatter = f"---\n{new_frontmatter}---\n"
+        if self.frontmatter.dict == {}:
+            new_frontmatter = ""
+        else:
+            new_frontmatter = f"---\n{new_frontmatter}---\n"
 
         if current_frontmatter is None:
             self.file_content = new_frontmatter + self.file_content
             return
 
-        current_frontmatter = re.escape(current_frontmatter)
+        current_frontmatter = f"{re.escape(current_frontmatter)}\n?"
         self.sub(current_frontmatter, new_frontmatter, is_regex=True)
 
     def write(self, path: Path = None) -> None:

@@ -65,6 +65,8 @@ class Application:
                     self.application_rename_metadata()
                 case "delete_metadata":
                     self.application_delete_metadata()
+                case "transpose_metadata":
+                    self.application_transpose_metadata()
                 case "review_changes":
                     self.review_changes()
                 case "commit_changes":
@@ -117,6 +119,51 @@ class Application:
                     return
 
                 alerts.success(f"Added metadata to {num_changed} notes")
+            case _:  # pragma: no cover
+                return
+
+    def application_delete_metadata(self) -> None:
+        alerts.usage("Delete either a key and all associated values, or a specific value.")
+
+        choices = [
+            {"name": "Delete key", "value": "delete_key"},
+            {"name": "Delete value", "value": "delete_value"},
+            {"name": "Delete inline tag", "value": "delete_inline_tag"},
+            questionary.Separator(),
+            {"name": "Back", "value": "back"},
+        ]
+        match self.questions.ask_selection(
+            choices=choices, question="Select a metadata type to delete"
+        ):
+            case "delete_key":
+                self.delete_key()
+            case "delete_value":
+                self.delete_value()
+            case "delete_inline_tag":
+                self.delete_inline_tag()
+            case _:  # pragma: no cover
+                return
+
+    def application_rename_metadata(self) -> None:
+        """Rename metadata."""
+        alerts.usage("Select the type of metadata to rename.")
+
+        choices = [
+            {"name": "Rename key", "value": "rename_key"},
+            {"name": "Rename value", "value": "rename_value"},
+            {"name": "Rename inline tag", "value": "rename_inline_tag"},
+            questionary.Separator(),
+            {"name": "Back", "value": "back"},
+        ]
+        match self.questions.ask_selection(
+            choices=choices, question="Select a metadata type to rename"
+        ):
+            case "rename_key":
+                self.rename_key()
+            case "rename_value":
+                self.rename_value()
+            case "rename_inline_tag":
+                self.rename_inline_tag()
             case _:  # pragma: no cover
                 return
 
@@ -286,6 +333,24 @@ class Application:
                 case _:
                     return
 
+    def application_transpose_metadata(self) -> None:
+        """Transpose metadata."""
+        alerts.usage("Transpose metadata from frontmatter to inline or vice versa.")
+
+        choices = [
+            {"name": "Transpose frontmatter to inline", "value": "frontmatter_to_inline"},
+            {"name": "Transpose inline to frontmatter", "value": "inline_to_frontmatter"},
+        ]
+        match self.questions.ask_selection(
+            choices=choices, question="Select metadata to transpose"
+        ):
+            case "frontmatter_to_inline":
+                self.transpose_metadata(begin=MetadataType.FRONTMATTER, end=MetadataType.INLINE)
+            case "inline_to_frontmatter":
+                self.transpose_metadata(begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER)
+            case _:
+                return
+
     def application_vault(self) -> None:
         """Vault actions."""
         alerts.usage("Create or delete a backup of your vault.")
@@ -305,51 +370,6 @@ class Application:
                     self.vault.delete_backup()
                 case _:
                     return
-
-    def application_delete_metadata(self) -> None:
-        alerts.usage("Delete either a key and all associated values, or a specific value.")
-
-        choices = [
-            {"name": "Delete key", "value": "delete_key"},
-            {"name": "Delete value", "value": "delete_value"},
-            {"name": "Delete inline tag", "value": "delete_inline_tag"},
-            questionary.Separator(),
-            {"name": "Back", "value": "back"},
-        ]
-        match self.questions.ask_selection(
-            choices=choices, question="Select a metadata type to delete"
-        ):
-            case "delete_key":
-                self.delete_key()
-            case "delete_value":
-                self.delete_value()
-            case "delete_inline_tag":
-                self.delete_inline_tag()
-            case _:  # pragma: no cover
-                return
-
-    def application_rename_metadata(self) -> None:
-        """Rename metadata."""
-        alerts.usage("Select the type of metadata to rename.")
-
-        choices = [
-            {"name": "Rename key", "value": "rename_key"},
-            {"name": "Rename value", "value": "rename_value"},
-            {"name": "Rename inline tag", "value": "rename_inline_tag"},
-            questionary.Separator(),
-            {"name": "Back", "value": "back"},
-        ]
-        match self.questions.ask_selection(
-            choices=choices, question="Select a metadata type to rename"
-        ):
-            case "rename_key":
-                self.rename_key()
-            case "rename_value":
-                self.rename_value()
-            case "rename_inline_tag":
-                self.rename_inline_tag()
-            case _:  # pragma: no cover
-                return
 
     def commit_changes(self) -> bool:
         """Write all changes to disk.
@@ -537,3 +557,78 @@ class Application:
             if note_to_review is None or note_to_review == "return":
                 break
             changed_notes[note_to_review].print_diff()
+
+    def transpose_metadata(self, begin: MetadataType, end: MetadataType) -> None:
+        """Transpose metadata from one format to another.
+
+        Args:
+            begin: The format to transpose from.
+            end: The format to transpose to.
+        """
+        choices = [
+            {"name": f"Transpose all {begin.value} to {end.value}", "value": "transpose_all"},
+            {"name": "Transpose a key", "value": "transpose_key"},
+            {"name": "Transpose a value", "value": "transpose_value"},
+            {"name": "Back", "value": "back"},
+        ]
+        match self.questions.ask_selection(choices=choices, question="Select an action to perform"):
+            case "transpose_all":
+                num_changed = self.vault.transpose_metadata(
+                    begin=begin,
+                    end=end,
+                    location=self.vault.insert_location,
+                )
+
+                if num_changed == 0:
+                    alerts.warning(f"No notes were changed")
+                    return
+
+                alerts.success(
+                    f"Renamed transposed {begin.value} to {end.value} in {num_changed} notes"
+                )
+            case "transpose_key":
+                key = self.questions.ask_existing_key(question="Which key to transpose?")
+                if key is None:  # pragma: no cover
+                    return
+
+                num_changed = self.vault.transpose_metadata(
+                    begin=begin,
+                    end=end,
+                    key=key,
+                    location=self.vault.insert_location,
+                )
+
+                if num_changed == 0:
+                    alerts.warning(f"No notes were changed")
+                    return
+
+                alerts.success(
+                    f"Transposed key: `{key}` from {begin.value} to {end.value} in {num_changed} notes"
+                )
+            case "transpose_value":
+                key = self.questions.ask_existing_key(question="Which key contains the value?")
+                if key is None:  # pragma: no cover
+                    return
+
+                questions2 = Questions(vault=self.vault, key=key)
+                value = questions2.ask_existing_value(question="Which value to transpose?")
+                if value is None:  # pragma: no cover
+                    return
+
+                num_changed = self.vault.transpose_metadata(
+                    begin=begin,
+                    end=end,
+                    key=key,
+                    value=value,
+                    location=self.vault.insert_location,
+                )
+
+                if num_changed == 0:
+                    alerts.warning(f"No notes were changed")
+                    return
+
+                alerts.success(
+                    f"Transposed key: `{key}:{value}` from {begin.value} to {end.value} in {num_changed} notes"
+                )
+            case _:
+                return

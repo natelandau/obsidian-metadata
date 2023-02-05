@@ -45,46 +45,45 @@ Once installed, run `obsidian-metadata` in your terminal to enter an interactive
 
 **Inspect Metadata**
 
--   View all metadata in the vault
--   View all metadata in the vault
--   View all frontmatter
--   View all inline metadata
--   View all inline tags
--   Export all metadata to CSV or JSON file
+-   **View all metadata in the vault**
+-   View all **frontmatter**
+-   View all **inline metadata**
+-   View all **inline tags**
+-   **Export all metadata to CSV or JSON file**
 
 **Filter Notes in Scope**: Limit the scope of notes to be processed with one or more filters.
 
--   Path filter (regex): Limit scope based on the path or filename
--   Metadata Filter: Limit scope based on a key or key/value pair
--   Tag Filter: Limit scope based on an in-text tag
--   List and Clear Filters List all current filters and clear one or all
--   List notes in scope: List notes that will be processed.
+-   **Path filter (regex)**: Limit scope based on the path or filename
+-   **Metadata filter**: Limit scope based on a key or key/value pair
+-   **Tag filter**: Limit scope based on an in-text tag
+-   **List and clear filters**: List all current filters and clear one or all
+-   **List notes in scope**: List notes that will be processed.
 
 **Add Metadata**: Add new metadata to your vault.
 
--   Add metadata to the frontmatter
--   Add to inline metadata - Set `insert_location` in the config to control where the new metadata is inserted. (Default: Bottom)
--   Add to inline tag - Set `insert_location` in the config to control where the new tag is inserted. (Default: Bottom)
+-   **Add new metadata to the frontmatter**
+-   **Add new inline metadata** - Set `insert_location` in the config to control where the new metadata is inserted. (Default: Bottom)
+-   **Add new inline tag** - Set `insert_location` in the config to control where the new tag is inserted. (Default: Bottom)
 
 **Rename Metadata**: Rename either a key and all associated values, a specific value within a key. or an in-text tag.
 
--   Rename a key
--   Rename a value
--   rename an inline tag
+-   **Rename a key**
+-   **Rename a value**
+-   **Rename an inline tag**
 
 **Delete Metadata**: Delete either a key and all associated values, or a specific value.
 
--   Delete a key and associated values
--   Delete a value from a key
--   Delete an inline tag
+-   **Delete a key and associated values**
+-   **Delete a value from a key**
+-   **Delete an inline tag**
 
 **Review Changes**: Prior to committing changes, review all changes that will be made.
 
--   View a diff of the changes that will be made
+-   **View a diff of the changes** that will be made
 
 **Commit Changes**: Write the changes to disk. This step is not undoable.
 
--   Commit changes to the vault
+-   **Commit changes to the vault**
 
 ### Configuration
 

@@ -517,13 +517,7 @@ class Application:
             alerts.info("No changes to review.")
             return
 
-        print(f"\nFound {len(changed_notes)} changed notes in the vault.\n")
-        answer = self.questions.ask_confirm(
-            question="View diffs of individual files?", default=False
-        )
-        if not answer:  # pragma: no cover
-            return
-
+        alerts.info(f"Found {len(changed_notes)} changed notes in the vault")
         choices: list[dict[str, Any] | questionary.Separator] = [questionary.Separator()]
         for n, note in enumerate(changed_notes, start=1):
             _selection = {
@@ -538,7 +532,7 @@ class Application:
         while True:
             note_to_review = self.questions.ask_selection(
                 choices=choices,
-                question="Select a new to view the diff",
+                question="Select an updated note to view the diff",
             )
             if note_to_review is None or note_to_review == "return":
                 break

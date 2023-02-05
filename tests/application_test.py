@@ -531,10 +531,6 @@ def test_review_changes(test_application, mocker, capsys) -> None:
         side_effect=["rename_metadata", "review_changes", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_confirm",
-        return_value=True,
-    )
-    mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_existing_key",
         return_value="tags",
     )
@@ -549,7 +545,7 @@ def test_review_changes(test_application, mocker, capsys) -> None:
     with pytest.raises(KeyError):
         app.application_main()
     captured = capsys.readouterr()
-    assert captured.out == Regex(r".*Found.*\d+.*changed notes in the vault.*", re.DOTALL)
+    assert captured.out == Regex(r".*Found.*\d+.*changed notes in the vault", re.DOTALL)
     assert "- tags:" in captured.out
     assert "+ new_tags:" in captured.out
 

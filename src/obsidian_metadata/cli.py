@@ -110,17 +110,18 @@ def main(
     [bold underline]Filter Notes in Scope[/]
     Limit the scope of notes to be processed with one or more filters.
         • Path filter (regex):      Limit scope based on the path or filename
-        • Metadata Filter:          Limit scope based on a key or key/value pair
-        • Tag Filter:               Limit scope based on an in-text tag
-        • List and Clear Filters:   List all current filters and clear one or all
+        • Metadata filter:          Limit scope based on a key or key/value pair
+        • Tag filter:               Limit scope based on an in-text tag
+        • List and clear filters:   List all current filters and clear one or all
         • List notes in scope:      List notes that will be processed.
 
     [bold underline]Add Metadata[/]
     Add new metadata to your vault.
-        • Add metadata to the frontmatter
-        • Add to inline metadata - Set `insert_location` in the config to
+        • Add new metadata to the frontmatter
+        • Add new inline metadata - Set `insert_location` in the config to
           control where the new metadata is inserted. (Default: Bottom)
-        • [dim]Add to inline tag (Not yet implemented)[/]
+        • Add new inline tag - Set `insert_location` in the config to
+          control where the new tag is inserted. (Default: Bottom)
 
     [bold underline]Rename Metadata[/]
     Rename either a key and all associated values, a specific value within a key. or an in-text tag.

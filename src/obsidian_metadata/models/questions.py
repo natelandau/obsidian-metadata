@@ -436,8 +436,12 @@ class Questions:
             question, validate=self._validate_new_key, style=self.style, qmark="INPUT    |"
         ).ask()
 
-    def ask_new_tag(self, question: str = "New tag name") -> str:  # pragma: no cover
-        """Ask the user for a new inline tag."""
+    def ask_new_tag(self, question: str = "Enter a new tag") -> str:  # pragma: no cover
+        """Ask the user for a new tag.
+
+        Args:
+            question (str, optional): The question to ask. Defaults to "Enter a new tag".
+        """
         return questionary.text(
             question, validate=self._validate_new_tag, style=self.style, qmark="INPUT    |"
         ).ask()

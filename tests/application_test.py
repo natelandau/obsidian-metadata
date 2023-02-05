@@ -42,7 +42,7 @@ def test_abort(test_application, mocker, capsys) -> None:
     assert "Done!" in captured.out
 
 
-def test_add_metadata_frontmatter_success(test_application, mocker, capsys) -> None:
+def test_add_metadata_frontmatter(test_application, mocker, capsys) -> None:
     """Test adding new metadata to the vault."""
     app = test_application
     app._load_vault()
@@ -69,7 +69,7 @@ def test_add_metadata_frontmatter_success(test_application, mocker, capsys) -> N
     assert captured.out == Regex(r"SUCCESS +\| Added metadata to.*\d+.*notes", re.DOTALL)
 
 
-def test_add_metadata_inline_success(test_application, mocker, capsys) -> None:
+def test_add_metadata_inline(test_application, mocker, capsys) -> None:
     """Test adding new metadata to the vault."""
     app = test_application
     app._load_vault()
@@ -88,6 +88,29 @@ def test_add_metadata_inline_success(test_application, mocker, capsys) -> None:
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_new_value",
         return_value="new_key_value",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"SUCCESS +\| Added metadata to.*\d+.*notes", re.DOTALL)
+
+
+def test_add_metadata_tag(test_application, mocker, capsys) -> None:
+    """Test adding new metadata to the vault."""
+    app = test_application
+    app._load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["add_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_area",
+        return_value=MetadataType.TAGS,
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_tag",
+        return_value="new_tag",
     )
 
     with pytest.raises(KeyError):

@@ -118,7 +118,8 @@ def main(
     [bold underline]Add Metadata[/]
     Add new metadata to your vault.
         • Add metadata to the frontmatter
-        • [dim]Add to inline metadata (Not yet implemented)[/]
+        • Add to inline metadata - Set `insert_location` in the config to
+          control where the new metadata is inserted. (Default: Bottom)
         • [dim]Add to inline tag (Not yet implemented)[/]
 
     [bold underline]Rename Metadata[/]

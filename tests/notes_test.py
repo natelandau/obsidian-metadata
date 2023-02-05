@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import typer
 
-from obsidian_metadata.models.enums import MetadataType
+from obsidian_metadata.models.enums import InsertLocation, MetadataType
 from obsidian_metadata.models.notes import Note
 from tests.helpers import Regex
 
@@ -74,36 +74,33 @@ def test_note_create(sample_note) -> None:
     assert note.original_file_content == content
 
 
-def test_append(sample_note) -> None:
-    """Test appending to note."""
-    note = Note(note_path=sample_note)
-    assert note.dry_run is False
+def test_add_metadata_inline(short_note) -> None:
+    """Test adding metadata."""
+    path1, path2 = short_note
+    note = Note(note_path=path1)
 
-    string = "This is a test string."
-    string2 = "Lorem ipsum dolor sit"
+    assert note.inline_metadata.dict == {}
+    assert (
+        note.add_metadata(MetadataType.INLINE, location=InsertLocation.BOTTOM, key="new_key1")
+        is True
+    )
+    assert note.inline_metadata.dict == {"new_key1": []}
+    assert "new_key1::" in note.file_content.strip()
 
-    note.append(string_to_append=string)
-    assert string in note.file_content
-    assert len(re.findall(re.escape(string), note.file_content)) == 1
-
-    note.append(string_to_append=string)
-    assert string in note.file_content
-    assert len(re.findall(re.escape(string), note.file_content)) == 1
-
-    note.append(string_to_append=string, allow_multiple=True)
-    assert string in note.file_content
-    assert len(re.findall(re.escape(string), note.file_content)) == 2
-
-    note.append(string_to_append=string2)
-    assert string2 in note.file_content
-    assert len(re.findall(re.escape(string2), note.file_content)) == 1
-
-    note.append(string_to_append=string2, allow_multiple=True)
-    assert string2 in note.file_content
-    assert len(re.findall(re.escape(string2), note.file_content)) == 2
+    assert (
+        note.add_metadata(MetadataType.INLINE, key="new_key1", location=InsertLocation.BOTTOM)
+        is False
+    )
+    assert (
+        note.add_metadata(
+            MetadataType.INLINE, key="new_key2", value="new_value1", location=InsertLocation.TOP
+        )
+        is True
+    )
+    assert "new_key2:: new_value1" in note.file_content
 
 
-def test_add_metadata(sample_note) -> None:
+def test_add_metadata_frontmatter(sample_note) -> None:
     """Test adding metadata."""
     note = Note(note_path=sample_note)
     assert note.add_metadata(MetadataType.FRONTMATTER, "frontmatter_Key1") is False
@@ -240,7 +237,7 @@ def test_has_changes(sample_note) -> None:
     note = Note(note_path=sample_note)
 
     assert note.has_changes() is False
-    note.append("This is a test string.")
+    note.insert("This is a test string.", location=InsertLocation.BOTTOM)
     assert note.has_changes() is True
 
     note = Note(note_path=sample_note)
@@ -259,6 +256,146 @@ def test_has_changes(sample_note) -> None:
     assert note.has_changes() is True
 
 
+def test_insert_bottom(short_note) -> None:
+    """Test inserting metadata to bottom of note."""
+    path1, path2 = short_note
+    note = Note(note_path=str(path1))
+    note2 = Note(note_path=str(path2))
+
+    string1 = "This is a test string."
+    string2 = "This is"
+
+    correct_content = """
+---
+key: value
+---
+
+# header 1
+
+Lorem ipsum dolor sit amet.
+
+This is a test string.
+    """
+    correct_content2 = """
+---
+key: value
+---
+
+# header 1
+
+Lorem ipsum dolor sit amet.
+
+This is a test string.
+This is
+    """
+    correct_content3 = """
+Lorem ipsum dolor sit amet.
+
+This is a test string.
+    """
+    note.insert(new_string=string1, location=InsertLocation.BOTTOM)
+    assert note.file_content == correct_content.strip()
+
+    note.insert(new_string=string2, location=InsertLocation.BOTTOM)
+    assert note.file_content == correct_content.strip()
+
+    note.insert(new_string=string2, allow_multiple=True, location=InsertLocation.BOTTOM)
+    assert note.file_content == correct_content2.strip()
+
+    note2.insert(new_string=string1, location=InsertLocation.BOTTOM)
+    assert note2.file_content == correct_content3.strip()
+
+
+def test_insert_after_frontmatter(short_note) -> None:
+    """Test inserting metadata to bottom of note."""
+    path1, path2 = short_note
+    note = Note(note_path=path1)
+    note2 = Note(note_path=path2)
+
+    string1 = "This is a test string."
+    string2 = "This is"
+    correct_content = """
+---
+key: value
+---
+This is a test string.
+
+# header 1
+
+Lorem ipsum dolor sit amet.
+    """
+
+    correct_content2 = """
+---
+key: value
+---
+This is
+This is a test string.
+
+# header 1
+
+Lorem ipsum dolor sit amet.
+    """
+    correct_content3 = """
+This is a test string.
+Lorem ipsum dolor sit amet.
+    """
+
+    note.insert(new_string=string1, location=InsertLocation.TOP)
+    assert note.file_content.strip() == correct_content.strip()
+
+    note.insert(new_string=string2, allow_multiple=True, location=InsertLocation.TOP)
+    assert note.file_content.strip() == correct_content2.strip()
+
+    note2.insert(new_string=string1, location=InsertLocation.TOP)
+    assert note2.file_content.strip() == correct_content3.strip()
+
+
+def test_insert_after_title(short_note) -> None:
+    """Test inserting metadata to bottom of note."""
+    path1, path2 = short_note
+    note = Note(note_path=path1)
+    note2 = Note(note_path=path2)
+
+    string1 = "This is a test string."
+    string2 = "This is"
+    correct_content = """
+---
+key: value
+---
+
+# header 1
+This is a test string.
+
+Lorem ipsum dolor sit amet.
+    """
+
+    correct_content2 = """
+---
+key: value
+---
+
+# header 1
+This is
+This is a test string.
+
+Lorem ipsum dolor sit amet.
+    """
+    correct_content3 = """
+This is a test string.
+Lorem ipsum dolor sit amet.
+    """
+
+    note.insert(new_string=string1, location=InsertLocation.AFTER_TITLE)
+    assert note.file_content.strip() == correct_content.strip()
+
+    note.insert(new_string=string2, allow_multiple=True, location=InsertLocation.AFTER_TITLE)
+    assert note.file_content.strip() == correct_content2.strip()
+
+    note2.insert(new_string=string1, location=InsertLocation.AFTER_TITLE)
+    assert note2.file_content.strip() == correct_content3.strip()
+
+
 def test_print_note(sample_note, capsys) -> None:
     """Test printing note."""
     note = Note(note_path=sample_note)
@@ -273,7 +410,7 @@ def test_print_diff(sample_note, capsys) -> None:
     """Test printing diff."""
     note = Note(note_path=sample_note)
 
-    note.append("This is a test string.")
+    note.insert("This is a test string.", location=InsertLocation.BOTTOM)
     note.print_diff()
     captured = capsys.readouterr()
     assert "+ This is a test string." in captured.out
@@ -362,12 +499,12 @@ def test_rename_metadata(sample_note) -> None:
     assert note.file_content == Regex(r"new_key:: new_value")
 
 
-def test_replace_frontmatter(sample_note) -> None:
+def test_update_frontmatter(sample_note) -> None:
     """Test replacing frontmatter."""
     note = Note(note_path=sample_note)
 
     note.rename_metadata("frontmatter_Key1", "author name", "some_new_key_here")
-    note.replace_frontmatter()
+    note.update_frontmatter()
     new_frontmatter = """---
 date_created: '2022-12-22'
 tags:
@@ -387,9 +524,9 @@ shared_key2: shared_key2_value1
     assert "```python" in note.file_content
 
     note2 = Note(note_path="tests/fixtures/test_vault/no_metadata.md")
-    note2.replace_frontmatter()
+    note2.update_frontmatter()
     note2.frontmatter.dict = {"key1": "value1", "key2": "value2"}
-    note2.replace_frontmatter()
+    note2.update_frontmatter()
     new_frontmatter = """---
 key1: value1
 key2: value2

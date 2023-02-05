@@ -517,6 +517,86 @@ def test_inline_contains() -> None:
     assert inline.contains("key", r"^\d_value", is_regex=True) is False
 
 
+def test_inline_add() -> None:
+    """Test inline add."""
+    inline = InlineMetadata(INLINE_CONTENT)
+
+    assert inline.add("bold_key1") is False
+    assert inline.add("bold_key1", "bold_key1_value") is False
+    assert inline.add("added_key") is True
+    assert inline.dict == {
+        "added_key": [],
+        "bold_key1": ["bold_key1_value"],
+        "bold_key2": ["bold_key2_value"],
+        "emoji_📅_key": ["emoji_📅_key_value"],
+        "in_text_key1": ["in_text_key1_value"],
+        "in_text_key2": ["in_text_key2_value"],
+        "link_key": ["link_key_value"],
+        "repeated_key": ["repeated_key_value1", "repeated_key_value2"],
+        "tag_key": ["tag_key_value"],
+    }
+
+    assert inline.add("added_key1", "added_value") is True
+    assert inline.dict == {
+        "added_key": [],
+        "added_key1": ["added_value"],
+        "bold_key1": ["bold_key1_value"],
+        "bold_key2": ["bold_key2_value"],
+        "emoji_📅_key": ["emoji_📅_key_value"],
+        "in_text_key1": ["in_text_key1_value"],
+        "in_text_key2": ["in_text_key2_value"],
+        "link_key": ["link_key_value"],
+        "repeated_key": ["repeated_key_value1", "repeated_key_value2"],
+        "tag_key": ["tag_key_value"],
+    }
+
+    with pytest.raises(ValueError):
+        assert inline.add("added_key1", "added_value_2") is True
+
+    assert inline.dict == {
+        "added_key": [],
+        "added_key1": ["added_value"],
+        "bold_key1": ["bold_key1_value"],
+        "bold_key2": ["bold_key2_value"],
+        "emoji_📅_key": ["emoji_📅_key_value"],
+        "in_text_key1": ["in_text_key1_value"],
+        "in_text_key2": ["in_text_key2_value"],
+        "link_key": ["link_key_value"],
+        "repeated_key": ["repeated_key_value1", "repeated_key_value2"],
+        "tag_key": ["tag_key_value"],
+    }
+
+    assert inline.add("added_key2", ["added_value_1", "added_value_2"]) is True
+    assert inline.dict == {
+        "added_key": [],
+        "added_key1": ["added_value"],
+        "added_key2": ["added_value_1"],
+        "bold_key1": ["bold_key1_value"],
+        "bold_key2": ["bold_key2_value"],
+        "emoji_📅_key": ["emoji_📅_key_value"],
+        "in_text_key1": ["in_text_key1_value"],
+        "in_text_key2": ["in_text_key2_value"],
+        "link_key": ["link_key_value"],
+        "repeated_key": ["repeated_key_value1", "repeated_key_value2"],
+        "tag_key": ["tag_key_value"],
+    }
+
+    assert inline.add("added_key", "added_value")
+    assert inline.dict == {
+        "added_key": ["added_value"],
+        "added_key1": ["added_value"],
+        "added_key2": ["added_value_1"],
+        "bold_key1": ["bold_key1_value"],
+        "bold_key2": ["bold_key2_value"],
+        "emoji_📅_key": ["emoji_📅_key_value"],
+        "in_text_key1": ["in_text_key1_value"],
+        "in_text_key2": ["in_text_key2_value"],
+        "link_key": ["link_key_value"],
+        "repeated_key": ["repeated_key_value1", "repeated_key_value2"],
+        "tag_key": ["tag_key_value"],
+    }
+
+
 def test_inline_metadata_rename() -> None:
     """Test inline metadata rename."""
     inline = InlineMetadata(INLINE_CONTENT)

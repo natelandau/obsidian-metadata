@@ -12,7 +12,7 @@ from typing import Any
 import questionary
 import typer
 
-from obsidian_metadata.models.enums import MetadataType
+from obsidian_metadata.models.enums import InsertLocation, MetadataType
 from obsidian_metadata.models.patterns import Patterns
 from obsidian_metadata.models.vault import Vault
 
@@ -76,6 +76,7 @@ class Questions:
                 ("qmark", "bold"),
                 ("question", "bold"),
                 ("separator", "fg:#808080"),
+                ("answer", "fg:#FF9D00 bold"),
                 ("instruction", "fg:#808080"),
                 ("highlighted", "bold underline"),
                 ("text", ""),
@@ -404,6 +405,23 @@ class Questions:
             style=self.style,
             qmark="INPUT    |",
         ).ask()
+
+    def ask_metadata_location(
+        self, question: str = "Where in a note should we add metadata"
+    ) -> InsertLocation:  # pragma: no cover
+        """Ask the user for the location within a note to place new metadata.
+
+        Returns:
+            InsertLocation: The location within a note to place new metadata.
+        """
+        choices = []
+        for metadata_location in InsertLocation:
+            choices.append({"name": metadata_location.value, "value": metadata_location})
+
+        return self.ask_selection(
+            choices=choices,
+            question="Select the location for the metadata",
+        )
 
     def ask_new_key(self, question: str = "New key name") -> str:  # pragma: no cover
         """Ask the user for a new metadata key.

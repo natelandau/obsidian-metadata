@@ -75,7 +75,12 @@
     ]
     ignore-init-module-imports = true
     line-length = 100
-    per-file-ignores = { "cli.py" = ["PLR0913"] }
+    per-file-ignores = { "cli.py" = [
+        "PLR0913",
+    ], "tests/*.py" = [
+        "E999",
+        "PLR2004",
+    ] }
     select = [
         "A",
         "B",

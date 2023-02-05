@@ -9,6 +9,8 @@ from rich.console import Console
 from rich.table import Table
 from ruamel.yaml import YAML
 
+from obsidian_metadata._utils.alerts import logger as log
+from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils import (
     clean_dictionary,
     dict_contains,
@@ -234,7 +236,7 @@ class Frontmatter:
             dict: Metadata from the note.
         """
         try:
-            frontmatter_block: str = PATTERNS.frontmatt_block_no_separators.search(
+            frontmatter_block: str = PATTERNS.frontmatt_block_strip_separators.search(
                 file_content
             ).group("frontmatter")
         except AttributeError:
@@ -388,7 +390,7 @@ class InlineMetadata:
     """Representation of inline metadata in the form of `key:: value`."""
 
     def __init__(self, file_content: str):
-        self.dict: dict[str, list[str]] = self._grab_inline_metadata(file_content)
+        self.dict: dict[str, list[str]] = self.grab_inline_metadata(file_content)
         self.dict_original: dict[str, list[str]] = self.dict.copy()
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -399,32 +401,8 @@ class InlineMetadata:
         """
         return f"InlineMetadata(inline_metadata={self.dict})"
 
-    def _grab_inline_metadata(self, file_content: str) -> dict[str, list[str]]:
-        """Grab inline metadata from a note.
-
-        Returns:
-            dict[str, str]: Inline metadata from the note.
-        """
-        content = remove_markdown_sections(
-            file_content,
-            strip_codeblocks=True,
-            strip_inlinecode=True,
-            strip_frontmatter=True,
-        )
-        all_results = PATTERNS.find_inline_metadata.findall(content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
-
-        inline_metadata: dict[str, list[str]] = {}
-        for k, v in stripped_null_values:
-            if k in inline_metadata:
-                inline_metadata[k].append(str(v))
-            else:
-                inline_metadata[k] = [str(v)]
-
-        return clean_dictionary(inline_metadata)
-
     def add(self, key: str, value: str | list[str] = None) -> bool:
-        """Add a key and value to the frontmatter.
+        """Add a key and value to the inline metadata.
 
         Args:
             key (str): Key to add.
@@ -433,8 +411,26 @@ class InlineMetadata:
         Returns:
             bool: True if the metadata was added
         """
-        # TODO: implement adding to inline metadata which requires knowing where in the note the metadata is to be added.  In addition, unlike frontmatter, it is not possible to have multiple values for a key.
-        pass
+        if value is None:
+            if key not in self.dict:
+                self.dict[key] = []
+                return True
+            return False
+
+        if isinstance(value, list):
+            value = value[0]
+
+        if key not in self.dict:
+            self.dict[key] = [value]
+            return True
+
+        if key in self.dict and len(self.dict[key]) > 0:
+            if value in self.dict[key]:
+                return False
+            raise ValueError(f"'{key}' not empty")
+
+        self.dict[key].append(value)
+        return True
 
     def contains(self, key: str, value: str = None, is_regex: bool = False) -> bool:
         """Check if a key or value exists in the inline metadata.
@@ -476,6 +472,30 @@ class InlineMetadata:
             return True
 
         return False
+
+    def grab_inline_metadata(self, file_content: str) -> dict[str, list[str]]:
+        """Grab inline metadata from a note.
+
+        Returns:
+            dict[str, str]: Inline metadata from the note.
+        """
+        content = remove_markdown_sections(
+            file_content,
+            strip_codeblocks=True,
+            strip_inlinecode=True,
+            strip_frontmatter=True,
+        )
+        all_results = PATTERNS.find_inline_metadata.findall(content)
+        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
+
+        inline_metadata: dict[str, list[str]] = {}
+        for k, v in stripped_null_values:
+            if k in inline_metadata:
+                inline_metadata[k].append(str(v))
+            else:
+                inline_metadata[k] = [str(v)]
+
+        return clean_dictionary(inline_metadata)
 
     def has_changes(self) -> bool:
         """Check if the metadata has changes.

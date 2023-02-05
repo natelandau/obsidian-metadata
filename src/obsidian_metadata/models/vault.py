@@ -13,10 +13,10 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 from rich.table import Table
 
-from obsidian_metadata._config import VaultConfig
+from obsidian_metadata._config.config import Config, VaultConfig
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
-from obsidian_metadata.models import MetadataType, Note, VaultMetadata
+from obsidian_metadata.models import InsertLocation, MetadataType, Note, VaultMetadata
 
 
 @dataclass
@@ -46,8 +46,10 @@ class Vault:
         dry_run: bool = False,
         filters: list[VaultFilter] = [],
     ):
+        self.config = config.config
         self.vault_path: Path = config.path
         self.name = self.vault_path.name
+        self.insert_location: InsertLocation = self._find_insert_location()
         self.dry_run: bool = dry_run
         self.backup_path: Path = self.vault_path.parent / f"{self.vault_path.name}.bak"
         self.exclude_paths: list[Path] = []
@@ -110,6 +112,21 @@ class Vault:
 
         return notes_list
 
+    def _find_insert_location(self) -> InsertLocation:
+        """Find the insert location for a note.
+
+        Returns:
+            InsertLocation: Insert location for the note.
+        """
+        if self.config["insert_location"].upper() == "TOP":
+            return InsertLocation.TOP
+        elif self.config["insert_location"].upper() == "HEADER":
+            return InsertLocation.AFTER_TITLE
+        elif self.config["insert_location"].upper() == "BOTTOM":
+            return InsertLocation.BOTTOM
+        else:
+            return InsertLocation.BOTTOM
+
     def _find_markdown_notes(self) -> list[Path]:
         """Build list of all markdown files in the vault.
 
@@ -145,21 +162,31 @@ class Vault:
                     metadata=_note.inline_tags.list,
                 )
 
-    def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> int:
-        """Add metadata to all notes in the vault.
+    def add_metadata(
+        self,
+        area: MetadataType,
+        key: str,
+        value: str | list[str] = None,
+        location: InsertLocation = None,
+    ) -> int:
+        """Add metadata to all notes in the vault which do not already contain it.
 
         Args:
             area (MetadataType): Area of metadata to add to.
             key (str): Key to add.
             value (str|list, optional): Value to add.
+            location (InsertLocation, optional): Location to insert metadata. (Defaults to `vault.config.insert_location`)
 
         Returns:
             int: Number of notes updated.
         """
+        if location is None:
+            location = self.insert_location
+
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.add_metadata(area, key, value):
+            if _note.add_metadata(area, key, value, location):
                 num_changed += 1
 
         if num_changed > 0:
@@ -258,91 +285,6 @@ class Vault:
 
         return num_changed
 
-    def get_changed_notes(self) -> list[Note]:
-        """Returns a list of notes that have changes.
-
-        Returns:
-            list[Note]: List of notes that have changes.
-        """
-        changed_notes = []
-        for _note in self.notes_in_scope:
-            if _note.has_changes():
-                changed_notes.append(_note)
-
-        changed_notes = sorted(changed_notes, key=lambda x: x.note_path)
-        return changed_notes
-
-    def info(self) -> None:
-        """Print information about the vault."""
-        table = Table(show_header=False)
-        table.add_row("Vault", str(self.vault_path))
-        if self.backup_path.exists():
-            table.add_row("Backup path", str(self.backup_path))
-        else:
-            table.add_row("Backup", "None")
-        table.add_row("Notes in scope", str(len(self.notes_in_scope)))
-        table.add_row("Notes excluded from scope", str(self.num_excluded_notes()))
-        table.add_row("Active filters", str(len(self.filters)))
-        table.add_row("Notes with changes", str(len(self.get_changed_notes())))
-
-        Console().print(table)
-
-    def list_editable_notes(self) -> None:
-        """Print a list of notes within the scope that are being edited."""
-        table = Table(title="Notes in current scope", show_header=False, box=box.HORIZONTALS)
-        for _n, _note in enumerate(self.notes_in_scope, start=1):
-            table.add_row(str(_n), str(_note.note_path.relative_to(self.vault_path)))
-        Console().print(table)
-
-    def num_excluded_notes(self) -> int:
-        """Count number of excluded notes."""
-        return len(self.all_notes) - len(self.notes_in_scope)
-
-    def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> int:
-        """Renames a key or key-value pair in the note's metadata.
-
-        If no value is provided, will rename an entire key.
-
-        Args:
-            key (str): Key to rename.
-            value_1 (str): Value to rename or new name of key if no value_2 is provided.
-            value_2 (str, optional): New value.
-
-        Returns:
-            int: Number of notes that had metadata renamed.
-        """
-        num_changed = 0
-
-        for _note in self.notes_in_scope:
-            if _note.rename_metadata(key, value_1, value_2):
-                num_changed += 1
-
-        if num_changed > 0:
-            self._rebuild_vault_metadata()
-
-        return num_changed
-
-    def rename_inline_tag(self, old_tag: str, new_tag: str) -> int:
-        """Rename an inline tag in the vault.
-
-        Args:
-            old_tag (str): Old tag name.
-            new_tag (str): New tag name.
-
-        Returns:
-            int: Number of notes that had inline tags renamed.
-        """
-        num_changed = 0
-
-        for _note in self.notes_in_scope:
-            if _note.rename_inline_tag(old_tag, new_tag):
-                num_changed += 1
-
-        if num_changed > 0:
-            self._rebuild_vault_metadata()
-
-        return num_changed
-
     def export_metadata(self, path: str, format: str = "csv") -> None:
         """Write metadata to a csv file.
 
@@ -384,3 +326,88 @@ class Vault:
 
                 with open(export_file, "w", encoding="UTF8") as f:
                     json.dump(dict_to_dump, f, indent=4, ensure_ascii=False, sort_keys=True)
+
+    def get_changed_notes(self) -> list[Note]:
+        """Returns a list of notes that have changes.
+
+        Returns:
+            list[Note]: List of notes that have changes.
+        """
+        changed_notes = []
+        for _note in self.notes_in_scope:
+            if _note.has_changes():
+                changed_notes.append(_note)
+
+        changed_notes = sorted(changed_notes, key=lambda x: x.note_path)
+        return changed_notes
+
+    def info(self) -> None:
+        """Print information about the vault."""
+        table = Table(show_header=False)
+        table.add_row("Vault", str(self.vault_path))
+        if self.backup_path.exists():
+            table.add_row("Backup path", str(self.backup_path))
+        else:
+            table.add_row("Backup", "None")
+        table.add_row("Notes in scope", str(len(self.notes_in_scope)))
+        table.add_row("Notes excluded from scope", str(self.num_excluded_notes()))
+        table.add_row("Active filters", str(len(self.filters)))
+        table.add_row("Notes with changes", str(len(self.get_changed_notes())))
+
+        Console().print(table)
+
+    def list_editable_notes(self) -> None:
+        """Print a list of notes within the scope that are being edited."""
+        table = Table(title="Notes in current scope", show_header=False, box=box.HORIZONTALS)
+        for _n, _note in enumerate(self.notes_in_scope, start=1):
+            table.add_row(str(_n), str(_note.note_path.relative_to(self.vault_path)))
+        Console().print(table)
+
+    def num_excluded_notes(self) -> int:
+        """Count number of excluded notes."""
+        return len(self.all_notes) - len(self.notes_in_scope)
+
+    def rename_inline_tag(self, old_tag: str, new_tag: str) -> int:
+        """Rename an inline tag in the vault.
+
+        Args:
+            old_tag (str): Old tag name.
+            new_tag (str): New tag name.
+
+        Returns:
+            int: Number of notes that had inline tags renamed.
+        """
+        num_changed = 0
+
+        for _note in self.notes_in_scope:
+            if _note.rename_inline_tag(old_tag, new_tag):
+                num_changed += 1
+
+        if num_changed > 0:
+            self._rebuild_vault_metadata()
+
+        return num_changed
+
+    def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> int:
+        """Renames a key or key-value pair in the note's metadata.
+
+        If no value is provided, will rename an entire key.
+
+        Args:
+            key (str): Key to rename.
+            value_1 (str): Value to rename or new name of key if no value_2 is provided.
+            value_2 (str, optional): New value.
+
+        Returns:
+            int: Number of notes that had metadata renamed.
+        """
+        num_changed = 0
+
+        for _note in self.notes_in_scope:
+            if _note.rename_metadata(key, value_1, value_2):
+                num_changed += 1
+
+        if num_changed > 0:
+            self._rebuild_vault_metadata()
+
+        return num_changed

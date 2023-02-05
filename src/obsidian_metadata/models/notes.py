@@ -9,13 +9,13 @@ import rich.repr
 import typer
 from rich.console import Console
 from rich.table import Table
-
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata.models import (
     Frontmatter,
     InlineMetadata,
     InlineTags,
+    InsertLocation,
     MetadataType,
     Patterns,
 )
@@ -117,48 +117,43 @@ class Note:
                         _v = re.escape(_v)
                         self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
 
-    def add_metadata(self, area: MetadataType, key: str, value: str | list[str] = None) -> bool:
-        """Add metadata to the note.
+    def add_metadata(
+        self,
+        area: MetadataType,
+        key: str,
+        value: str | list[str] = None,
+        location: InsertLocation = None,
+    ) -> bool:
+        """Add metadata to the note if it does not already exist.
 
         Args:
             area (MetadataType): Area to add metadata to.
             key (str): Key to add.
+            location (InsertLocation, optional): Location to add inline metadata and tags.
             value (str, optional): Value to add.
 
         Returns:
             bool: Whether the metadata was added.
         """
         if area is MetadataType.FRONTMATTER and self.frontmatter.add(key, value):
-            self.replace_frontmatter()
+            self.update_frontmatter()
             return True
 
-        if area is MetadataType.INLINE:
-            # TODO: implement adding to inline metadata
-            pass
+        try:
+            if area is MetadataType.INLINE and self.inline_metadata.add(key, value):
+                line = f"{key}:: " if value is None else f"{key}:: {value}"
+                self.insert(new_string=line, location=location)
+                return True
+
+        except ValueError as e:
+            log.warning(f"Could not add metadata to {self.note_path}: {e}")
+            return False
 
         if area is MetadataType.TAGS:
             # TODO: implement adding to intext tags
             pass
 
         return False
-
-    def append(self, string_to_append: str, allow_multiple: bool = False) -> None:
-        """Append a string to the end of a note.
-
-        Args:
-            string_to_append (str): String to append to the note.
-            allow_multiple (bool): Whether to allow appending the string if it already exists in the note.
-        """
-        if allow_multiple:
-            self.file_content += f"\n{string_to_append}"
-        else:
-            if len(re.findall(re.escape(string_to_append), self.file_content)) == 0:
-                self.file_content += f"\n{string_to_append}"
-
-    def commit_changes(self) -> None:
-        """Commit changes to the note to disk."""
-        # TODO: rewrite frontmatter if it has changed
-        pass
 
     def contains_inline_tag(self, tag: str, is_regex: bool = False) -> bool:
         """Check if a note contains the specified inline tag.
@@ -235,14 +230,14 @@ class Note:
 
         if value is None:
             if self.frontmatter.delete(key):
-                self.replace_frontmatter()
+                self.update_frontmatter()
                 changed_value = True
             if self.inline_metadata.delete(key):
                 self._delete_inline_metadata(key, value)
                 changed_value = True
         else:
             if self.frontmatter.delete(key, value):
-                self.replace_frontmatter()
+                self.update_frontmatter()
                 changed_value = True
             if self.inline_metadata.delete(key, value):
                 self._delete_inline_metadata(key, value)
@@ -272,6 +267,53 @@ class Note:
 
         return False
 
+    def insert(
+        self,
+        new_string: str,
+        location: InsertLocation,
+        allow_multiple: bool = False,
+    ) -> None:
+        """Insert a string at the top of a note.
+
+        Args:
+            new_string (str): String to insert at the top of the note.
+            allow_multiple (bool): Whether to allow inserting the string if it already exists in the note.
+            location (InsertLocation): Location to insert the string.
+        """
+        if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
+            return
+
+        match location:  # noqa: E999
+            case InsertLocation.BOTTOM:
+                self.file_content += f"\n{new_string}"
+            case InsertLocation.TOP:
+                try:
+                    top = PATTERNS.frontmatter_block.search(self.file_content).group("frontmatter")
+                except AttributeError:
+                    top = ""
+
+                if top == "":
+                    self.file_content = f"{new_string}\n{self.file_content}"
+                else:
+                    new_string = f"{top}\n{new_string}"
+                    top = re.escape(top)
+                    self.sub(top, new_string, is_regex=True)
+            case InsertLocation.AFTER_TITLE:
+                try:
+                    top = PATTERNS.top_with_header.search(self.file_content).group("top")
+                except AttributeError:
+                    top = ""
+
+                if top == "":
+                    self.file_content = f"{new_string}\n{self.file_content}"
+                else:
+                    new_string = f"{top}\n{new_string}"
+                    top = re.escape(top)
+                    self.sub(top, new_string, is_regex=True)
+            case _:
+                raise ValueError(f"Invalid location: {location}")
+        pass
+
     def print_note(self) -> None:
         """Print the note to the console."""
         print(self.file_content)
@@ -292,28 +334,6 @@ class Note:
                 table.add_row(line, style="red")
 
         Console().print(table)
-
-    def replace_frontmatter(self, sort_keys: bool = False) -> None:
-        """Replace the frontmatter in the note with the current frontmatter object."""
-        try:
-            current_frontmatter = PATTERNS.frontmatt_block_with_separators.search(
-                self.file_content
-            ).group("frontmatter")
-        except AttributeError:
-            current_frontmatter = None
-
-        if current_frontmatter is None and self.frontmatter.dict == {}:
-            return
-
-        new_frontmatter = self.frontmatter.to_yaml(sort_keys=sort_keys)
-        new_frontmatter = f"---\n{new_frontmatter}---\n"
-
-        if current_frontmatter is None:
-            self.file_content = new_frontmatter + self.file_content
-            return
-
-        current_frontmatter = re.escape(current_frontmatter)
-        self.sub(current_frontmatter, new_frontmatter, is_regex=True)
 
     def rename_inline_tag(self, tag_1: str, tag_2: str) -> bool:
         """Rename an inline tag from the note ONLY if it's not in the metadata as well.
@@ -351,14 +371,14 @@ class Note:
         changed_value: bool = False
         if value_2 is None:
             if self.frontmatter.rename(key, value_1):
-                self.replace_frontmatter()
+                self.update_frontmatter()
                 changed_value = True
             if self.inline_metadata.rename(key, value_1):
                 self._rename_inline_metadata(key, value_1)
                 changed_value = True
         else:
             if self.frontmatter.rename(key, value_1, value_2):
-                self.replace_frontmatter()
+                self.update_frontmatter()
                 changed_value = True
             if self.inline_metadata.rename(key, value_1, value_2):
                 self._rename_inline_metadata(key, value_1, value_2)
@@ -381,6 +401,28 @@ class Note:
             pattern = re.escape(pattern)
 
         self.file_content = re.sub(pattern, replacement, self.file_content, re.MULTILINE)
+
+    def update_frontmatter(self, sort_keys: bool = False) -> None:
+        """Replace the frontmatter in the note with the current frontmatter object."""
+        try:
+            current_frontmatter = PATTERNS.frontmatter_block.search(self.file_content).group(
+                "frontmatter"
+            )
+        except AttributeError:
+            current_frontmatter = None
+
+        if current_frontmatter is None and self.frontmatter.dict == {}:
+            return
+
+        new_frontmatter = self.frontmatter.to_yaml(sort_keys=sort_keys)
+        new_frontmatter = f"---\n{new_frontmatter}---\n"
+
+        if current_frontmatter is None:
+            self.file_content = new_frontmatter + self.file_content
+            return
+
+        current_frontmatter = re.escape(current_frontmatter)
+        self.sub(current_frontmatter, new_frontmatter, is_regex=True)
 
     def write(self, path: Path = None) -> None:
         """Write the note's content to disk.

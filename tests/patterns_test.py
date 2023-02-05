@@ -56,10 +56,69 @@ shared_key1: 'shared_key1_value'
 """
 
 
-def test_regex():
-    """Test regexes."""
+def test_top_with_header():
+    """Test identifying the top of a note."""
     pattern = Patterns()
 
+    no_fm_or_header = """
+
+
+Lorem ipsum dolor sit amet.
+
+# header 1
+---
+horizontal: rule
+---
+Lorem ipsum dolor sit amet.
+"""
+    fm_and_header: str = """
+---
+tags:
+  - tag_1
+  - tag_2
+  -
+  - 📅/tag_3
+frontmatter_Key1: "frontmatter_Key1_value"
+frontmatter_Key2: ["note", "article"]
+shared_key1: 'shared_key1_value'
+---
+
+# Header 1
+more content
+
+---
+horizontal: rule
+---
+"""
+    fm_and_header_result = """---
+tags:
+  - tag_1
+  - tag_2
+  -
+  - 📅/tag_3
+frontmatter_Key1: "frontmatter_Key1_value"
+frontmatter_Key2: ["note", "article"]
+shared_key1: 'shared_key1_value'
+---
+
+# Header 1"""
+    no_fm = """
+
+    ### Header's number 3 [📅] "+$2.00" 🤷
+    ---
+    horizontal: rule
+    ---
+    """
+    no_fm_result = '### Header\'s number 3 [📅] "+$2.00" 🤷'
+
+    assert pattern.top_with_header.search(no_fm_or_header).group("top") == ""
+    assert pattern.top_with_header.search(fm_and_header).group("top") == fm_and_header_result
+    assert pattern.top_with_header.search(no_fm).group("top") == no_fm_result
+
+
+def test_find_inline_tags():
+    """Test find_inline_tags regex."""
+    pattern = Patterns()
     assert pattern.find_inline_tags.findall(TAG_CONTENT) == [
         "1",
         "2",
@@ -87,6 +146,11 @@ def test_regex():
         "📅/tag",
     ]
 
+
+def test_find_inline_metadata():
+    """Test find_inline_metadata regex."""
+    pattern = Patterns()
+
     result = pattern.find_inline_metadata.findall(INLINE_METADATA)
     assert result == [
         ("", "", "1", "1**"),
@@ -99,14 +163,26 @@ def test_regex():
         ("", "", "emoji_📅_key", "📅emoji_📅_key_value"),
     ]
 
-    found = pattern.frontmatt_block_with_separators.search(FRONTMATTER_CONTENT).group("frontmatter")
+
+def test_find_frontmatter():
+    """Test regexes."""
+    pattern = Patterns()
+    found = pattern.frontmatter_block.search(FRONTMATTER_CONTENT).group("frontmatter")
     assert found == CORRECT_FRONTMATTER_WITH_SEPARATORS
 
-    found = pattern.frontmatt_block_no_separators.search(FRONTMATTER_CONTENT).group("frontmatter")
+    found = pattern.frontmatt_block_strip_separators.search(FRONTMATTER_CONTENT).group(
+        "frontmatter"
+    )
     assert found == CORRECT_FRONTMATTER_NO_SEPARATORS
 
     with pytest.raises(AttributeError):
-        pattern.frontmatt_block_no_separators.search(TAG_CONTENT).group("frontmatter")
+        pattern.frontmatt_block_strip_separators.search(TAG_CONTENT).group("frontmatter")
+
+
+def test_validators():
+    """Test validators."""
+    pattern = Patterns()
 
     assert pattern.validate_tag_text.search("test_tag") is None
+    assert pattern.validate_tag_text.search("#asdf").group(0) == "#"
     assert pattern.validate_tag_text.search("#asdf").group(0) == "#"

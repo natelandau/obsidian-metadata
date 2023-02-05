@@ -1,6 +1,7 @@
 ["Sample Vault"]
-    exclude_paths = [".git", ".obsidian", "ignore_folder"]
-    path          = "tests/fixtures/sample_vault"
+    exclude_paths   = [".git", ".obsidian", "ignore_folder"]
+    insert_location = "top"
+    path            = "tests/fixtures/sample_vault"
 ["Test Vault"]
     exclude_paths = [".git", ".obsidian", "ignore_folder"]
     path          = "tests/fixtures/test_vault"

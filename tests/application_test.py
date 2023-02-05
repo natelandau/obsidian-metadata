@@ -69,6 +69,33 @@ def test_add_metadata_frontmatter_success(test_application, mocker, capsys) -> N
     assert captured.out == Regex(r"SUCCESS +\| Added metadata to.*\d+.*notes", re.DOTALL)
 
 
+def test_add_metadata_inline_success(test_application, mocker, capsys) -> None:
+    """Test adding new metadata to the vault."""
+    app = test_application
+    app._load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["add_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_area",
+        return_value=MetadataType.INLINE,
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_key",
+        return_value="new_key",
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_new_value",
+        return_value="new_key_value",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = capsys.readouterr()
+    assert captured.out == Regex(r"SUCCESS +\| Added metadata to.*\d+.*notes", re.DOTALL)
+
+
 def test_delete_inline_tag(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application

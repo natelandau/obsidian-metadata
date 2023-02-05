@@ -135,24 +135,47 @@ class Note:
         Returns:
             bool: Whether the metadata was added.
         """
-        if area is MetadataType.FRONTMATTER and self.frontmatter.add(key, value):
-            self.update_frontmatter()
-            return True
-
-        try:
-            if area is MetadataType.INLINE and self.inline_metadata.add(key, str(value)):
-                line = f"{key}:: " if value is None else f"{key}:: {value}"
-                self.insert(new_string=line, location=location)
+        match area:  # noqa: E999
+            case MetadataType.FRONTMATTER if self.frontmatter.add(key, value):
+                self.update_frontmatter()
                 return True
 
-        except ValueError as e:
-            log.warning(f"Could not add metadata to {self.note_path}: {e}")
-            return False
+            case MetadataType.INLINE:
+                if value is None:
+                    if self.inline_metadata.add(key):
+                        line = f"{key}::"
+                        self.insert(new_string=line, location=location)
+                        return True
 
-        if area is MetadataType.TAGS and self.inline_tags.add(str(value)):
-            line = f"#{value}"
-            self.insert(new_string=line, location=location)
-            return True
+                new_values = []
+                if isinstance(value, list):
+                    new_values = [_v for _v in value if self.inline_metadata.add(key, _v)]
+                else:
+                    if self.inline_metadata.add(key, value):
+                        new_values = [value]
+
+                if new_values:
+                    for value in new_values:
+                        self.insert(new_string=f"{key}:: {value}", location=location)
+                    return True
+
+            case MetadataType.TAGS:
+                new_values = []
+                if isinstance(value, list):
+                    new_values = [_v for _v in value if self.inline_tags.add(_v)]
+                else:
+                    if self.inline_tags.add(value):
+                        new_values = [value]
+
+                if new_values:
+                    for value in new_values:
+                        if value.startswith("#"):
+                            value = value[1:]
+                        self.insert(new_string=f"#{value}", location=location)
+                    return True
+
+            case _:
+                return False
 
         return False
 
@@ -284,7 +307,7 @@ class Note:
         if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
             return
 
-        match location:  # noqa: E999
+        match location:
             case InsertLocation.BOTTOM:
                 self.file_content += f"\n{new_string}"
             case InsertLocation.TOP:

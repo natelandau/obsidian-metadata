@@ -46,7 +46,6 @@ horizontal: rule
 """
 INLINE_CONTENT = """\
 repeated_key:: repeated_key_value1
-
 #inline_tag_top1,#inline_tag_top2
 **bold_key1**:: bold_key1_value
 **bold_key2:: bold_key2_value**
@@ -280,9 +279,6 @@ def test_inline_metadata_add() -> None:
         "tag_key": ["tag_key_value"],
     }
 
-    with pytest.raises(ValueError):
-        assert inline.add("added_key1", "added_value_2") is True
-
     assert inline.dict == {
         "added_key": [],
         "added_key1": ["added_value"],
@@ -309,6 +305,8 @@ def test_inline_metadata_add() -> None:
         "repeated_key": ["repeated_key_value1", "repeated_key_value2"],
         "tag_key": ["tag_key_value"],
     }
+    assert inline.add("repeated_key", "repeated_key_value1") is False
+    assert inline.add("repeated_key", "new_value") is True
 
 
 def test_inline_metadata_contains() -> None:

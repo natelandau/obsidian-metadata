@@ -401,7 +401,7 @@ class InlineMetadata:
         """
         return f"InlineMetadata(inline_metadata={self.dict})"
 
-    def add(self, key: str, value: str = None) -> bool:
+    def add(self, key: str, value: str | list[str] = None) -> bool:
         """Add a key and value to the inline metadata.
 
         Args:
@@ -411,23 +411,29 @@ class InlineMetadata:
         Returns:
             bool: True if the metadata was added
         """
-        if value is None or value == "" or value == "None":
+        if value is None:
             if key not in self.dict:
                 self.dict[key] = []
                 return True
             return False
 
         if key not in self.dict:
+            if isinstance(value, list):
+                self.dict[key] = value
+                return True
+
             self.dict[key] = [value]
             return True
 
-        if key in self.dict and len(self.dict[key]) > 0:
-            if value in self.dict[key]:
-                return False
-            raise ValueError(f"'{key}' not empty")
+        if key in self.dict and value not in self.dict[key]:
+            if isinstance(value, list):
+                self.dict[key].extend(value)
+                return True
 
-        self.dict[key].append(value)
-        return True
+            self.dict[key].append(value)
+            return True
+
+        return False
 
     def contains(self, key: str, value: str = None, is_regex: bool = False) -> bool:
         """Check if a key or value exists in the inline metadata.
@@ -561,7 +567,7 @@ class InlineTags:
             )
         )
 
-    def add(self, new_tag: str) -> bool:
+    def add(self, new_tag: str | list[str]) -> bool:
         """Add a new inline tag.
 
         Args:
@@ -570,13 +576,27 @@ class InlineTags:
         Returns:
             bool: True if a tag was added.
         """
-        if new_tag in self.list:
-            return False
+        if isinstance(new_tag, list):
+            for _tag in new_tag:
+                if _tag.startswith("#"):
+                    _tag = _tag[1:]
+                if _tag in self.list:
+                    return False
+                new_list = self.list.copy()
+                new_list.append(_tag)
+                self.list = sorted(new_list)
+                return True
+        else:
+            if new_tag.startswith("#"):
+                new_tag = new_tag[1:]
+            if new_tag in self.list:
+                return False
+            new_list = self.list.copy()
+            new_list.append(new_tag)
+            self.list = sorted(new_list)
+            return True
 
-        new_list = self.list.copy()
-        new_list.append(new_tag)
-        self.list = sorted(new_list)
-        return True
+        return False
 
     def contains(self, tag: str, is_regex: bool = False) -> bool:
         """Check if a tag exists in the metadata.

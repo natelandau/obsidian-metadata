@@ -99,6 +99,21 @@ def test_add_metadata_inline(short_note) -> None:
     )
     assert "new_key2:: new_value1" in note.file_content
 
+    assert (
+        note.add_metadata(
+            MetadataType.INLINE, key="new_key2", value="new_value2", location=InsertLocation.BOTTOM
+        )
+        is True
+    )
+    assert "new_key2:: new_value2" in note.file_content
+
+    assert (
+        note.add_metadata(
+            MetadataType.INLINE, key="new_key2", value="new_value2", location=InsertLocation.BOTTOM
+        )
+        is False
+    )
+
 
 def test_add_metadata_frontmatter(sample_note) -> None:
     """Test adding metadata."""

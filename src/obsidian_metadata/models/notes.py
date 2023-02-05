@@ -120,7 +120,7 @@ class Note:
     def add_metadata(
         self,
         area: MetadataType,
-        key: str,
+        key: str = None,
         value: str | list[str] = None,
         location: InsertLocation = None,
     ) -> bool:
@@ -128,7 +128,7 @@ class Note:
 
         Args:
             area (MetadataType): Area to add metadata to.
-            key (str): Key to add.
+            key (str, optional): Key to add
             location (InsertLocation, optional): Location to add inline metadata and tags.
             value (str, optional): Value to add.
 
@@ -140,7 +140,7 @@ class Note:
             return True
 
         try:
-            if area is MetadataType.INLINE and self.inline_metadata.add(key, value):
+            if area is MetadataType.INLINE and self.inline_metadata.add(key, str(value)):
                 line = f"{key}:: " if value is None else f"{key}:: {value}"
                 self.insert(new_string=line, location=location)
                 return True
@@ -149,9 +149,10 @@ class Note:
             log.warning(f"Could not add metadata to {self.note_path}: {e}")
             return False
 
-        if area is MetadataType.TAGS:
-            # TODO: implement adding to intext tags
-            pass
+        if area is MetadataType.TAGS and self.inline_tags.add(str(value)):
+            line = f"#{value}"
+            self.insert(new_string=line, location=location)
+            return True
 
         return False
 

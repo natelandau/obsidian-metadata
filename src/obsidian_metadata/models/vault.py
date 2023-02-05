@@ -165,7 +165,7 @@ class Vault:
     def add_metadata(
         self,
         area: MetadataType,
-        key: str,
+        key: str = None,
         value: str | list[str] = None,
         location: InsertLocation = None,
     ) -> int:
@@ -186,7 +186,7 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.add_metadata(area, key, value, location):
+            if _note.add_metadata(area=area, key=key, value=value, location=location):
                 num_changed += 1
 
         if num_changed > 0:

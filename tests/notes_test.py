@@ -103,6 +103,7 @@ def test_add_metadata_inline(short_note) -> None:
 def test_add_metadata_frontmatter(sample_note) -> None:
     """Test adding metadata."""
     note = Note(note_path=sample_note)
+
     assert note.add_metadata(MetadataType.FRONTMATTER, "frontmatter_Key1") is False
     assert note.add_metadata(MetadataType.FRONTMATTER, "shared_key1", "shared_key1_value") is False
     assert note.add_metadata(MetadataType.FRONTMATTER, "new_key1") is True
@@ -157,6 +158,30 @@ def test_add_metadata_frontmatter(sample_note) -> None:
             "📅/frontmatter_tag3",
         ],
     }
+
+
+def test_add_metadata_tag(sample_note) -> None:
+    """Test adding inline tags."""
+    note = Note(note_path=sample_note)
+
+    assert (
+        note.add_metadata(MetadataType.TAGS, value="shared_tag", location=InsertLocation.TOP)
+        is False
+    )
+    assert (
+        note.add_metadata(MetadataType.TAGS, value="a_new_tag", location=InsertLocation.TOP) is True
+    )
+    assert note.inline_tags.list == [
+        "a_new_tag",
+        "inline_tag_bottom1",
+        "inline_tag_bottom2",
+        "inline_tag_top1",
+        "inline_tag_top2",
+        "intext_tag1",
+        "intext_tag2",
+        "shared_tag",
+    ]
+    assert "#a_new_tag" in note.file_content
 
 
 def test_contains_inline_tag(sample_note) -> None:

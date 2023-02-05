@@ -401,7 +401,7 @@ class InlineMetadata:
         """
         return f"InlineMetadata(inline_metadata={self.dict})"
 
-    def add(self, key: str, value: str | list[str] = None) -> bool:
+    def add(self, key: str, value: str = None) -> bool:
         """Add a key and value to the inline metadata.
 
         Args:
@@ -411,14 +411,11 @@ class InlineMetadata:
         Returns:
             bool: True if the metadata was added
         """
-        if value is None:
+        if value is None or value == "" or value == "None":
             if key not in self.dict:
                 self.dict[key] = []
                 return True
             return False
-
-        if isinstance(value, list):
-            value = value[0]
 
         if key not in self.dict:
             self.dict[key] = [value]
@@ -563,6 +560,23 @@ class InlineTags:
                 )
             )
         )
+
+    def add(self, new_tag: str) -> bool:
+        """Add a new inline tag.
+
+        Args:
+            new_tag (str): Tag to add.
+
+        Returns:
+            bool: True if a tag was added.
+        """
+        if new_tag in self.list:
+            return False
+
+        new_list = self.list.copy()
+        new_list.append(new_tag)
+        self.list = sorted(new_list)
+        return True
 
     def contains(self, tag: str, is_regex: bool = False) -> bool:
         """Check if a tag exists in the metadata.

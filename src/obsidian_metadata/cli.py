@@ -120,7 +120,8 @@ def main(
         • Add metadata to the frontmatter
         • Add to inline metadata - Set `insert_location` in the config to
           control where the new metadata is inserted. (Default: Bottom)
-        • [dim]Add to inline tag (Not yet implemented)[/]
+        • Add to inline tag - Set `insert_location` in the config to
+          control where the new tag is inserted. (Default: Bottom)
 
     [bold underline]Rename Metadata[/]
     Rename either a key and all associated values, a specific value within a key. or an in-text tag.

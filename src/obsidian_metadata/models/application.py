@@ -104,7 +104,19 @@ class Application:
                 alerts.success(f"Added metadata to {num_changed} notes")
 
             case MetadataType.TAGS:
-                alerts.warning(f"Adding metadata to {area} is not supported yet")
+                tag = self.questions.ask_new_tag()
+                if tag is None:  # pragma: no cover
+                    return
+
+                num_changed = self.vault.add_metadata(
+                    area=area, value=tag, location=self.vault.insert_location
+                )
+
+                if num_changed == 0:  # pragma: no cover
+                    alerts.warning(f"No notes were changed")
+                    return
+
+                alerts.success(f"Added metadata to {num_changed} notes")
             case _:  # pragma: no cover
                 return
 

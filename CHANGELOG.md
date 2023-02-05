@@ -1,3 +1,15 @@
+## v0.5.0 (2023-02-04)
+
+### Feat
+
+-   add new tags (#16)
+-   add new inline metadata (#15)
+-   **configuration**: `insert_location` specifies where content is added within notes
+
+### Fix
+
+-   find more emojis
+
 ## v0.4.0 (2023-02-02)
 
 ### Feat

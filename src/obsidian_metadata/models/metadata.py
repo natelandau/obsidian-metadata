@@ -2,7 +2,7 @@
 
 import re
 from io import StringIO
-
+import copy
 from rich import print
 from rich.columns import Columns
 from rich.console import Console
@@ -49,15 +49,13 @@ class VaultMetadata:
         """
         if isinstance(metadata, dict):
             new_metadata = clean_dictionary(metadata)
-            self.dict = merge_dictionaries(self.dict.copy(), new_metadata.copy())
+            self.dict = merge_dictionaries(self.dict, new_metadata)
 
         if area == MetadataType.FRONTMATTER:
-            self.frontmatter = merge_dictionaries(self.frontmatter.copy(), new_metadata.copy())
+            self.frontmatter = merge_dictionaries(self.frontmatter, new_metadata)
 
         if area == MetadataType.INLINE:
-            self.inline_metadata = merge_dictionaries(
-                self.inline_metadata.copy(), new_metadata.copy()
-            )
+            self.inline_metadata = merge_dictionaries(self.inline_metadata, new_metadata)
 
         if area == MetadataType.TAGS and isinstance(metadata, list):
             self.tags.extend(metadata)
@@ -118,7 +116,7 @@ class VaultMetadata:
         Returns:
             bool: True if a value was deleted
         """
-        new_dict = self.dict.copy()
+        new_dict = copy.deepcopy(self.dict)
 
         if value_to_delete is None:
             for _k in list(new_dict):
@@ -216,7 +214,7 @@ class Frontmatter:
 
     def __init__(self, file_content: str):
         self.dict: dict[str, list[str]] = self._grab_note_frontmatter(file_content)
-        self.dict_original: dict[str, list[str]] = self.dict.copy()
+        self.dict_original: dict[str, list[str]] = copy.deepcopy(self.dict)
 
     def __repr__(self) -> str:  # pragma: no cover
         """Representation of the frontmatter.
@@ -364,7 +362,7 @@ class Frontmatter:
             str: Frontmatter as a YAML string.
             sort_keys (bool, optional): Sort the keys. Defaults to False.
         """
-        dict_to_dump = self.dict.copy()
+        dict_to_dump = copy.deepcopy(self.dict)
         for k in dict_to_dump:
             if dict_to_dump[k] == []:
                 dict_to_dump[k] = None
@@ -391,7 +389,7 @@ class InlineMetadata:
 
     def __init__(self, file_content: str):
         self.dict: dict[str, list[str]] = self.grab_inline_metadata(file_content)
-        self.dict_original: dict[str, list[str]] = self.dict.copy()
+        self.dict_original: dict[str, list[str]] = copy.deepcopy(self.dict)
 
     def __repr__(self) -> str:  # pragma: no cover
         """Representation of inline metadata.

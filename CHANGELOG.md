@@ -1,3 +1,15 @@
+## v0.6.0 (2023-02-06)
+
+### Feat
+
+- transpose metadata (#18)
+
+### Fix
+
+- **ui**: add seperator to top of select lists
+- allow adding inline tags with same key different values (#17)
+- remove unnecessary question when viewing diffs
+
 ## v0.5.0 (2023-02-04)
 
 ### Feat

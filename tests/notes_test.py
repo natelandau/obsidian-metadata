@@ -36,7 +36,7 @@ def test_note_create(sample_note) -> None:
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -58,9 +58,9 @@ def test_note_create(sample_note) -> None:
     assert note.inline_metadata.dict == {
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
         "shared_key2": ["shared_key2_value2"],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
@@ -127,7 +127,7 @@ def test_add_metadata_frontmatter(sample_note) -> None:
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "new_key1": [],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -143,7 +143,7 @@ def test_add_metadata_frontmatter(sample_note) -> None:
         "frontmatter_Key2": ["article", "note"],
         "new_key1": [],
         "new_key2": ["new_key2_value"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -164,7 +164,7 @@ def test_add_metadata_frontmatter(sample_note) -> None:
         "frontmatter_Key2": ["article", "note"],
         "new_key1": [],
         "new_key2": ["new_key2_value", "new_key2_value2", "new_key2_value3"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -272,7 +272,7 @@ def test_delete_metadata(sample_note) -> Note:
     assert note.file_content != Regex(r"bottom_key2")
 
     assert note.delete_metadata("shared_key1", area=MetadataType.INLINE) is True
-    assert note.frontmatter.dict["shared_key1"] == ["shared_key1_value"]
+    assert note.frontmatter.dict["shared_key1"] == ["shared_key1_value", "shared_key1_value3"]
     assert "shared_key1" not in note.inline_metadata.dict
 
     assert note.delete_metadata("shared_key2", area=MetadataType.FRONTMATTER) is True
@@ -514,9 +514,9 @@ def test_rename_inline_metadata(sample_note) -> None:
     assert note.file_content != Regex(r"bottom_key1::")
     assert note.file_content == Regex(r"new_key::")
 
-    note._rename_inline_metadata("emoji_📅_key", "emoji_📅_key_value", "new_value")
-    assert note.file_content != Regex(r"emoji_📅_key:: ?emoji_📅_key_value")
-    assert note.file_content == Regex(r"emoji_📅_key:: ?new_value")
+    note._rename_inline_metadata("key📅", "📅_key_value", "new_value")
+    assert note.file_content != Regex(r"key📅:: ?📅_key_value")
+    assert note.file_content == Regex(r"key📅:: ?new_value")
 
 
 def test_rename_metadata(sample_note) -> None:
@@ -588,11 +588,15 @@ def test_transpose_frontmatter(sample_note) -> None:
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
         "date_created": ["2022-12-22"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": [
+            "shared_key1_value",
+            "shared_key1_value2",
+            "shared_key1_value3",
+        ],
         "shared_key2": ["shared_key2_value2", "shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -600,6 +604,44 @@ def test_transpose_frontmatter(sample_note) -> None:
             "shared_tag",
             "📅/frontmatter_tag3",
         ],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+    }
+
+    # Transpose when key exists in both frontmatter and inline metadata
+    note = Note(note_path=sample_note)
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.FRONTMATTER,
+            end=MetadataType.INLINE,
+            key="shared_key1",
+        )
+        is True
+    )
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+    }
+    assert note.inline_metadata.dict == {
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": [
+            "shared_key1_value",
+            "shared_key1_value2",
+            "shared_key1_value3",
+        ],
+        "shared_key2": ["shared_key2_value2"],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value_as_link"],
@@ -619,7 +661,7 @@ def test_transpose_frontmatter(sample_note) -> None:
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -632,9 +674,9 @@ def test_transpose_frontmatter(sample_note) -> None:
     assert note.inline_metadata.dict == {
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
         "shared_key2": ["shared_key2_value2"],
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value_as_link"],
@@ -654,7 +696,7 @@ def test_transpose_frontmatter(sample_note) -> None:
     assert note.frontmatter.dict == {
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -666,10 +708,10 @@ def test_transpose_frontmatter(sample_note) -> None:
     assert note.inline_metadata.dict == {
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "frontmatter_Key2": ["article", "note"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
         "shared_key2": ["shared_key2_value2"],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
@@ -691,7 +733,7 @@ def test_transpose_frontmatter(sample_note) -> None:
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -703,10 +745,10 @@ def test_transpose_frontmatter(sample_note) -> None:
     assert note.inline_metadata.dict == {
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "frontmatter_Key2": ["note"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
         "shared_key2": ["shared_key2_value2"],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
@@ -727,7 +769,7 @@ def test_transpose_frontmatter(sample_note) -> None:
     assert note.frontmatter.dict == {
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -739,10 +781,10 @@ def test_transpose_frontmatter(sample_note) -> None:
     assert note.inline_metadata.dict == {
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "frontmatter_Key2": ["note", "article"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
         "shared_key2": ["shared_key2_value2"],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
@@ -767,7 +809,9 @@ frontmatter_Key1: some_new_key_here
 frontmatter_Key2:
   - article
   - note
-shared_key1: shared_key1_value
+shared_key1:
+  - shared_key1_value
+  - shared_key1_value3
 shared_key2: shared_key2_value1
 ---"""
     assert new_frontmatter in note.file_content

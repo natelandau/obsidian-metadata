@@ -1,14 +1,16 @@
 ---
 date_created: 2022-12-22
 tags:
-  - shared_tag
-  - frontmatter_tag1
-  - frontmatter_tag2
-  -
-  - 📅/frontmatter_tag3
+    - shared_tag
+    - frontmatter_tag1
+    - frontmatter_tag2
+    -
+    - 📅/frontmatter_tag3
 frontmatter_Key1: author name
 frontmatter_Key2: ["article", "note"]
-shared_key1: shared_key1_value
+shared_key1:
+    - shared_key1_value
+    - shared_key1_value3
 shared_key2: shared_key2_value1
 ---
 
@@ -18,10 +20,12 @@ top_key1:: top_key1_value
 **top_key2:: top_key2_value**
 top_key3:: [[top_key3_value_as_link]]
 shared_key1:: shared_key1_value
+shared_key1:: shared_key1_value2
 shared_key2:: shared_key2_value2
-emoji_📅_key:: emoji_📅_key_value
+key📅:: 📅_key_value
 
 # Heading 1
+
 Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. #intext_tag1 Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu [intext_key:: intext_value] fugiat nulla (#intext_tag2) pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est lab
 
 ```python

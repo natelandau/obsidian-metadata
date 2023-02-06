@@ -411,3 +411,42 @@ class Vault:
             self._rebuild_vault_metadata()
 
         return num_changed
+
+    def transpose_metadata(
+        self,
+        begin: MetadataType,
+        end: MetadataType,
+        key: str = None,
+        value: str | list[str] = None,
+        location: InsertLocation = None,
+    ) -> int:
+        """Transpose metadata from one type to another.
+
+        Args:
+            begin (MetadataType): Metadata type to transpose from.
+            end (MetadataType): Metadata type to transpose to.
+            key (str, optional): Key to transpose. Defaults to None.
+            value (str, optional): Value to transpose. Defaults to None.
+            location (InsertLocation, optional): Location to insert metadata. (Defaults to `vault.config.insert_location`)
+
+        Returns:
+            int: Number of notes that had metadata transposed.
+        """
+        if location is None:
+            location = self.insert_location
+
+        num_changed = 0
+        for _note in self.notes_in_scope:
+            if _note.transpose_metadata(
+                begin=begin,
+                end=end,
+                key=key,
+                value=value,
+                location=location,
+            ):
+                num_changed += 1
+
+        if num_changed > 0:
+            self._rebuild_vault_metadata()
+
+        return num_changed

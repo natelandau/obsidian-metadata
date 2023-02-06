@@ -280,6 +280,7 @@ class Questions:
                 {"name": "Add Metadata", "value": "add_metadata"},
                 {"name": "Rename Metadata", "value": "rename_metadata"},
                 {"name": "Delete Metadata", "value": "delete_metadata"},
+                {"name": "Transpose Metadata", "value": "transpose_metadata"},
                 questionary.Separator("-------------------------------"),
                 {"name": "Review Changes", "value": "review_changes"},
                 {"name": "Commit Changes", "value": "commit_changes"},

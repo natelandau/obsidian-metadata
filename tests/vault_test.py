@@ -29,12 +29,16 @@ def test_vault_creation(test_vault):
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
         "date_created": ["2022-12-22"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "ignored_frontmatter": ["ignore_me"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": [
+            "shared_key1_value",
+            "shared_key1_value2",
+            "shared_key1_value3",
+        ],
         "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
         "tags": [
             "frontmatter_tag1",
@@ -63,9 +67,9 @@ def test_vault_creation(test_vault):
     assert vault.metadata.inline_metadata == {
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
         "shared_key2": ["shared_key2_value2"],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
@@ -77,7 +81,7 @@ def test_vault_creation(test_vault):
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "ignored_frontmatter": ["ignore_me"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -104,13 +108,17 @@ def test_add_metadata(test_vault) -> None:
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
         "date_created": ["2022-12-22"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "ignored_frontmatter": ["ignore_me"],
         "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
         "new_key": [],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": [
+            "shared_key1_value",
+            "shared_key1_value2",
+            "shared_key1_value3",
+        ],
         "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
         "tags": [
             "frontmatter_tag1",
@@ -132,7 +140,7 @@ def test_add_metadata(test_vault) -> None:
         "frontmatter_Key2": ["article", "note"],
         "ignored_frontmatter": ["ignore_me"],
         "new_key": [],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -150,14 +158,18 @@ def test_add_metadata(test_vault) -> None:
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
         "date_created": ["2022-12-22"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "ignored_frontmatter": ["ignore_me"],
         "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
         "new_key": [],
         "new_key2": ["new_key2_value"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": [
+            "shared_key1_value",
+            "shared_key1_value2",
+            "shared_key1_value3",
+        ],
         "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
         "tags": [
             "frontmatter_tag1",
@@ -180,7 +192,7 @@ def test_add_metadata(test_vault) -> None:
         "ignored_frontmatter": ["ignore_me"],
         "new_key": [],
         "new_key2": ["new_key2_value"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -470,3 +482,51 @@ def test_rename_metadata(test_vault) -> None:
         "shared_tag",
         "📅/frontmatter_tag3",
     ]
+
+
+def test_transpose_metadata(test_vault) -> None:
+    """Test transposing metadata."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+
+    assert vault.transpose_metadata(begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER) == 2
+
+    assert vault.metadata.inline_metadata == {}
+    assert vault.metadata.frontmatter == {
+        "author": ["author name"],
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "ignored_frontmatter": ["ignore_me"],
+        "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": [
+            "shared_key1_value",
+            "shared_key1_value2",
+            "shared_key1_value3",
+        ],
+        "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "frontmatter_tag3",
+            "ignored_file_tag1",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+        "type": ["article", "note"],
+    }
+
+    assert (
+        vault.transpose_metadata(
+            begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER, location=InsertLocation.TOP
+        )
+        == 0
+    )

@@ -36,7 +36,7 @@ def test_note_create(sample_note) -> None:
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -58,9 +58,9 @@ def test_note_create(sample_note) -> None:
     assert note.inline_metadata.dict == {
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
-        "emoji_📅_key": ["emoji_📅_key_value"],
         "intext_key": ["intext_value"],
-        "shared_key1": ["shared_key1_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
         "shared_key2": ["shared_key2_value2"],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
@@ -127,7 +127,7 @@ def test_add_metadata_frontmatter(sample_note) -> None:
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
         "new_key1": [],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -143,7 +143,7 @@ def test_add_metadata_frontmatter(sample_note) -> None:
         "frontmatter_Key2": ["article", "note"],
         "new_key1": [],
         "new_key2": ["new_key2_value"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -164,7 +164,7 @@ def test_add_metadata_frontmatter(sample_note) -> None:
         "frontmatter_Key2": ["article", "note"],
         "new_key1": [],
         "new_key2": ["new_key2_value", "new_key2_value2", "new_key2_value3"],
-        "shared_key1": ["shared_key1_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
@@ -270,6 +270,14 @@ def test_delete_metadata(sample_note) -> Note:
     assert note.delete_metadata("bottom_key2") is True
     assert "bottom_key2" not in note.inline_metadata.dict
     assert note.file_content != Regex(r"bottom_key2")
+
+    assert note.delete_metadata("shared_key1", area=MetadataType.INLINE) is True
+    assert note.frontmatter.dict["shared_key1"] == ["shared_key1_value", "shared_key1_value3"]
+    assert "shared_key1" not in note.inline_metadata.dict
+
+    assert note.delete_metadata("shared_key2", area=MetadataType.FRONTMATTER) is True
+    assert note.inline_metadata.dict["shared_key2"] == ["shared_key2_value2"]
+    assert "shared_key2" not in note.frontmatter.dict
 
 
 def test_has_changes(sample_note) -> None:
@@ -506,9 +514,9 @@ def test_rename_inline_metadata(sample_note) -> None:
     assert note.file_content != Regex(r"bottom_key1::")
     assert note.file_content == Regex(r"new_key::")
 
-    note._rename_inline_metadata("emoji_📅_key", "emoji_📅_key_value", "new_value")
-    assert note.file_content != Regex(r"emoji_📅_key:: ?emoji_📅_key_value")
-    assert note.file_content == Regex(r"emoji_📅_key:: ?new_value")
+    note._rename_inline_metadata("key📅", "📅_key_value", "new_value")
+    assert note.file_content != Regex(r"key📅:: ?📅_key_value")
+    assert note.file_content == Regex(r"key📅:: ?new_value")
 
 
 def test_rename_metadata(sample_note) -> None:
@@ -539,6 +547,251 @@ def test_rename_metadata(sample_note) -> None:
     assert note.file_content == Regex(r"new_key:: new_value")
 
 
+def test_transpose_frontmatter(sample_note) -> None:
+    """Test transposing metadata."""
+    note = Note(note_path=sample_note)
+    note.frontmatter.dict = {}
+    assert note.transpose_metadata(begin=MetadataType.FRONTMATTER, end=MetadataType.INLINE) is False
+
+    note = Note(note_path=sample_note)
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.FRONTMATTER,
+            end=MetadataType.INLINE,
+            key="not_a_key",
+        )
+        is False
+    )
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.FRONTMATTER,
+            end=MetadataType.INLINE,
+            key="frontmatter_Key2",
+            value="not_a_value",
+        )
+        is False
+    )
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.FRONTMATTER,
+            end=MetadataType.INLINE,
+            key="frontmatter_Key2",
+            value=["not_a_value", "not_a_value2"],
+        )
+        is False
+    )
+
+    # Transpose all frontmatter metadata to inline metadata
+    assert note.transpose_metadata(begin=MetadataType.FRONTMATTER, end=MetadataType.INLINE) is True
+    assert note.frontmatter.dict == {}
+    assert note.inline_metadata.dict == {
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": [
+            "shared_key1_value",
+            "shared_key1_value2",
+            "shared_key1_value3",
+        ],
+        "shared_key2": ["shared_key2_value2", "shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+    }
+
+    # Transpose when key exists in both frontmatter and inline metadata
+    note = Note(note_path=sample_note)
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.FRONTMATTER,
+            end=MetadataType.INLINE,
+            key="shared_key1",
+        )
+        is True
+    )
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+    }
+    assert note.inline_metadata.dict == {
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": [
+            "shared_key1_value",
+            "shared_key1_value2",
+            "shared_key1_value3",
+        ],
+        "shared_key2": ["shared_key2_value2"],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+    }
+
+    # Transpose a single key and it's respective values
+    note = Note(note_path=sample_note)
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.INLINE,
+            end=MetadataType.FRONTMATTER,
+            key="top_key1",
+        )
+        is True
+    )
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article", "note"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+        "top_key1": ["top_key1_value"],
+    }
+    assert note.inline_metadata.dict == {
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
+        "shared_key2": ["shared_key2_value2"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+    }
+
+    # Transpose a key when it's value is a list
+    note = Note(note_path=sample_note)
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.FRONTMATTER,
+            end=MetadataType.INLINE,
+            key="frontmatter_Key2",
+            value=["article", "note"],
+        )
+        is True
+    )
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+    }
+    assert note.inline_metadata.dict == {
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "frontmatter_Key2": ["article", "note"],
+        "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
+        "shared_key2": ["shared_key2_value2"],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+    }
+
+    # Transpose a string value from a key
+    note = Note(note_path=sample_note)
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.FRONTMATTER,
+            end=MetadataType.INLINE,
+            key="frontmatter_Key2",
+            value="note",
+        )
+        is True
+    )
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "frontmatter_Key2": ["article"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+    }
+    assert note.inline_metadata.dict == {
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "frontmatter_Key2": ["note"],
+        "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
+        "shared_key2": ["shared_key2_value2"],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+    }
+
+    # Transpose list values from a key
+    note = Note(note_path=sample_note)
+    assert (
+        note.transpose_metadata(
+            begin=MetadataType.FRONTMATTER,
+            end=MetadataType.INLINE,
+            key="frontmatter_Key2",
+            value=["note", "article"],
+        )
+        is True
+    )
+    assert note.frontmatter.dict == {
+        "date_created": ["2022-12-22"],
+        "frontmatter_Key1": ["author name"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
+        "shared_key2": ["shared_key2_value1"],
+        "tags": [
+            "frontmatter_tag1",
+            "frontmatter_tag2",
+            "shared_tag",
+            "📅/frontmatter_tag3",
+        ],
+    }
+    assert note.inline_metadata.dict == {
+        "bottom_key1": ["bottom_key1_value"],
+        "bottom_key2": ["bottom_key2_value"],
+        "frontmatter_Key2": ["note", "article"],
+        "intext_key": ["intext_value"],
+        "key📅": ["📅_key_value"],
+        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
+        "shared_key2": ["shared_key2_value2"],
+        "top_key1": ["top_key1_value"],
+        "top_key2": ["top_key2_value"],
+        "top_key3": ["top_key3_value_as_link"],
+    }
+
+
 def test_update_frontmatter(sample_note) -> None:
     """Test replacing frontmatter."""
     note = Note(note_path=sample_note)
@@ -556,7 +809,9 @@ frontmatter_Key1: some_new_key_here
 frontmatter_Key2:
   - article
   - note
-shared_key1: shared_key1_value
+shared_key1:
+  - shared_key1_value
+  - shared_key1_value3
 shared_key2: shared_key2_value1
 ---"""
     assert new_frontmatter in note.file_content

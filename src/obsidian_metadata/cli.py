@@ -135,6 +135,14 @@ def main(
         • Delete a value from a key
         • Delete an inline tag
 
+    [bold underline]Transpose Metadata[/]
+    Move metadata from inline to frontmatter or the reverse.
+
+        • Transpose all metadata - Moves all frontmatter to inline
+          metadata, or the reverse
+        • Transpose key - Transposes a specific key and all it's values
+        • Transpose value- Transpose a specific key:value pair
+
     [bold underline]Review Changes[/]
     Prior to committing changes, review all changes that will be made.
         • View a diff of the changes that will be made

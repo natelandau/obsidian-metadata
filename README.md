@@ -77,6 +77,12 @@ Once installed, run `obsidian-metadata` in your terminal to enter an interactive
 -   **Delete a value from a key**
 -   **Delete an inline tag**
 
+**Transpose Metadata**: Move metadata from inline to frontmatter or the reverse.
+
+-   **Transpose all metadata** - Moves all frontmatter to inline metadata, or the reverse
+-   **Transpose key** - Transposes a specific key and all it's values
+-   **Transpose value**- Transpose a specific key:value pair
+
 **Review Changes**: Prior to committing changes, review all changes that will be made.
 
 -   **View a diff of the changes** that will be made
@@ -122,7 +128,7 @@ To bypass the configuration file and specify a vault to use at runtime use the `
 
 There are two ways to contribute to this project.
 
-### 1. Containerized development (Recommended)
+### 1. Containerized development
 
 1. Clone this repository. `git clone https://github.com/natelandau/obsidian-metadata`
 2. Open the repository in Visual Studio Code

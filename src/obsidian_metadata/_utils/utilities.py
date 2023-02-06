@@ -122,7 +122,7 @@ def docstring_parameter(*sub: Any) -> Any:
 
 
 def merge_dictionaries(dict1: dict, dict2: dict) -> dict:
-    """Merge two dictionaries.
+    """Merge two dictionaries. When the values are lists, they are merged and sorted.
 
     Args:
         dict1 (dict): First dictionary.

@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from obsidian_metadata.models.enums import MetadataType
-from tests.helpers import Regex
+from tests.helpers import Regex, remove_ansi
 
 
 def test_instantiate_application(test_application) -> None:
@@ -38,8 +38,8 @@ def test_abort(test_application, mocker, capsys) -> None:
     )
 
     app.application_main()
-    captured = capsys.readouterr()
-    assert "Done!" in captured.out
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "Done!" in captured
 
 
 def test_add_metadata_frontmatter(test_application, mocker, capsys) -> None:
@@ -65,8 +65,8 @@ def test_add_metadata_frontmatter(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\| Added metadata to.*\d+.*notes", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"SUCCESS +\| Added metadata to \d+ notes", re.DOTALL)
 
 
 def test_add_metadata_inline(test_application, mocker, capsys) -> None:
@@ -92,8 +92,8 @@ def test_add_metadata_inline(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\| Added metadata to.*\d+.*notes", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"SUCCESS +\| Added metadata to \d+ notes", re.DOTALL)
 
 
 def test_add_metadata_tag(test_application, mocker, capsys) -> None:
@@ -115,8 +115,8 @@ def test_add_metadata_tag(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\| Added metadata to.*\d+.*notes", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"SUCCESS +\| Added metadata to \d+ notes", re.DOTALL)
 
 
 def test_delete_inline_tag(test_application, mocker, capsys) -> None:
@@ -138,8 +138,8 @@ def test_delete_inline_tag(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"WARNING +\| No notes were changed", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "WARNING  | No notes were changed" in captured
 
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
@@ -156,8 +156,8 @@ def test_delete_inline_tag(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\| Deleted.*\d+.*notes", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"SUCCESS +\| Deleted inline tag: breakfast in \d+ notes", re.DOTALL)
 
 
 def test_delete_key(test_application, mocker, capsys) -> None:
@@ -179,8 +179,8 @@ def test_delete_key(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"WARNING +\| No notes found with a.*key.*matching", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert r"WARNING  | No notes found with a key matching: \d{7}" in captured
 
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
@@ -197,10 +197,8 @@ def test_delete_key(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(
-        r"SUCCESS +\|.*Deleted.*keys.*matching:.*d\\w\+.*from.*10", re.DOTALL
-    )
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"SUCCESS  \| Deleted keys matching: d\\w\+ from \d+ notes", re.DOTALL)
 
 
 def test_delete_value(test_application, mocker, capsys) -> None:
@@ -225,8 +223,8 @@ def test_delete_value(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"WARNING +\| No notes found matching:", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert r"WARNING  | No notes found matching: area: \d{7}" in captured
 
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
@@ -246,10 +244,8 @@ def test_delete_value(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(
-        r"SUCCESS +\| Deleted value.*\^front\\w\+\$.*from.*key.*area.*in.*\d+.*notes", re.DOTALL
-    )
+    captured = remove_ansi(capsys.readouterr().out)
+    assert r"SUCCESS  | Deleted value ^front\w+$ from key area in 8 notes" in captured
 
 
 def test_filter_notes(test_application, mocker, capsys) -> None:
@@ -271,10 +267,10 @@ def test_filter_notes(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\| Loaded.*\d+.*notes from.*\d+.*total", re.DOTALL)
-    assert "02 inline/inline 2.md" in captured.out
-    assert "03 mixed/mixed 1.md" not in captured.out
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"SUCCESS +\| Loaded \d+ notes from \d+ total", re.DOTALL)
+    assert "02 inline/inline 2.md" in captured
+    assert "03 mixed/mixed 1.md" not in captured
 
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
@@ -326,11 +322,11 @@ def test_filter_clear(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert "02 inline/inline 2.md" in captured.out
-    assert "03 mixed/mixed 1.md" in captured.out
-    assert "01 frontmatter/frontmatter 4.md" in captured.out
-    assert "04 no metadata/no_metadata_1.md " in captured.out
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "02 inline/inline 2.md" in captured
+    assert "03 mixed/mixed 1.md" in captured
+    assert "01 frontmatter/frontmatter 4.md" in captured
+    assert "04 no metadata/no_metadata_1.md " in captured
 
 
 def test_inspect_metadata_all(test_application, mocker, capsys) -> None:
@@ -348,8 +344,8 @@ def test_inspect_metadata_all(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"type +│ article", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"type +│ article", re.DOTALL)
 
 
 def test_rename_inline_tag(test_application, mocker, capsys) -> None:
@@ -375,8 +371,8 @@ def test_rename_inline_tag(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"WARNING +\| No notes were changed", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "No notes were changed" in captured
 
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
@@ -397,8 +393,8 @@ def test_rename_inline_tag(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Renamed.*breakfast.*to.*new_tag.*in.*\d+.*notes", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"Renamed breakfast to new_tag in \d+ notes", re.DOTALL)
 
 
 def test_rename_key(test_application, mocker, capsys) -> None:
@@ -424,8 +420,8 @@ def test_rename_key(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert "WARNING  | No notes were changed" in captured.out
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "WARNING  | No notes were changed" in captured
 
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
@@ -446,8 +442,8 @@ def test_rename_key(test_application, mocker, capsys) -> None:
 
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Renamed.*tags.*to.*new_tags.*in.*\d+.*notes", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"Renamed tags to new_tags in \d+ notes", re.DOTALL)
 
 
 def test_rename_value_fail(test_application, mocker, capsys) -> None:
@@ -476,8 +472,8 @@ def test_rename_value_fail(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"WARNING +\| No notes were changed", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "WARNING  | No notes were changed" in captured
 
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
@@ -501,11 +497,10 @@ def test_rename_value_fail(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(
-        r"SUCCESS +\| Renamed.*'area:frontmatter'.*to.*'area:new_key'", re.DOTALL
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(
+        r"SUCCESS +\| Renamed 'area:frontmatter' to 'area:new_key' in \d+ notes", re.DOTALL
     )
-    assert captured.out == Regex(r".*in.*\d+.*notes.*", re.DOTALL)
 
 
 def test_review_no_changes(test_application, mocker, capsys) -> None:
@@ -518,8 +513,8 @@ def test_review_no_changes(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"INFO +\| No changes to review", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "INFO     | No changes to review" in captured
 
 
 def test_review_changes(test_application, mocker, capsys) -> None:
@@ -544,10 +539,49 @@ def test_review_changes(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r".*Found.*\d+.*changed notes in the vault", re.DOTALL)
-    assert "- tags:" in captured.out
-    assert "+ new_tags:" in captured.out
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r".*Found \d+ changed notes in the vault", re.DOTALL)
+    assert "- tags:" in captured
+    assert "+ new_tags:" in captured
+
+
+def test_transpose_metadata(test_application, mocker, capsys) -> None:
+    """Transpose metadata."""
+    app = test_application
+    app._load_vault()
+
+    assert app.vault.metadata.inline_metadata["inline_key"] == ["inline_key_value"]
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["transpose_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["inline_to_frontmatter", "transpose_all"],
+    )
+    with pytest.raises(KeyError):
+        app.application_main()
+    assert app.vault.metadata.inline_metadata == {}
+    assert app.vault.metadata.frontmatter["inline_key"] == ["inline_key_value"]
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "SUCCESS  | Transposed Inline Metadata to Frontmatter in 5 notes" in captured
+
+    app = test_application
+    app._load_vault()
+
+    assert app.vault.metadata.frontmatter["date_created"] == ["2022-12-21", "2022-12-22"]
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["transpose_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["frontmatter_to_inline", "transpose_all"],
+    )
+    with pytest.raises(KeyError):
+        app.application_main()
+    assert app.vault.metadata.inline_metadata["date_created"] == ["2022-12-21", "2022-12-22"]
+    assert app.vault.metadata.frontmatter == {}
 
 
 def test_vault_backup(test_application, mocker, capsys) -> None:
@@ -565,8 +599,10 @@ def test_vault_backup(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\|.*application\.bak", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(
+        r"SUCCESS +\| Vault backed up to:[-\w\d\/\s]+application\.bak", re.DOTALL
+    )
 
 
 def test_vault_delete(test_application, mocker, capsys, tmp_path) -> None:
@@ -586,5 +622,5 @@ def test_vault_delete(test_application, mocker, capsys, tmp_path) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"SUCCESS +\| Backup deleted", re.DOTALL)
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"SUCCESS +\| Backup deleted", re.DOTALL)

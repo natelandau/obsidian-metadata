@@ -6,10 +6,6 @@ tags:
     - breakfast
     - not_food
 author: John Doe
-nested_list:
-    nested_list_one:
-        - nested_list_one_a
-        - nested_list_one_b
 type:
     - article
     - note

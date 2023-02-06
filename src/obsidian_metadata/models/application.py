@@ -348,7 +348,7 @@ class Application:
                 self.transpose_metadata(begin=MetadataType.FRONTMATTER, end=MetadataType.INLINE)
             case "inline_to_frontmatter":
                 self.transpose_metadata(begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER)
-            case _:
+            case _:  # pragma: no cover
                 return
 
     def application_vault(self) -> None:
@@ -583,9 +583,7 @@ class Application:
                     alerts.warning(f"No notes were changed")
                     return
 
-                alerts.success(
-                    f"Renamed transposed {begin.value} to {end.value} in {num_changed} notes"
-                )
+                alerts.success(f"Transposed {begin.value} to {end.value} in {num_changed} notes")
             case "transpose_key":
                 key = self.questions.ask_existing_key(question="Which key to transpose?")
                 if key is None:  # pragma: no cover

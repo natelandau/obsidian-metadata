@@ -496,6 +496,7 @@ class Questions:
         Returns:
             any: The selected item value.
         """
+        choices.insert(0, questionary.Separator())
         return questionary.select(
             question,
             choices=choices,

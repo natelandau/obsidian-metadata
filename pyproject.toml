@@ -36,7 +36,7 @@
 
     [tool.poetry.group.dev.dependencies]
         black                 = "^23.1.0"
-        commitizen            = "^2.42.0"
+        commitizen            = "^2.42.1"
         coverage              = "^7.2.0"
         interrogate           = "^1.5.0"
         mypy                  = "^1.0.1"
@@ -73,12 +73,7 @@
     ]
     ignore-init-module-imports = true
     line-length = 100
-    per-file-ignores = { "cli.py" = [
-        "PLR0913",
-    ], "tests/*.py" = [
-        "E999",
-        "PLR2004",
-    ] }
+    per-file-ignores = { "cli.py" = ["PLR0913"], "tests/*.py" = ["E999", "PLR2004"] }
     select = [
         "A",
         "B",
@@ -143,15 +138,12 @@
     line-length = 100
 
 [tool.commitizen]
-    bump_message = "bump(release): v$current_version → v$new_version"
-    changelog_incremental = true
-    tag_format = "v$version"
+    bump_message             = "bump(release): v$current_version → v$new_version"
+    changelog_incremental    = true
+    tag_format               = "v$version"
     update_changelog_on_bump = true
-    version = "0.6.0"
-    version_files = [
-        "pyproject.toml:version",
-        "src/obsidian_metadata/__version__.py:__version__",
-    ]
+    version                  = "0.6.0"
+    version_files            = ["pyproject.toml:version", "src/obsidian_metadata/__version__.py:__version__"]
 
 [tool.interrogate]
     exclude            = ["build", "docs", "tests"]
@@ -211,7 +203,7 @@
         help = "Lint this package"
 
         [[tool.poe.tasks.lint.sequence]]
-            shell = "ruff --extend-ignore=I001,D301,D401,PLR2004,PLR0913 src/"
+            shell = "ruff --extend-ignore=I001,D301,D401,PLR2004 src/"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "black --check src/ tests/"

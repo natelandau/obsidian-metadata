@@ -1,16 +1,15 @@
 """Work with metadata items."""
 
+import copy
 import re
 from io import StringIO
-import copy
+
 from rich import print
 from rich.columns import Columns
 from rich.console import Console
 from rich.table import Table
 from ruamel.yaml import YAML
 
-from obsidian_metadata._utils.alerts import logger as log
-from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils import (
     clean_dictionary,
     dict_contains,
@@ -61,7 +60,7 @@ class VaultMetadata:
             self.tags.extend(metadata)
             self.tags = sorted({s.strip("#") for s in self.tags})
 
-    def contains(
+    def contains(  # noqa: PLR0911
         self, area: MetadataType, key: str = None, value: str = None, is_regex: bool = False
     ) -> bool:
         """Check if a key and/or a value exists in the metadata.
@@ -82,7 +81,7 @@ class VaultMetadata:
         if area != MetadataType.TAGS and key is None:
             raise ValueError("Key must be provided when checking for a key's existence.")
 
-        match area:  # noqa: E999
+        match area:
             case MetadataType.ALL:
                 if dict_contains(self.dict, key, value, is_regex):
                     return True
@@ -249,7 +248,7 @@ class Frontmatter:
 
         return dict_values_to_lists_strings(frontmatter, strip_null_values=True)
 
-    def add(self, key: str, value: str | list[str] = None) -> bool:
+    def add(self, key: str, value: str | list[str] = None) -> bool:  # noqa: PLR0911
         """Add a key and value to the frontmatter.
 
         Args:
@@ -399,7 +398,7 @@ class InlineMetadata:
         """
         return f"InlineMetadata(inline_metadata={self.dict})"
 
-    def add(self, key: str, value: str | list[str] = None) -> bool:
+    def add(self, key: str, value: str | list[str] = None) -> bool:  # noqa: PLR0911
         """Add a key and value to the inline metadata.
 
         Args:

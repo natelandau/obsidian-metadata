@@ -1,21 +1,19 @@
 """Questions for the cli."""
 
 
-from typing import Any
 from pathlib import Path
+from typing import Any
+
 import questionary
-from rich import print
-from rich import box
+from rich import box, print
 from rich.console import Console
 from rich.table import Table
-from obsidian_metadata._config import VaultConfig
-from obsidian_metadata._utils.alerts import logger as log
-from obsidian_metadata.models import Patterns, Vault, VaultFilter
-from obsidian_metadata._utils import alerts
-from obsidian_metadata.models.questions import Questions
-from obsidian_metadata.models.enums import MetadataType
 
-PATTERNS = Patterns()
+from obsidian_metadata._config import VaultConfig
+from obsidian_metadata._utils import alerts
+from obsidian_metadata.models import Vault, VaultFilter
+from obsidian_metadata.models.enums import MetadataType
+from obsidian_metadata.models.questions import Questions
 
 
 class Application:
@@ -34,7 +32,6 @@ class Application:
 
     def _load_vault(self) -> None:
         """Load the vault."""
-
         if len(self.filters) == 0:
             self.vault: Vault = Vault(config=self.config, dry_run=self.dry_run)
         else:
@@ -52,7 +49,7 @@ class Application:
         while True:
             self.vault.info()
 
-            match self.questions.ask_application_main():  # noqa: E999
+            match self.questions.ask_application_main():
                 case "vault_actions":
                     self.application_vault()
                 case "inspect_metadata":
@@ -100,7 +97,7 @@ class Application:
                     area=area, key=key, value=value, location=self.vault.insert_location
                 )
                 if num_changed == 0:  # pragma: no cover
-                    alerts.warning(f"No notes were changed")
+                    alerts.warning("No notes were changed")
                     return
 
                 alerts.success(f"Added metadata to {num_changed} notes")
@@ -115,7 +112,7 @@ class Application:
                 )
 
                 if num_changed == 0:  # pragma: no cover
-                    alerts.warning(f"No notes were changed")
+                    alerts.warning("No notes were changed")
                     return
 
                 alerts.success(f"Added metadata to {num_changed} notes")
@@ -123,6 +120,7 @@ class Application:
                 return
 
     def application_delete_metadata(self) -> None:
+        """Delete metadata."""
         alerts.usage("Delete either a key and all associated values, or a specific value.")
 
         choices = [
@@ -167,7 +165,7 @@ class Application:
             case _:  # pragma: no cover
                 return
 
-    def application_filter(self) -> None:
+    def application_filter(self) -> None:  # noqa: C901,PLR0911,PLR0912
         """Filter notes."""
         alerts.usage("Limit the scope of notes to be processed with one or more filters.")
 
@@ -229,29 +227,29 @@ class Application:
                         show_header=False,
                         box=box.HORIZONTALS,
                     )
-                    for _n, filter in enumerate(self.filters, start=1):
-                        if filter.path_filter is not None:
+                    for _n, _filter in enumerate(self.filters, start=1):
+                        if _filter.path_filter is not None:
                             table.add_row(
                                 str(_n),
-                                f"Path regex: [tan bold]{filter.path_filter}",
+                                f"Path regex: [tan bold]{_filter.path_filter}",
                                 end_section=bool(_n == len(self.filters)),
                             )
-                        elif filter.tag_filter is not None:
+                        elif _filter.tag_filter is not None:
                             table.add_row(
                                 str(_n),
-                                f"Tag filter: [tan bold]{filter.tag_filter}",
+                                f"Tag filter: [tan bold]{_filter.tag_filter}",
                                 end_section=bool(_n == len(self.filters)),
                             )
-                        elif filter.key_filter is not None and filter.value_filter is None:
+                        elif _filter.key_filter is not None and _filter.value_filter is None:
                             table.add_row(
                                 str(_n),
-                                f"Key filter: [tan bold]{filter.key_filter}",
+                                f"Key filter: [tan bold]{_filter.key_filter}",
                                 end_section=bool(_n == len(self.filters)),
                             )
-                        elif filter.key_filter is not None and filter.value_filter is not None:
+                        elif _filter.key_filter is not None and _filter.value_filter is not None:
                             table.add_row(
                                 str(_n),
-                                f"Key/Value : [tan bold]{filter.key_filter}={filter.value_filter}",
+                                f"Key/Value : [tan bold]{_filter.key_filter}={_filter.value_filter}",
                                 end_section=bool(_n == len(self.filters)),
                             )
                     table.add_row(f"{len(self.filters) + 1}", "Clear All")
@@ -322,13 +320,13 @@ class Application:
                     path = self.questions.ask_path(question="Enter a path for the CSV file")
                     if path is None:
                         return
-                    self.vault.export_metadata(path=path, format="csv")
+                    self.vault.export_metadata(path=path, export_format="csv")
                     alerts.success(f"Metadata written to {path}")
                 case "export_json":
                     path = self.questions.ask_path(question="Enter a path for the JSON file")
                     if path is None:
                         return
-                    self.vault.export_metadata(path=path, format="json")
+                    self.vault.export_metadata(path=path, export_format="json")
                     alerts.success(f"Metadata written to {path}")
                 case _:
                     return
@@ -405,7 +403,7 @@ class Application:
 
         num_changed = self.vault.delete_inline_tag(tag)
         if num_changed == 0:
-            alerts.warning(f"No notes were changed")
+            alerts.warning("No notes were changed")
             return
 
         alerts.success(f"Deleted inline tag: {tag} in {num_changed} notes")
@@ -455,18 +453,17 @@ class Application:
     def noninteractive_export_csv(self, path: Path) -> None:
         """Export the vault metadata to CSV."""
         self._load_vault()
-        self.vault.export_metadata(format="json", path=str(path))
+        self.vault.export_metadata(export_format="json", path=str(path))
         alerts.success(f"Exported metadata to {path}")
 
     def noninteractive_export_json(self, path: Path) -> None:
         """Export the vault metadata to JSON."""
         self._load_vault()
-        self.vault.export_metadata(format="json", path=str(path))
+        self.vault.export_metadata(export_format="json", path=str(path))
         alerts.success(f"Exported metadata to {path}")
 
     def rename_key(self) -> None:
-        """Renames a key in the vault."""
-
+        """Rename a key in the vault."""
         original_key = self.questions.ask_existing_key(
             question="Which key would you like to rename?"
         )
@@ -479,7 +476,7 @@ class Application:
 
         num_changed = self.vault.rename_metadata(original_key, new_key)
         if num_changed == 0:
-            alerts.warning(f"No notes were changed")
+            alerts.warning("No notes were changed")
             return
 
         alerts.success(
@@ -488,7 +485,6 @@ class Application:
 
     def rename_inline_tag(self) -> None:
         """Rename an inline tag."""
-
         original_tag = self.questions.ask_existing_inline_tag(question="Which tag to rename?")
         if original_tag is None:  # pragma: no cover
             return
@@ -499,7 +495,7 @@ class Application:
 
         num_changed = self.vault.rename_inline_tag(original_tag, new_tag)
         if num_changed == 0:
-            alerts.warning(f"No notes were changed")
+            alerts.warning("No notes were changed")
             return
 
         alerts.success(
@@ -524,7 +520,7 @@ class Application:
 
         num_changes = self.vault.rename_metadata(key, value, new_value)
         if num_changes == 0:
-            alerts.warning(f"No notes were changed")
+            alerts.warning("No notes were changed")
             return
 
         alerts.success(f"Renamed '{key}:{value}' to '{key}:{new_value}' in {num_changes} notes")
@@ -558,7 +554,7 @@ class Application:
                 break
             changed_notes[note_to_review].print_diff()
 
-    def transpose_metadata(self, begin: MetadataType, end: MetadataType) -> None:
+    def transpose_metadata(self, begin: MetadataType, end: MetadataType) -> None:  # noqa: PLR0911
         """Transpose metadata from one format to another.
 
         Args:
@@ -580,7 +576,7 @@ class Application:
                 )
 
                 if num_changed == 0:
-                    alerts.warning(f"No notes were changed")
+                    alerts.warning("No notes were changed")
                     return
 
                 alerts.success(f"Transposed {begin.value} to {end.value} in {num_changed} notes")
@@ -597,7 +593,7 @@ class Application:
                 )
 
                 if num_changed == 0:
-                    alerts.warning(f"No notes were changed")
+                    alerts.warning("No notes were changed")
                     return
 
                 alerts.success(
@@ -622,7 +618,7 @@ class Application:
                 )
 
                 if num_changed == 0:
-                    alerts.warning(f"No notes were changed")
+                    alerts.warning("No notes were changed")
                     return
 
                 alerts.success(

@@ -1,14 +1,16 @@
 """Representation of notes and in the vault."""
 
 
+import copy
 import difflib
 import re
 from pathlib import Path
-import copy
+
 import rich.repr
 import typer
 from rich.console import Console
 from rich.table import Table
+
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata.models import (
@@ -117,7 +119,7 @@ class Note:
                         _v = re.escape(_v)
                         self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
 
-    def add_metadata(
+    def add_metadata(  # noqa: C901
         self,
         area: MetadataType,
         key: str = None,
@@ -135,17 +137,16 @@ class Note:
         Returns:
             bool: Whether the metadata was added.
         """
-        match area:  # noqa: E999
+        match area:
             case MetadataType.FRONTMATTER if self.frontmatter.add(key, value):
                 self.update_frontmatter()
                 return True
 
             case MetadataType.INLINE:
-                if value is None:
-                    if self.inline_metadata.add(key):
-                        line = f"{key}::"
-                        self.insert(new_string=line, location=location)
-                        return True
+                if value is None and self.inline_metadata.add(key):
+                    line = f"{key}::"
+                    self.insert(new_string=line, location=location)
+                    return True
 
                 new_values = []
                 if isinstance(value, list):
@@ -169,9 +170,10 @@ class Note:
 
                 if new_values:
                     for value in new_values:
-                        if value.startswith("#"):
-                            value = value[1:]
-                        self.insert(new_string=f"#{value}", location=location)
+                        _v = value
+                        if _v.startswith("#"):
+                            _v = _v[1:]
+                        self.insert(new_string=f"#{_v}", location=location)
                     return True
 
             case _:
@@ -437,7 +439,7 @@ class Note:
 
         self.file_content = re.sub(pattern, replacement, self.file_content, re.MULTILINE)
 
-    def transpose_metadata(
+    def transpose_metadata(  # noqa: C901, PLR0912, PLR0911, PLR0913
         self,
         begin: MetadataType,
         end: MetadataType,
@@ -492,8 +494,8 @@ class Note:
                             self.add_metadata(key=k, value=value, area=end, location=location)
                             self.delete_metadata(key=k, value=value, area=begin)
                             return True
-                        else:
-                            return False
+
+                        return False
 
                     if isinstance(value, list):
                         for value_item in value:
@@ -508,10 +510,7 @@ class Note:
                         if temp_dict[k] == []:
                             self.delete_metadata(key=k, area=begin)
 
-                    if has_changes:
-                        return True
-                    else:
-                        return False
+                    return bool(has_changes)
 
         if begin == MetadataType.TAGS:
             # TODO: Implement transposing to and from tags
@@ -532,10 +531,7 @@ class Note:
             return
 
         new_frontmatter = self.frontmatter.to_yaml(sort_keys=sort_keys)
-        if self.frontmatter.dict == {}:
-            new_frontmatter = ""
-        else:
-            new_frontmatter = f"---\n{new_frontmatter}---\n"
+        new_frontmatter = "" if self.frontmatter.dict == {} else f"---\n{new_frontmatter}---\n"
 
         if current_frontmatter is None:
             self.file_content = new_frontmatter + self.file_content

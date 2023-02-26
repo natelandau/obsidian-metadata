@@ -5,7 +5,7 @@ default_stages: [commit, manual]
 fail_fast: true
 repos:
     - repo: "https://github.com/commitizen-tools/commitizen"
-      rev: v2.42.0
+      rev: v2.42.1
       hooks:
           - id: commitizen
           - id: commitizen-branch
@@ -64,7 +64,7 @@ repos:
       rev: "v0.0.252"
       hooks:
           - id: ruff
-            args: ["--extend-ignore", "I001,D301,D401,PLR2004,PLR0913"]
+            args: ["--extend-ignore", "I001,D301,D401,PLR2004"]
             exclude: tests/
 
     - repo: "https://github.com/jendrikseipp/vulture"

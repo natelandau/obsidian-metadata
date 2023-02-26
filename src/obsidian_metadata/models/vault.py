@@ -1,11 +1,12 @@
 """Obsidian vault representation."""
 
 import csv
+import json
 import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-import json
+
 import rich.repr
 from rich import box
 from rich.console import Console
@@ -13,7 +14,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 from rich.table import Table
 
-from obsidian_metadata._config.config import Config, VaultConfig
+from obsidian_metadata._config.config import VaultConfig
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata.models import InsertLocation, MetadataType, Note, VaultMetadata
@@ -120,12 +121,14 @@ class Vault:
         """
         if self.config["insert_location"].upper() == "TOP":
             return InsertLocation.TOP
-        elif self.config["insert_location"].upper() == "HEADER":
+
+        if self.config["insert_location"].upper() == "HEADER":
             return InsertLocation.AFTER_TITLE
-        elif self.config["insert_location"].upper() == "BOTTOM":
+
+        if self.config["insert_location"].upper() == "BOTTOM":
             return InsertLocation.BOTTOM
-        else:
-            return InsertLocation.BOTTOM
+
+        return InsertLocation.BOTTOM
 
     def _find_markdown_notes(self) -> list[Path]:
         """Build list of all markdown files in the vault.
@@ -285,16 +288,16 @@ class Vault:
 
         return num_changed
 
-    def export_metadata(self, path: str, format: str = "csv") -> None:
+    def export_metadata(self, path: str, export_format: str = "csv") -> None:
         """Write metadata to a csv file.
 
         Args:
             path (Path): Path to write csv file to.
-            export_as (str, optional): Export as 'csv' or 'json'. Defaults to "csv".
+            export_format (str, optional): Export as 'csv' or 'json'. Defaults to "csv".
         """
         export_file = Path(path).expanduser().resolve()
 
-        match format:  # noqa: E999
+        match export_format:
             case "csv":
                 with open(export_file, "w", encoding="UTF8") as f:
                     writer = csv.writer(f)
@@ -412,7 +415,7 @@ class Vault:
 
         return num_changed
 
-    def transpose_metadata(
+    def transpose_metadata(  # noqa: PLR0913
         self,
         begin: MetadataType,
         end: MetadataType,

@@ -348,7 +348,7 @@ def test_export_csv(tmp_path, test_vault):
     vault = Vault(config=vault_config)
     export_file = Path(f"{tmp_path}/export.csv")
 
-    vault.export_metadata(path=export_file, format="csv")
+    vault.export_metadata(path=export_file, export_format="csv")
     assert export_file.exists() is True
     assert "frontmatter,date_created,2022-12-22" in export_file.read_text()
 
@@ -361,7 +361,7 @@ def test_export_json(tmp_path, test_vault):
     vault = Vault(config=vault_config)
     export_file = Path(f"{tmp_path}/export.json")
 
-    vault.export_metadata(path=export_file, format="json")
+    vault.export_metadata(path=export_file, export_format="json")
     assert export_file.exists() is True
     assert '"frontmatter": {' in export_file.read_text()
 

@@ -23,12 +23,12 @@
         regex       = "^2022.10.31"
         rich        = "^13.3.1"
         ruamel-yaml = "^0.17.21"
-        shellingham = "^1.4.0"
+        shellingham = "^1.5.0.post1"
         tomlkit     = "^0.11.6"
         typer       = "^0.7.0"
 
     [tool.poetry.group.test.dependencies]
-        pytest                 = "^7.2.1"
+        pytest                 = "^7.2.2"
         pytest-clarity         = "^1.0.1"
         pytest-mock            = "^3.10.0"
         pytest-pretty-terminal = "^1.1.0"
@@ -37,16 +37,16 @@
     [tool.poetry.group.dev.dependencies]
         black                 = "^23.1.0"
         commitizen            = "^2.42.1"
-        coverage              = "^7.2.0"
+        coverage              = "^7.2.1"
         interrogate           = "^1.5.0"
         mypy                  = "^1.0.1"
         pdoc                  = "^13.0.0"
         poethepoet            = "^0.18.1"
-        pre-commit            = "^3.1.0"
+        pre-commit            = "^3.1.1"
         pysnooper             = "^1.1.1"
-        ruff                  = "^0.0.252"
+        ruff                  = "^0.0.253"
         typeguard             = "^2.13.3"
-        types-python-dateutil = "^2.8.19.5"
+        types-python-dateutil = "^2.8.19.10"
         vulture               = "^2.7"
 
 [tool.ruff] # https://github.com/charliermarsh/ruff
@@ -73,7 +73,7 @@
     ]
     ignore-init-module-imports = true
     line-length = 100
-    per-file-ignores = { "cli.py" = ["PLR0913"], "tests/*.py" = ["E999", "PLR2004"] }
+    per-file-ignores = { "cli.py" = ["PLR0912", "PLR0913"], "tests/*.py" = ["PLR0913", "PLR2004"] }
     select = [
         "A",
         "B",
@@ -203,7 +203,7 @@
         help = "Lint this package"
 
         [[tool.poe.tasks.lint.sequence]]
-            shell = "ruff --extend-ignore=I001,D301,D401,PLR2004 src/"
+            shell = "ruff --extend-ignore=I001,D301,D401 src/"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "black --check src/ tests/"

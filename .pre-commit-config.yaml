@@ -61,10 +61,10 @@ repos:
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.0.252"
+      rev: "v0.0.253"
       hooks:
           - id: ruff
-            args: ["--extend-ignore", "I001,D301,D401,PLR2004"]
+            args: ["--extend-ignore", "I001,D301,D401"]
             exclude: tests/
 
     - repo: "https://github.com/jendrikseipp/vulture"

@@ -5,12 +5,12 @@ from pathlib import Path
 from typing import Any
 
 import questionary
-from rich import box, print
-from rich.console import Console
+from rich import box
 from rich.table import Table
 
 from obsidian_metadata._config import VaultConfig
 from obsidian_metadata._utils import alerts
+from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import Vault, VaultFilter
 from obsidian_metadata.models.enums import MetadataType
 from obsidian_metadata.models.questions import Questions
@@ -71,7 +71,7 @@ class Application:
                 case _:
                     break
 
-        print("Done!")
+        console.print("Done!")
         return
 
     def application_add_metadata(self) -> None:
@@ -218,7 +218,7 @@ class Application:
                         alerts.notice("No filters have been applied")
                         return
 
-                    print("")
+                    console.print("")
                     table = Table(
                         "Opt",
                         "Filter",
@@ -254,7 +254,7 @@ class Application:
                             )
                     table.add_row(f"{len(self.filters) + 1}", "Clear All")
                     table.add_row(f"{len(self.filters) + 2}", "Return to Main Menu")
-                    Console().print(table)
+                    console.print(table)
 
                     num = self.questions.ask_number(
                         question="Enter the number of the filter to clear"
@@ -297,25 +297,25 @@ class Application:
         while True:
             match self.questions.ask_selection(choices=choices, question="Select a vault action"):
                 case "all_metadata":
-                    print("")
+                    console.print("")
                     self.vault.metadata.print_metadata(area=MetadataType.ALL)
-                    print("")
+                    console.print("")
                 case "all_frontmatter":
-                    print("")
+                    console.print("")
                     self.vault.metadata.print_metadata(area=MetadataType.FRONTMATTER)
-                    print("")
+                    console.print("")
                 case "all_inline":
-                    print("")
+                    console.print("")
                     self.vault.metadata.print_metadata(area=MetadataType.INLINE)
-                    print("")
+                    console.print("")
                 case "all_keys":
-                    print("")
+                    console.print("")
                     self.vault.metadata.print_metadata(area=MetadataType.KEYS)
-                    print("")
+                    console.print("")
                 case "all_tags":
-                    print("")
+                    console.print("")
                     self.vault.metadata.print_metadata(area=MetadataType.TAGS)
-                    print("")
+                    console.print("")
                 case "export_csv":
                     path = self.questions.ask_path(question="Enter a path for the CSV file")
                     if path is None:
@@ -378,7 +378,7 @@ class Application:
         changed_notes = self.vault.get_changed_notes()
 
         if len(changed_notes) == 0:
-            print("\n")
+            console.print("\n")
             alerts.notice("No changes to commit.\n")
             return False
 

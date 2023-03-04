@@ -5,7 +5,6 @@ from typing import Optional
 
 import questionary
 import typer
-from rich import print
 
 from obsidian_metadata._config import Config
 from obsidian_metadata._utils import (
@@ -14,6 +13,7 @@ from obsidian_metadata._utils import (
     docstring_parameter,
     version_callback,
 )
+from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import Application
 
 app = typer.Typer(add_completion=False, no_args_is_help=True, rich_markup_mode="rich")
@@ -171,7 +171,7 @@ def main(
  |_|  |_|\___|\__\__,_|\__,_|\__,_|\__\__,_|
 """
     clear_screen()
-    print(banner)
+    console.print(banner)
 
     config: Config = Config(config_path=config_file, vault_path=vault_path)
     if len(config.vaults) == 0:

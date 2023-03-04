@@ -6,6 +6,7 @@ from typing import Any
 import typer
 
 from obsidian_metadata.__version__ import __version__
+from obsidian_metadata._utils.console import console
 
 
 def clean_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
@@ -181,5 +182,5 @@ def remove_markdown_sections(
 def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
-        print(f"{__package__.split('.')[0]}: v{__version__}")
+        console.print(f"{__package__.split('.')[0]}: v{__version__}")
         raise typer.Exit()

@@ -9,7 +9,6 @@ from pathlib import Path
 
 import rich.repr
 from rich import box
-from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 from rich.table import Table
@@ -17,6 +16,7 @@ from rich.table import Table
 from obsidian_metadata._config.config import VaultConfig
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
+from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import InsertLocation, MetadataType, Note, VaultMetadata
 
 
@@ -202,7 +202,7 @@ class Vault:
         log.debug("Backing up vault")
         if self.dry_run:
             alerts.dryrun(f"Backup up vault to: {self.backup_path}")
-            print("\n")
+            console.print("\n")
             return
 
         try:
@@ -357,14 +357,14 @@ class Vault:
         table.add_row("Active filters", str(len(self.filters)))
         table.add_row("Notes with changes", str(len(self.get_changed_notes())))
 
-        Console().print(table)
+        console.print(table)
 
     def list_editable_notes(self) -> None:
         """Print a list of notes within the scope that are being edited."""
         table = Table(title="Notes in current scope", show_header=False, box=box.HORIZONTALS)
         for _n, _note in enumerate(self.notes_in_scope, start=1):
             table.add_row(str(_n), str(_note.note_path.relative_to(self.vault_path)))
-        Console().print(table)
+        console.print(table)
 
     def num_excluded_notes(self) -> int:
         """Count number of excluded notes."""

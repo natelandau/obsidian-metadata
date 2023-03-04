@@ -8,11 +8,11 @@ from pathlib import Path
 
 import rich.repr
 import typer
-from rich.console import Console
 from rich.table import Table
 
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
+from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import (
     Frontmatter,
     InlineMetadata,
@@ -355,7 +355,7 @@ class Note:
 
     def print_note(self) -> None:
         """Print the note to the console."""
-        print(self.file_content)
+        console.print(self.file_content)
 
     def print_diff(self) -> None:
         """Print a diff of the note's original state and it's new state."""
@@ -372,7 +372,7 @@ class Note:
             elif line.startswith("-"):
                 table.add_row(line, style="red")
 
-        Console().print(table)
+        console.print(table)
 
     def rename_inline_tag(self, tag_1: str, tag_2: str) -> bool:
         """Rename an inline tag from the note ONLY if it's not in the metadata as well.

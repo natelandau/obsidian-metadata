@@ -4,9 +4,7 @@ import copy
 import re
 from io import StringIO
 
-from rich import print
 from rich.columns import Columns
-from rich.console import Console
 from rich.table import Table
 from ruamel.yaml import YAML
 
@@ -17,6 +15,7 @@ from obsidian_metadata._utils import (
     merge_dictionaries,
     remove_markdown_sections,
 )
+from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import Patterns  # isort: ignore
 from obsidian_metadata.models.enums import MetadataType
 
@@ -172,7 +171,7 @@ class VaultMetadata:
                     "\n".join(sorted(value)) if isinstance(value, list) else value
                 )
                 table.add_row(f"[bold]{key}[/]", str(values))
-            Console().print(table)
+            console.print(table)
 
         if list_to_print is not None:
             columns = Columns(
@@ -181,7 +180,7 @@ class VaultMetadata:
                 expand=True,
                 title=header if area != MetadataType.ALL else "All inline tags",
             )
-            print(columns)
+            console.print(columns)
 
     def rename(self, key: str, value_1: str, value_2: str = None) -> bool:
         """Replace a value in the frontmatter.

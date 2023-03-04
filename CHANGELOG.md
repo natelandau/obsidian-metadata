@@ -1,3 +1,13 @@
+## v0.6.1 (2023-03-03)
+
+### Fix
+
+- improve error handling when frontmatter malformed
+
+### Refactor
+
+- use single console instance
+
 ## v0.6.0 (2023-02-06)
 
 ### Feat

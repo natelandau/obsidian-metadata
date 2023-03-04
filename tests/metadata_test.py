@@ -88,6 +88,22 @@ def test_frontmatter_create() -> None:
     }
 
 
+def test_frontmatter_create_error() -> None:
+    """Test frontmatter creation error.
+
+    GIVEN frontmatter content
+    WHEN frontmatter is invalid
+    THEN raise ValueError
+    """
+    fn = """---
+tags: tag
+invalid = = "content"
+---
+    """
+    with pytest.raises(AttributeError):
+        Frontmatter(fn)
+
+
 def test_frontmatter_contains() -> None:
     """Test frontmatter contains."""
     frontmatter = Frontmatter(FRONTMATTER_CONTENT)

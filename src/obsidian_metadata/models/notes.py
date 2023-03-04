@@ -53,7 +53,12 @@ class Note:
             alerts.error(f"Note {self.note_path} not found. Exiting")
             raise typer.Exit(code=1) from e
 
-        self.frontmatter: Frontmatter = Frontmatter(self.file_content)
+        try:
+            self.frontmatter: Frontmatter = Frontmatter(self.file_content)
+        except AttributeError as e:
+            alerts.error(f"Note {self.note_path} has invalid frontmatter.\n{e}")
+            raise typer.Exit(code=1) from e
+
         self.inline_tags: InlineTags = InlineTags(self.file_content)
         self.inline_metadata: InlineMetadata = InlineMetadata(self.file_content)
         self.original_file_content: str = self.file_content
@@ -113,11 +118,10 @@ class Note:
                         )
                     else:
                         self.sub(f"{_k}::", f"{value_1}::")
-                else:
-                    if re.search(key, _k) and re.search(value_1, _v):
-                        _k = re.escape(_k)
-                        _v = re.escape(_v)
-                        self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
+                elif re.search(key, _k) and re.search(value_1, _v):
+                    _k = re.escape(_k)
+                    _v = re.escape(_v)
+                    self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
 
     def add_metadata(  # noqa: C901
         self,
@@ -151,9 +155,8 @@ class Note:
                 new_values = []
                 if isinstance(value, list):
                     new_values = [_v for _v in value if self.inline_metadata.add(key, _v)]
-                else:
-                    if self.inline_metadata.add(key, value):
-                        new_values = [value]
+                elif self.inline_metadata.add(key, value):
+                    new_values = [value]
 
                 if new_values:
                     for value in new_values:
@@ -164,9 +167,8 @@ class Note:
                 new_values = []
                 if isinstance(value, list):
                     new_values = [_v for _v in value if self.inline_tags.add(_v)]
-                else:
-                    if self.inline_tags.add(value):
-                        new_values = [value]
+                elif self.inline_tags.add(value):
+                    new_values = [value]
 
                 if new_values:
                     for value in new_values:

@@ -175,6 +175,18 @@ def test_add_metadata_frontmatter(sample_note) -> None:
     }
 
 
+def test_add_metadata_frontmatter_error() -> None:
+    """Test adding metadata.
+
+    GIVEN a note with broken frontmatter
+    WHEN the note is initialized
+    THEN a typer exit is raised
+    """
+    broken_fm = Path("tests/fixtures/broken_frontmatter.md")
+    with pytest.raises(typer.Exit):
+        Note(note_path=broken_fm)
+
+
 def test_add_metadata_tag(sample_note) -> None:
     """Test adding inline tags."""
     note = Note(note_path=sample_note)

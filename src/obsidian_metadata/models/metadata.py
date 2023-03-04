@@ -240,7 +240,11 @@ class Frontmatter:
             return {}
 
         yaml = YAML(typ="safe")
-        frontmatter: dict = yaml.load(frontmatter_block)
+        yaml.allow_unicode = False
+        try:
+            frontmatter: dict = yaml.load(frontmatter_block)
+        except Exception as e:  # noqa: BLE001
+            raise AttributeError(e) from e
 
         for k in frontmatter:
             if frontmatter[k] is None:

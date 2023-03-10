@@ -94,35 +94,6 @@ class Note:
                     _v = re.escape(_v)
                     self.sub(rf"({_k}::) ?{_v}", r"\1", is_regex=True)
 
-    def _rename_inline_metadata(self, key: str, value_1: str, value_2: str = None) -> None:
-        """Replace the inline metadata in the note with the current inline metadata object.
-
-        Args:
-            key (str): Key to rename.
-            value_1 (str): Value to replace OR new key name (if value_2 is None).
-            value_2 (str, optional): New value.
-
-        """
-        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
-
-        for _k, _v in stripped_null_values:
-            if re.search(key, _k):
-                if value_2 is None:
-                    if re.search(rf"{key}[^\w\d_-]+", _k):
-                        key_text = re.split(r"[^\w\d_-]+$", _k)[0]
-                        key_markdown = re.split(r"^[\w\d_-]+", _k)[1]
-                        self.sub(
-                            rf"{key_text}{key_markdown}::",
-                            rf"{value_1}{key_markdown}::",
-                        )
-                    else:
-                        self.sub(f"{_k}::", f"{value_1}::")
-                elif re.search(key, _k) and re.search(value_1, _v):
-                    _k = re.escape(_k)
-                    _v = re.escape(_v)
-                    self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
-
     def add_metadata(  # noqa: C901
         self,
         area: MetadataType,
@@ -143,13 +114,13 @@ class Note:
         """
         match area:
             case MetadataType.FRONTMATTER if self.frontmatter.add(key, value):
-                self.update_frontmatter()
+                self.write_frontmatter()
                 return True
 
             case MetadataType.INLINE:
                 if value is None and self.inline_metadata.add(key):
                     line = f"{key}::"
-                    self.insert(new_string=line, location=location)
+                    self.write_string(new_string=line, location=location)
                     return True
 
                 new_values = []
@@ -160,7 +131,7 @@ class Note:
 
                 if new_values:
                     for value in new_values:
-                        self.insert(new_string=f"{key}:: {value}", location=location)
+                        self.write_string(new_string=f"{key}:: {value}", location=location)
                     return True
 
             case MetadataType.TAGS:
@@ -175,13 +146,35 @@ class Note:
                         _v = value
                         if _v.startswith("#"):
                             _v = _v[1:]
-                        self.insert(new_string=f"#{_v}", location=location)
+                        self.write_string(new_string=f"#{_v}", location=location)
                     return True
 
             case _:
                 return False
 
         return False
+
+    def commit(self, path: Path = None) -> None:
+        """Write the note's content to disk. This is a destructive action.
+
+        Args:
+            path (Path): Path to write the note to. Defaults to the note's path.
+
+        Raises:
+            typer.Exit: If the note's path is not found.
+        """
+        p = self.note_path if path is None else path
+        if self.dry_run:
+            log.trace(f"DRY RUN: Writing note {p} to disk")
+            return
+
+        try:
+            with open(p, "w") as f:
+                log.trace(f"Writing note {p} to disk")
+                f.write(self.file_content)
+        except FileNotFoundError as e:
+            alerts.error(f"Note {p} not found. Exiting")
+            raise typer.Exit(code=1) from e
 
     def contains_inline_tag(self, tag: str, is_regex: bool = False) -> bool:
         """Check if a note contains the specified inline tag.
@@ -196,7 +189,7 @@ class Note:
         return self.inline_tags.contains(tag, is_regex=is_regex)
 
     def contains_metadata(self, key: str, value: str = None, is_regex: bool = False) -> bool:
-        """Check if a note has a key or a key-value pair in its metadata.
+        """Check if a note has a key or a key-value pair in its Frontmatter or InlineMetadata.
 
         Args:
             key (str): Key to check for.
@@ -245,7 +238,7 @@ class Note:
     def delete_metadata(
         self, key: str, value: str = None, area: MetadataType = MetadataType.ALL
     ) -> bool:
-        """Delete a key or key-value pair from the note's metadata. Regex is supported.
+        """Delete a key or key-value pair from the note's Frontmatter or InlineMetadata. Regex is supported.
 
         If no value is provided, will delete an entire key.
 
@@ -263,7 +256,7 @@ class Note:
             if (
                 area == MetadataType.FRONTMATTER or area == MetadataType.ALL
             ) and self.frontmatter.delete(key):
-                self.update_frontmatter()
+                self.write_frontmatter()
                 changed_value = True
             if (
                 area == MetadataType.INLINE or area == MetadataType.ALL
@@ -274,7 +267,7 @@ class Note:
             if (
                 area == MetadataType.FRONTMATTER or area == MetadataType.ALL
             ) and self.frontmatter.delete(key, value):
-                self.update_frontmatter()
+                self.write_frontmatter()
                 changed_value = True
             if (
                 area == MetadataType.INLINE or area == MetadataType.ALL
@@ -305,53 +298,6 @@ class Note:
             return True
 
         return False
-
-    def insert(
-        self,
-        new_string: str,
-        location: InsertLocation,
-        allow_multiple: bool = False,
-    ) -> None:
-        """Insert a string at the top of a note.
-
-        Args:
-            new_string (str): String to insert at the top of the note.
-            allow_multiple (bool): Whether to allow inserting the string if it already exists in the note.
-            location (InsertLocation): Location to insert the string.
-        """
-        if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
-            return
-
-        match location:
-            case InsertLocation.BOTTOM:
-                self.file_content += f"\n{new_string}"
-            case InsertLocation.TOP:
-                try:
-                    top = PATTERNS.frontmatter_block.search(self.file_content).group("frontmatter")
-                except AttributeError:
-                    top = ""
-
-                if top == "":
-                    self.file_content = f"{new_string}\n{self.file_content}"
-                else:
-                    new_string = f"{top}\n{new_string}"
-                    top = re.escape(top)
-                    self.sub(top, new_string, is_regex=True)
-            case InsertLocation.AFTER_TITLE:
-                try:
-                    top = PATTERNS.top_with_header.search(self.file_content).group("top")
-                except AttributeError:
-                    top = ""
-
-                if top == "":
-                    self.file_content = f"{new_string}\n{self.file_content}"
-                else:
-                    new_string = f"{top}\n{new_string}"
-                    top = re.escape(top)
-                    self.sub(top, new_string, is_regex=True)
-            case _:
-                raise ValueError(f"Invalid location: {location}")
-        pass
 
     def print_note(self) -> None:
         """Print the note to the console."""
@@ -395,7 +341,7 @@ class Note:
         return False
 
     def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> bool:
-        """Rename a key or key-value pair in the note's metadata.
+        """Rename a key or key-value pair in the note's InlineMetadata and Frontmatter objects.
 
         If no value is provided, will rename an entire key.
 
@@ -410,17 +356,17 @@ class Note:
         changed_value: bool = False
         if value_2 is None:
             if self.frontmatter.rename(key, value_1):
-                self.update_frontmatter()
+                self.write_frontmatter()
                 changed_value = True
             if self.inline_metadata.rename(key, value_1):
-                self._rename_inline_metadata(key, value_1)
+                self.write_metadata(key, value_1)
                 changed_value = True
         else:
             if self.frontmatter.rename(key, value_1, value_2):
-                self.update_frontmatter()
+                self.write_frontmatter()
                 changed_value = True
             if self.inline_metadata.rename(key, value_1, value_2):
-                self._rename_inline_metadata(key, value_1, value_2)
+                self.write_metadata(key, value_1, value_2)
                 changed_value = True
 
         if changed_value:
@@ -520,7 +466,7 @@ class Note:
 
         return False
 
-    def update_frontmatter(self, sort_keys: bool = False) -> None:
+    def write_frontmatter(self, sort_keys: bool = False) -> None:
         """Replace the frontmatter in the note with the current frontmatter object."""
         try:
             current_frontmatter = PATTERNS.frontmatter_block.search(self.file_content).group(
@@ -542,24 +488,78 @@ class Note:
         current_frontmatter = f"{re.escape(current_frontmatter)}\n?"
         self.sub(current_frontmatter, new_frontmatter, is_regex=True)
 
-    def write(self, path: Path = None) -> None:
-        """Write the note's content to disk.
+    def write_metadata(self, key: str, value_1: str, value_2: str = None) -> None:
+        """Write changes to a specific inline metadata key or value.
 
         Args:
-            path (Path): Path to write the note to. Defaults to the note's path.
+            key (str): Key to rename.
+            value_1 (str): Value to replace OR new key name (if value_2 is None).
+            value_2 (str, optional): New value.
 
-        Raises:
-            typer.Exit: If the note's path is not found.
         """
-        p = self.note_path if path is None else path
-        if self.dry_run:
-            log.trace(f"DRY RUN: Writing note {p} to disk")
+        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
+        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
+
+        for _k, _v in stripped_null_values:
+            if re.search(key, _k):
+                if value_2 is None:
+                    if re.search(rf"{key}[^\w\d_-]+", _k):
+                        key_text = re.split(r"[^\w\d_-]+$", _k)[0]
+                        key_markdown = re.split(r"^[\w\d_-]+", _k)[1]
+                        self.sub(
+                            rf"{key_text}{key_markdown}::",
+                            rf"{value_1}{key_markdown}::",
+                        )
+                    else:
+                        self.sub(f"{_k}::", f"{value_1}::")
+                elif re.search(key, _k) and re.search(value_1, _v):
+                    _k = re.escape(_k)
+                    _v = re.escape(_v)
+                    self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
+
+    def write_string(
+        self,
+        new_string: str,
+        location: InsertLocation,
+        allow_multiple: bool = False,
+    ) -> None:
+        """Insert a string into the note at a requested location.
+
+        Args:
+            new_string (str): String to insert at the top of the note.
+            allow_multiple (bool): Whether to allow inserting the string if it already exists in the note.
+            location (InsertLocation): Location to insert the string.
+        """
+        if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
             return
 
-        try:
-            with open(p, "w") as f:
-                log.trace(f"Writing note {p} to disk")
-                f.write(self.file_content)
-        except FileNotFoundError as e:
-            alerts.error(f"Note {p} not found. Exiting")
-            raise typer.Exit(code=1) from e
+        match location:
+            case InsertLocation.BOTTOM:
+                self.file_content += f"\n{new_string}"
+            case InsertLocation.TOP:
+                try:
+                    top = PATTERNS.frontmatter_block.search(self.file_content).group("frontmatter")
+                except AttributeError:
+                    top = ""
+
+                if top == "":
+                    self.file_content = f"{new_string}\n{self.file_content}"
+                else:
+                    new_string = f"{top}\n{new_string}"
+                    top = re.escape(top)
+                    self.sub(top, new_string, is_regex=True)
+            case InsertLocation.AFTER_TITLE:
+                try:
+                    top = PATTERNS.top_with_header.search(self.file_content).group("top")
+                except AttributeError:
+                    top = ""
+
+                if top == "":
+                    self.file_content = f"{new_string}\n{self.file_content}"
+                else:
+                    new_string = f"{top}\n{new_string}"
+                    top = re.escape(top)
+                    self.sub(top, new_string, is_regex=True)
+            case _:
+                raise ValueError(f"Invalid location: {location}")
+        pass

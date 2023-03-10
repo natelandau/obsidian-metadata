@@ -297,7 +297,7 @@ def test_has_changes(sample_note) -> None:
     note = Note(note_path=sample_note)
 
     assert note.has_changes() is False
-    note.insert("This is a test string.", location=InsertLocation.BOTTOM)
+    note.write_string("This is a test string.", location=InsertLocation.BOTTOM)
     assert note.has_changes() is True
 
     note = Note(note_path=sample_note)
@@ -316,7 +316,7 @@ def test_has_changes(sample_note) -> None:
     assert note.has_changes() is True
 
 
-def test_insert_bottom(short_note) -> None:
+def test_write_string_bottom(short_note) -> None:
     """Test inserting metadata to bottom of note."""
     path1, path2 = short_note
     note = Note(note_path=str(path1))
@@ -353,20 +353,20 @@ Lorem ipsum dolor sit amet.
 
 This is a test string.
     """
-    note.insert(new_string=string1, location=InsertLocation.BOTTOM)
+    note.write_string(new_string=string1, location=InsertLocation.BOTTOM)
     assert note.file_content == correct_content.strip()
 
-    note.insert(new_string=string2, location=InsertLocation.BOTTOM)
+    note.write_string(new_string=string2, location=InsertLocation.BOTTOM)
     assert note.file_content == correct_content.strip()
 
-    note.insert(new_string=string2, allow_multiple=True, location=InsertLocation.BOTTOM)
+    note.write_string(new_string=string2, allow_multiple=True, location=InsertLocation.BOTTOM)
     assert note.file_content == correct_content2.strip()
 
-    note2.insert(new_string=string1, location=InsertLocation.BOTTOM)
+    note2.write_string(new_string=string1, location=InsertLocation.BOTTOM)
     assert note2.file_content == correct_content3.strip()
 
 
-def test_insert_after_frontmatter(short_note) -> None:
+def test_write_string_after_frontmatter(short_note) -> None:
     """Test inserting metadata to bottom of note."""
     path1, path2 = short_note
     note = Note(note_path=path1)
@@ -401,17 +401,17 @@ This is a test string.
 Lorem ipsum dolor sit amet.
     """
 
-    note.insert(new_string=string1, location=InsertLocation.TOP)
+    note.write_string(new_string=string1, location=InsertLocation.TOP)
     assert note.file_content.strip() == correct_content.strip()
 
-    note.insert(new_string=string2, allow_multiple=True, location=InsertLocation.TOP)
+    note.write_string(new_string=string2, allow_multiple=True, location=InsertLocation.TOP)
     assert note.file_content.strip() == correct_content2.strip()
 
-    note2.insert(new_string=string1, location=InsertLocation.TOP)
+    note2.write_string(new_string=string1, location=InsertLocation.TOP)
     assert note2.file_content.strip() == correct_content3.strip()
 
 
-def test_insert_after_title(short_note) -> None:
+def test_write_string_after_title(short_note) -> None:
     """Test inserting metadata to bottom of note."""
     path1, path2 = short_note
     note = Note(note_path=path1)
@@ -446,13 +446,13 @@ This is a test string.
 Lorem ipsum dolor sit amet.
     """
 
-    note.insert(new_string=string1, location=InsertLocation.AFTER_TITLE)
+    note.write_string(new_string=string1, location=InsertLocation.AFTER_TITLE)
     assert note.file_content.strip() == correct_content.strip()
 
-    note.insert(new_string=string2, allow_multiple=True, location=InsertLocation.AFTER_TITLE)
+    note.write_string(new_string=string2, allow_multiple=True, location=InsertLocation.AFTER_TITLE)
     assert note.file_content.strip() == correct_content2.strip()
 
-    note2.insert(new_string=string1, location=InsertLocation.AFTER_TITLE)
+    note2.write_string(new_string=string1, location=InsertLocation.AFTER_TITLE)
     assert note2.file_content.strip() == correct_content3.strip()
 
 
@@ -470,7 +470,7 @@ def test_print_diff(sample_note, capsys) -> None:
     """Test printing diff."""
     note = Note(note_path=sample_note)
 
-    note.insert("This is a test string.", location=InsertLocation.BOTTOM)
+    note.write_string("This is a test string.", location=InsertLocation.BOTTOM)
     note.print_diff()
     captured = capsys.readouterr()
     assert "+ This is a test string." in captured.out
@@ -513,20 +513,20 @@ def test_rename_inline_tag(sample_note) -> None:
     assert note.file_content != Regex(r"#intext_tag1")
 
 
-def test_rename_inline_metadata(sample_note) -> None:
+def test_write_metadata(sample_note) -> None:
     """Test renaming inline metadata."""
     note = Note(note_path=sample_note)
 
-    note._rename_inline_metadata("nonexistent_key", "new_key")
+    note.write_metadata("nonexistent_key", "new_key")
     assert note.file_content == note.original_file_content
-    note._rename_inline_metadata("bottom_key1", "no_value", "new_value")
+    note.write_metadata("bottom_key1", "no_value", "new_value")
     assert note.file_content == note.original_file_content
 
-    note._rename_inline_metadata("bottom_key1", "new_key")
+    note.write_metadata("bottom_key1", "new_key")
     assert note.file_content != Regex(r"bottom_key1::")
     assert note.file_content == Regex(r"new_key::")
 
-    note._rename_inline_metadata("key📅", "📅_key_value", "new_value")
+    note.write_metadata("key📅", "📅_key_value", "new_value")
     assert note.file_content != Regex(r"key📅:: ?📅_key_value")
     assert note.file_content == Regex(r"key📅:: ?new_value")
 
@@ -804,12 +804,12 @@ def test_transpose_frontmatter(sample_note) -> None:
     }
 
 
-def test_update_frontmatter(sample_note) -> None:
+def test_write_frontmatter(sample_note) -> None:
     """Test replacing frontmatter."""
     note = Note(note_path=sample_note)
 
     note.rename_metadata("frontmatter_Key1", "author name", "some_new_key_here")
-    note.update_frontmatter()
+    note.write_frontmatter()
     new_frontmatter = """---
 date_created: '2022-12-22'
 tags:
@@ -831,9 +831,9 @@ shared_key2: shared_key2_value1
     assert "```python" in note.file_content
 
     note2 = Note(note_path="tests/fixtures/test_vault/no_metadata.md")
-    note2.update_frontmatter()
+    note2.write_frontmatter()
     note2.frontmatter.dict = {"key1": "value1", "key2": "value2"}
-    note2.update_frontmatter()
+    note2.write_frontmatter()
     new_frontmatter = """---
 key1: value1
 key2: value2
@@ -842,18 +842,18 @@ key2: value2
     assert "Lorem ipsum dolor sit amet" in note2.file_content
 
 
-def test_write(sample_note, tmp_path) -> None:
+def test_commit(sample_note, tmp_path) -> None:
     """Test writing note to file."""
     note = Note(note_path=sample_note)
     note.sub(pattern="Heading 1", replacement="Heading 2")
 
-    note.write()
+    note.commit()
     note = Note(note_path=sample_note)
     assert "Heading 2" in note.file_content
     assert "Heading 1" not in note.file_content
 
     new_path = Path(tmp_path / "new_note.md")
-    note.write(new_path)
+    note.commit(new_path)
     note2 = Note(note_path=new_path)
     assert "Heading 2" in note2.file_content
     assert "Heading 1" not in note2.file_content

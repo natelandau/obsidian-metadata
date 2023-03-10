@@ -95,6 +95,20 @@ def test_vault_creation(test_vault):
     }
 
 
+def set_insert_location(test_vault):
+    """Test setting a new insert location."""
+    vault_path = test_vault
+    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+    vault = Vault(config=vault_config)
+
+    assert vault.name == "vault"
+    assert vault.vault_path == vault_path
+    assert vault.insert_location == InsertLocation.BOTTOM
+    vault.insert_location = InsertLocation.TOP
+    assert vault.insert_location == InsertLocation.TOP
+
+
 def test_add_metadata(test_vault) -> None:
     """Test adding metadata to the vault."""
     vault_path = test_vault

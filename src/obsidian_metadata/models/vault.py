@@ -114,7 +114,7 @@ class Vault:
         return notes_list
 
     def _find_insert_location(self) -> InsertLocation:
-        """Find the insert location for a note.
+        """Find the insert location for a note from the configuration file.
 
         Returns:
             InsertLocation: Insert location for the note.
@@ -129,6 +129,24 @@ class Vault:
             return InsertLocation.BOTTOM
 
         return InsertLocation.BOTTOM
+
+    @property
+    def insert_location(self) -> InsertLocation:
+        """Location to insert new or reorganized metadata.
+
+        Returns:
+            InsertLocation: The insert location.
+        """
+        return self._insert_location
+
+    @insert_location.setter
+    def insert_location(self, value: InsertLocation) -> None:
+        """Set the insert location for the vault.
+
+        Args:
+            value (InsertLocation): The insert location to set.
+        """
+        self._insert_location = value
 
     def _find_markdown_notes(self) -> list[Path]:
         """Build list of all markdown files in the vault.
@@ -234,7 +252,7 @@ class Vault:
         for _note in self.notes_in_scope:
             if _note.has_changes():
                 log.trace(f"writing to {_note.note_path}")
-                _note.write()
+                _note.commit()
 
     def delete_backup(self) -> None:
         """Delete the vault backup."""

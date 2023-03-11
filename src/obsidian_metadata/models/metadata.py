@@ -226,7 +226,7 @@ class Frontmatter:
         """Grab metadata from a note.
 
         Args:
-            note_path (Path): Path to the note file.
+            file_content (str): Content of the note.
 
         Returns:
             dict: Metadata from the note.

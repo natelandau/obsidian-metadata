@@ -63,12 +63,15 @@ def dict_contains(
     return key in dictionary and value in dictionary[key]
 
 
-def dict_values_to_lists_strings(dictionary: dict, strip_null_values: bool = False) -> dict:
+def dict_values_to_lists_strings(
+    dictionary: dict,
+    strip_null_values: bool = False,
+) -> dict:
     """Convert all values in a dictionary to lists of strings.
 
     Args:
         dictionary (dict): Dictionary to convert
-        strip_null (bool): Whether to strip null values
+        strip_null_values (bool): Whether to strip null values
 
     Returns:
         dict: Dictionary with all values converted to lists of strings

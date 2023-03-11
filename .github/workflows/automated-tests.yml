@@ -67,7 +67,7 @@ jobs:
             - name: Lint with Mypy
               run: poetry run mypy src/
             - name: lint with ruff
-              run: poetry run ruff --extend-ignore=I001,D301,D401,PLR2004,PLR0913 src/
+              run: poetry run ruff --extend-ignore=I001,D301,D401 src/
             - name: check pyproject.toml
               run: poetry run poetry check
 

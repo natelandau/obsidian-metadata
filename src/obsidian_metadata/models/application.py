@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import questionary
+import typer
 from rich import box
 from rich.table import Table
 
@@ -393,7 +394,7 @@ class Application:
 
         if not self.dry_run:
             alerts.success(f"{len(changed_notes)} changes committed to disk. Exiting")
-            return True
+            raise typer.Exit(0)
 
         return True
 

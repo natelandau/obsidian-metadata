@@ -1,3 +1,15 @@
+## v0.7.0 (2023-03-11)
+
+### Feat
+
+- transpose metadata between frontmatter and inline
+- select insert location for new inline metadata
+
+### Fix
+
+- exit after committing changes
+- fix typo and sort order of options
+
 ## v0.6.1 (2023-03-03)
 
 ### Fix

@@ -38,8 +38,14 @@ def sample_note(tmp_path) -> Path:
 
 
 @pytest.fixture()
-def short_note(tmp_path) -> Path:
-    """Fixture which creates a temporary short note file."""
+def short_notes(tmp_path) -> Path:
+    """Fixture which creates two temporary note files.
+
+    Yields:
+        Tuple[Path, Path]: Tuple of two temporary note files.
+            1. Very short note with frontmatter
+            2. Very short note without any frontmatter
+    """
     source_file1: Path = Path("tests/fixtures/short_textfile.md")
     source_file2: Path = Path("tests/fixtures/no_metadata.md")
     if not source_file1.exists():

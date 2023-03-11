@@ -245,7 +245,7 @@ def test_delete_value(test_application, mocker, capsys) -> None:
     with pytest.raises(KeyError):
         app.application_main()
     captured = remove_ansi(capsys.readouterr().out)
-    assert r"SUCCESS  | Deleted value ^front\w+$ from key area in 8 notes" in captured
+    assert r"SUCCESS  | Deleted value ^front\w+$ from key area in 4 notes" in captured
 
 
 def test_filter_notes(test_application, mocker, capsys) -> None:

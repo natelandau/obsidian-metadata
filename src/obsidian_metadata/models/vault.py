@@ -82,6 +82,7 @@ class Vault:
         yield "num_notes", len(self.all_notes)
         yield "num_notes_in_scope", len(self.notes_in_scope)
         yield "exclude_paths", self.exclude_paths
+        yield "insert_location", self.insert_location
 
     def _filter_notes(self) -> list[Note]:
         """Filter notes by path and metadata using the filters defined in self.filters.
@@ -122,7 +123,7 @@ class Vault:
         if self.config["insert_location"].upper() == "TOP":
             return InsertLocation.TOP
 
-        if self.config["insert_location"].upper() == "HEADER":
+        if self.config["insert_location"].upper() == "AFTER_TITLE":
             return InsertLocation.AFTER_TITLE
 
         if self.config["insert_location"].upper() == "BOTTOM":
@@ -374,6 +375,7 @@ class Vault:
         table.add_row("Notes excluded from scope", str(self.num_excluded_notes()))
         table.add_row("Active filters", str(len(self.filters)))
         table.add_row("Notes with changes", str(len(self.get_changed_notes())))
+        table.add_row("Insert Location", str(self.insert_location.value))
 
         console.print(table)
 

@@ -122,9 +122,9 @@ class Config:
             # Folders within the vault to ignore when indexing metadata
             exclude_paths = [".git", ".obsidian"]
 
-            # Location to add metadata. One of:
+            # Location to add new metadata. One of:
             #    TOP:            Directly after frontmatter.
-            #    AFTER_TITLE:    After a header following frontmatter.
+            #    AFTER_TITLE:    After the first header following frontmatter.
             #    BOTTOM:         The bottom of the note
             insert_location = "BOTTOM"
         """
@@ -164,6 +164,7 @@ class VaultConfig:
         yield "config", self.config
         yield "path", self.path
         yield "exclude_paths", self.exclude_paths
+        yield "insert_location", self.insert_location
 
     def _validate_vault_path(self, vault_path: Path | None) -> Path:
         """Validate the vault path."""

@@ -23,5 +23,5 @@ class InsertLocation(Enum):
     """
 
     TOP = "Top"
-    AFTER_TITLE = "Header"
+    AFTER_TITLE = "After title"
     BOTTOM = "Bottom"

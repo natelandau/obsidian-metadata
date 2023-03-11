@@ -11,7 +11,7 @@ from obsidian_metadata.models.metadata import (
     InlineTags,
     VaultMetadata,
 )
-from tests.helpers import Regex
+from tests.helpers import Regex, remove_ansi
 
 FILE_CONTENT: str = Path("tests/fixtures/test_vault/test1.md").read_text()
 TAG_LIST: list[str] = ["tag 1", "tag 2", "tag 3"]
@@ -609,39 +609,39 @@ def test_vault_metadata_print(capsys) -> None:
     vm.index_metadata(area=MetadataType.TAGS, metadata=TAG_LIST)
 
     vm.print_metadata(area=MetadataType.ALL)
-    captured = capsys.readouterr()
-    assert "All metadata" in captured.out
-    assert "All inline tags" in captured.out
-    assert "┃ Keys             ┃ Values            ┃" in captured.out
-    assert "│ shared_key1      │ shared_key1_value │" in captured.out
-    assert captured.out == Regex("#tag 1 +#tag 2")
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "All metadata" in captured
+    assert "All inline tags" in captured
+    assert "┃ Keys             ┃ Values            ┃" in captured
+    assert "│ shared_key1      │ shared_key1_value │" in captured
+    assert captured == Regex("#tag 1 +#tag 2")
 
     vm.print_metadata(area=MetadataType.FRONTMATTER)
-    captured = capsys.readouterr()
-    assert "All frontmatter" in captured.out
-    assert "┃ Keys             ┃ Values            ┃" in captured.out
-    assert "│ shared_key1      │ shared_key1_value │" in captured.out
-    assert "value1" not in captured.out
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "All frontmatter" in captured
+    assert "┃ Keys             ┃ Values            ┃" in captured
+    assert "│ shared_key1      │ shared_key1_value │" in captured
+    assert "value1" not in captured
 
     vm.print_metadata(area=MetadataType.INLINE)
-    captured = capsys.readouterr()
-    assert "All inline" in captured.out
-    assert "┃ Keys ┃ Values ┃" in captured.out
-    assert "shared_key1" not in captured.out
-    assert "│ key1 │ value1 │" in captured.out
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "All inline" in captured
+    assert "┃ Keys ┃ Values ┃" in captured
+    assert "shared_key1" not in captured
+    assert "│ key1 │ value1 │" in captured
 
     vm.print_metadata(area=MetadataType.TAGS)
-    captured = capsys.readouterr()
-    assert "All inline tags " in captured.out
-    assert "┃ Keys             ┃ Values            ┃" not in captured.out
-    assert captured.out == Regex("#tag 1 +#tag 2")
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "All inline tags " in captured
+    assert "┃ Keys             ┃ Values            ┃" not in captured
+    assert captured == Regex("#tag 1 +#tag 2")
 
     vm.print_metadata(area=MetadataType.KEYS)
-    captured = capsys.readouterr()
-    assert "All Keys " in captured.out
-    assert "┃ Keys             ┃ Values            ┃" not in captured.out
-    assert captured.out != Regex("#tag 1 +#tag 2")
-    assert captured.out == Regex("frontmatter_Key1 +frontmatter_Key2")
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "All Keys " in captured
+    assert "┃ Keys             ┃ Values            ┃" not in captured
+    assert captured != Regex("#tag 1 +#tag 2")
+    assert captured == Regex("frontmatter_Key1 +frontmatter_Key2")
 
 
 def test_vault_metadata_contains() -> None:

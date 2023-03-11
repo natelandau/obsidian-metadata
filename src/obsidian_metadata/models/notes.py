@@ -1,4 +1,4 @@
-"""Representation of notes and in the vault."""
+"""Representation of a not in the vault."""
 
 
 import copy
@@ -71,29 +71,6 @@ class Note:
         yield "inline_tags", self.inline_tags
         yield "inline_metadata", self.inline_metadata
 
-    def _delete_inline_metadata(self, key: str, value: str = None) -> None:
-        """Delete an inline metadata key/value pair from the text of the note. This method does not remove the key/value from the metadata attribute of the note.
-
-        Args:
-            key (str): Key to delete.
-            value (str, optional): Value to delete.
-        """
-        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
-
-        for _k, _v in stripped_null_values:
-            if re.search(key, _k):
-                if value is None:
-                    _k = re.escape(_k)
-                    _v = re.escape(_v)
-                    self.sub(rf"\[?{_k}:: ?{_v}]?", "", is_regex=True)
-                    return
-
-                if re.search(value, _v):
-                    _k = re.escape(_k)
-                    _v = re.escape(_v)
-                    self.sub(rf"({_k}::) ?{_v}", r"\1", is_regex=True)
-
     def add_metadata(  # noqa: C901
         self,
         area: MetadataType,
@@ -101,7 +78,7 @@ class Note:
         value: str | list[str] = None,
         location: InsertLocation = None,
     ) -> bool:
-        """Add metadata to the note if it does not already exist.
+        """Add metadata to the note if it does not already exist. This method adds specified metadata to the appropriate MetadataType object AND writes the new metadata to the note's file.
 
         Args:
             area (MetadataType): Area to add metadata to.
@@ -155,7 +132,7 @@ class Note:
         return False
 
     def commit(self, path: Path = None) -> None:
-        """Write the note's content to disk. This is a destructive action.
+        """Write the note's new content to disk. This is a destructive action.
 
         Args:
             path (Path): Path to write the note to. Defaults to the note's path.
@@ -238,9 +215,9 @@ class Note:
     def delete_metadata(
         self, key: str, value: str = None, area: MetadataType = MetadataType.ALL
     ) -> bool:
-        """Delete a key or key-value pair from the note's Frontmatter or InlineMetadata. Regex is supported.
+        """Delete a key or key-value pair from the note's Metadata object and the content of the note.  Regex is supported.
 
-        If no value is provided, will delete an entire key.
+        If no value is provided, will delete an entire specified key.
 
         Args:
             key (str): Key to delete.
@@ -252,28 +229,18 @@ class Note:
         """
         changed_value: bool = False
 
-        if value is None:
-            if (
-                area == MetadataType.FRONTMATTER or area == MetadataType.ALL
-            ) and self.frontmatter.delete(key):
-                self.write_frontmatter()
-                changed_value = True
-            if (
-                area == MetadataType.INLINE or area == MetadataType.ALL
-            ) and self.inline_metadata.delete(key):
-                self._delete_inline_metadata(key, value)
-                changed_value = True
-        else:
-            if (
-                area == MetadataType.FRONTMATTER or area == MetadataType.ALL
-            ) and self.frontmatter.delete(key, value):
-                self.write_frontmatter()
-                changed_value = True
-            if (
-                area == MetadataType.INLINE or area == MetadataType.ALL
-            ) and self.inline_metadata.delete(key, value):
-                self._delete_inline_metadata(key, value)
-                changed_value = True
+        if (
+            area == MetadataType.FRONTMATTER or area == MetadataType.ALL
+        ) and self.frontmatter.delete(key, value):
+            self.write_frontmatter()
+            changed_value = True
+
+        if (
+            area == MetadataType.INLINE or area == MetadataType.ALL
+        ) and self.inline_metadata.contains(key, value):
+            self.write_delete_inline_metadata(key, value)
+            self.inline_metadata.delete(key, value)
+            changed_value = True
 
         if changed_value:
             return True
@@ -299,12 +266,8 @@ class Note:
 
         return False
 
-    def print_note(self) -> None:
-        """Print the note to the console."""
-        console.print(self.file_content)
-
     def print_diff(self) -> None:
-        """Print a diff of the note's original state and it's new state."""
+        """Print a diff of the note's content. Compares original state to it's new state."""
         a = self.original_file_content.splitlines()
         b = self.file_content.splitlines()
 
@@ -320,8 +283,12 @@ class Note:
 
         console.print(table)
 
+    def print_note(self) -> None:
+        """Print the note to the console."""
+        console.print(self.file_content)
+
     def rename_inline_tag(self, tag_1: str, tag_2: str) -> bool:
-        """Rename an inline tag from the note ONLY if it's not in the metadata as well.
+        """Rename an inline tag. Updates the Metadata object and the text of the note.
 
         Args:
             tag_1 (str): Tag to rename.
@@ -341,9 +308,9 @@ class Note:
         return False
 
     def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> bool:
-        """Rename a key or key-value pair in the note's InlineMetadata and Frontmatter objects.
+        """Rename a key or key-value pair in the note's InlineMetadata and Frontmatter objects and the content of the note.
 
-        If no value is provided, will rename an entire key.
+        If no value is provided, will rename the entire specified key.
 
         Args:
             key (str): Key to rename.
@@ -359,14 +326,14 @@ class Note:
                 self.write_frontmatter()
                 changed_value = True
             if self.inline_metadata.rename(key, value_1):
-                self.write_metadata(key, value_1)
+                self.write_inline_metadata_change(key, value_1)
                 changed_value = True
         else:
             if self.frontmatter.rename(key, value_1, value_2):
                 self.write_frontmatter()
                 changed_value = True
             if self.inline_metadata.rename(key, value_1, value_2):
-                self.write_metadata(key, value_1, value_2)
+                self.write_inline_metadata_change(key, value_1, value_2)
                 changed_value = True
 
         if changed_value:
@@ -395,12 +362,15 @@ class Note:
         value: str | list[str] = None,
         location: InsertLocation = InsertLocation.BOTTOM,
     ) -> bool:
-        """Transpose metadata from one type to another.
+        """Move metadata from one metadata object to another. i.e. Frontmatter to InlineMetadata or vice versa.
+
+        If no key is specified, will transpose all metadata. If a key is specified, but no value, the entire key will be transposed. if a specific value is specified, just that value will be transposed.
 
         Args:
             begin (MetadataType): The type of metadata to transpose from.
             end (MetadataType): The type of metadata to transpose to.
             key (str, optional): The key to transpose. Defaults to None.
+            location (InsertLocation, optional): Where to insert the metadata. Defaults to InsertLocation.BOTTOM.
             value (str | list[str], optional): The value to transpose. Defaults to None.
 
         Returns:
@@ -466,8 +436,40 @@ class Note:
 
         return False
 
-    def write_frontmatter(self, sort_keys: bool = False) -> None:
-        """Replace the frontmatter in the note with the current frontmatter object."""
+    def write_delete_inline_metadata(self, key: str = None, value: str = None) -> bool:
+        """For a given inline metadata key and/or key-value pair, delete it from the text of the note. If no key is provided, will delete all inline metadata from the text of the note.
+
+        IMPORTANT: This method makes no changes to the InlineMetadata object.
+
+        Args:
+            key (str, optional): Key to delete.
+            value (str, optional): Value to delete.
+
+        Returns:
+            bool: Whether the note was updated.
+        """
+        for _k, _v in self.inline_metadata.dict.items():
+            if re.search(key, _k):
+                for _value in _v:
+                    if value is None:
+                        _k = re.escape(_k)
+                        _value = re.escape(_value)
+                        self.sub(rf"\[?{_k}:: ?{_value}]?", "", is_regex=True)
+                        return True
+
+                    if re.search(value, _value):
+                        _k = re.escape(_k)
+                        _value = re.escape(_value)
+                        self.sub(rf"({_k}::) ?{_value}", r"\1", is_regex=True)
+                        return True
+        return False
+
+    def write_frontmatter(self, sort_keys: bool = False) -> bool:
+        """Replace the frontmatter in the note with the current Frontmatter object.  If the Frontmatter object is empty, will delete the frontmatter from the note.
+
+        Returns:
+            bool: Whether the note was updated.
+        """
         try:
             current_frontmatter = PATTERNS.frontmatter_block.search(self.file_content).group(
                 "frontmatter"
@@ -476,19 +478,43 @@ class Note:
             current_frontmatter = None
 
         if current_frontmatter is None and self.frontmatter.dict == {}:
-            return
+            return False
 
         new_frontmatter = self.frontmatter.to_yaml(sort_keys=sort_keys)
         new_frontmatter = "" if self.frontmatter.dict == {} else f"---\n{new_frontmatter}---\n"
 
         if current_frontmatter is None:
             self.file_content = new_frontmatter + self.file_content
-            return
+            return True
 
         current_frontmatter = f"{re.escape(current_frontmatter)}\n?"
         self.sub(current_frontmatter, new_frontmatter, is_regex=True)
+        return True
 
-    def write_metadata(self, key: str, value_1: str, value_2: str = None) -> None:
+    def write_all_inline_metadata(
+        self,
+        location: InsertLocation,
+    ) -> bool:
+        """Write all metadata found in the InlineMetadata object to the note at a specified insert location.
+
+        Args:
+            location (InsertLocation): Where to insert the metadata.
+
+        Returns:
+            bool: Whether the note was updated.
+        """
+        if self.inline_metadata.dict != {}:
+            string = ""
+            for k, v in sorted(self.inline_metadata.dict.items()):
+                for value in v:
+                    string += f"{k}:: {value}\n"
+
+            if self.write_string(new_string=string, location=location, allow_multiple=True):
+                return True
+
+        return False
+
+    def write_inline_metadata_change(self, key: str, value_1: str, value_2: str = None) -> None:
         """Write changes to a specific inline metadata key or value.
 
         Args:
@@ -503,9 +529,9 @@ class Note:
         for _k, _v in stripped_null_values:
             if re.search(key, _k):
                 if value_2 is None:
-                    if re.search(rf"{key}[^\w\d_-]+", _k):
-                        key_text = re.split(r"[^\w\d_-]+$", _k)[0]
-                        key_markdown = re.split(r"^[\w\d_-]+", _k)[1]
+                    if re.search(rf"{key}[^\\w\\d_-]+", _k):
+                        key_text = re.split(r"[^\\w\\d_-]+$", _k)[0]
+                        key_markdown = re.split(r"^[\\w\\d_-]+", _k)[1]
                         self.sub(
                             rf"{key_text}{key_markdown}::",
                             rf"{value_1}{key_markdown}::",
@@ -522,20 +548,24 @@ class Note:
         new_string: str,
         location: InsertLocation,
         allow_multiple: bool = False,
-    ) -> None:
+    ) -> bool:
         """Insert a string into the note at a requested location.
 
         Args:
             new_string (str): String to insert at the top of the note.
             allow_multiple (bool): Whether to allow inserting the string if it already exists in the note.
             location (InsertLocation): Location to insert the string.
+
+        Returns:
+            bool: Whether the note was updated.
         """
         if not allow_multiple and len(re.findall(re.escape(new_string), self.file_content)) > 0:
-            return
+            return False
 
         match location:
             case InsertLocation.BOTTOM:
                 self.file_content += f"\n{new_string}"
+                return True
             case InsertLocation.TOP:
                 try:
                     top = PATTERNS.frontmatter_block.search(self.file_content).group("frontmatter")
@@ -544,10 +574,12 @@ class Note:
 
                 if top == "":
                     self.file_content = f"{new_string}\n{self.file_content}"
-                else:
-                    new_string = f"{top}\n{new_string}"
-                    top = re.escape(top)
-                    self.sub(top, new_string, is_regex=True)
+                    return True
+
+                new_string = f"{top}\n{new_string}"
+                top = re.escape(top)
+                self.sub(top, new_string, is_regex=True)
+                return True
             case InsertLocation.AFTER_TITLE:
                 try:
                     top = PATTERNS.top_with_header.search(self.file_content).group("top")
@@ -556,10 +588,11 @@ class Note:
 
                 if top == "":
                     self.file_content = f"{new_string}\n{self.file_content}"
-                else:
-                    new_string = f"{top}\n{new_string}"
-                    top = re.escape(top)
-                    self.sub(top, new_string, is_regex=True)
-            case _:
+                    return True
+
+                new_string = f"{top}\n{new_string}"
+                top = re.escape(top)
+                self.sub(top, new_string, is_regex=True)
+                return True
+            case _:  # pragma: no cover
                 raise ValueError(f"Invalid location: {location}")
-        pass

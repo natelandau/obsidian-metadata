@@ -108,9 +108,9 @@ def test_no_config_no_vault(tmp_path, mocker) -> None:
         # Folders within the vault to ignore when indexing metadata
         exclude_paths = [".git", ".obsidian"]
 
-        # Location to add metadata. One of:
+        # Location to add new metadata. One of:
         #    TOP:            Directly after frontmatter.
-        #    AFTER_TITLE:    After a header following frontmatter.
+        #    AFTER_TITLE:    After the first header following frontmatter.
         #    BOTTOM:         The bottom of the note
         insert_location = "BOTTOM\"
         """

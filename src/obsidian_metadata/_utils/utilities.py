@@ -35,7 +35,7 @@ def clear_screen() -> None:  # pragma: no cover
 def dict_contains(
     dictionary: dict[str, list[str]], key: str, value: str = None, is_regex: bool = False
 ) -> bool:
-    """Check if a dictionary contains a key.
+    """Check if a dictionary contains a key or if a specified key contains a value.
 
     Args:
         dictionary (dict): Dictionary to check

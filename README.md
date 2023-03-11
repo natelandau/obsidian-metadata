@@ -5,7 +5,7 @@
 A script to make batch updates to metadata in an Obsidian vault. No changes are
 made to the Vault until they are explicitly committed.
 
-[![asciicast](https://asciinema.org/a/555789.svg)](https://asciinema.org/a/555789)
+[![asciicast](https://asciinema.org/a/DQk0ufza1azwU3QFkE6XV33nm.svg)](https://asciinema.org/a/DQk0ufza1azwU3QFkE6XV33nm)
 
 ## Important Disclaimer
 

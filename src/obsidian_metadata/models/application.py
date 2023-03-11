@@ -124,9 +124,9 @@ class Application:
         alerts.usage("Delete either a key and all associated values, or a specific value.")
 
         choices = [
+            {"name": "Delete inline tag", "value": "delete_inline_tag"},
             {"name": "Delete key", "value": "delete_key"},
             {"name": "Delete value", "value": "delete_value"},
-            {"name": "Delete inline tag", "value": "delete_inline_tag"},
             questionary.Separator(),
             {"name": "Back", "value": "back"},
         ]
@@ -147,9 +147,9 @@ class Application:
         alerts.usage("Select the type of metadata to rename.")
 
         choices = [
+            {"name": "Rename inline tag", "value": "rename_inline_tag"},
             {"name": "Rename key", "value": "rename_key"},
             {"name": "Rename value", "value": "rename_value"},
-            {"name": "Rename inline tag", "value": "rename_inline_tag"},
             questionary.Separator(),
             {"name": "Back", "value": "back"},
         ]
@@ -283,11 +283,11 @@ class Application:
         )
 
         choices = [
-            {"name": "View all metadata", "value": "all_metadata"},
             {"name": "View all frontmatter", "value": "all_frontmatter"},
-            {"name": "View all inline_metadata", "value": "all_inline"},
-            {"name": "View all keys", "value": "all_keys"},
+            {"name": "View all inline metadata", "value": "all_inline"},
             {"name": "View all inline tags", "value": "all_tags"},
+            {"name": "View all keys", "value": "all_keys"},
+            {"name": "View all metadata", "value": "all_metadata"},
             questionary.Separator(),
             {"name": "Write all metadata to CSV", "value": "export_csv"},
             {"name": "Write all metadata to JSON file", "value": "export_json"},
@@ -534,7 +534,7 @@ class Application:
             return
 
         alerts.info(f"Found {len(changed_notes)} changed notes in the vault")
-        choices: list[dict[str, Any] | questionary.Separator] = [questionary.Separator()]
+        choices: list[dict[str, Any] | questionary.Separator] = []
         for n, note in enumerate(changed_notes, start=1):
             _selection = {
                 "name": f"{n}: {note.note_path.relative_to(self.vault.vault_path)}",

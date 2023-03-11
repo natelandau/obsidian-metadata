@@ -274,12 +274,14 @@ class Questions:
         return questionary.select(
             "What do you want to do?",
             choices=[
+                questionary.Separator("-------------------------------"),
                 {"name": "Vault Actions", "value": "vault_actions"},
                 {"name": "Inspect Metadata", "value": "inspect_metadata"},
                 {"name": "Filter Notes in Scope", "value": "filter_notes"},
+                questionary.Separator("-------------------------------"),
                 {"name": "Add Metadata", "value": "add_metadata"},
-                {"name": "Rename Metadata", "value": "rename_metadata"},
                 {"name": "Delete Metadata", "value": "delete_metadata"},
+                {"name": "Rename Metadata", "value": "rename_metadata"},
                 {"name": "Transpose Metadata", "value": "transpose_metadata"},
                 questionary.Separator("-------------------------------"),
                 {"name": "Review Changes", "value": "review_changes"},

@@ -135,13 +135,22 @@ def main(
         • Delete a value from a key
         • Delete an inline tag
 
+    [bold underline]Move Inline Metadata[/]
+    Move inline metadata to a specified location with a note
+
+        • Move to Top - Move all inline metadata beneath the frontmatter
+        • Move to After Title* - Move all inline metadata beneath the first markdown header
+        • Move to Bottom - Move all inline metadata to the bottom of the note
+
     [bold underline]Transpose Metadata[/]
-    Move metadata from inline to frontmatter or the reverse.
+    Move metadata from inline to frontmatter or the reverse. When transposing to inline metadata,
+    the `insert location` value in the config file will specify where in the
+    note it will be inserted.
 
         • Transpose all metadata - Moves all frontmatter to inline
           metadata, or the reverse
         • Transpose key - Transposes a specific key and all it's values
-        • Transpose value- Transpose a specific key:value pair
+        • Transpose value - Transpose a specific key:value pair
 
     [bold underline]Review Changes[/]
     Prior to committing changes, review all changes that will be made.

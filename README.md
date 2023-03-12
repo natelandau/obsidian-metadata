@@ -60,6 +60,7 @@ Once installed, run `obsidian-metadata` in your terminal to enter an interactive
 -   **List notes in scope**: List notes that will be processed.
 
 **Add Metadata**: Add new metadata to your vault.
+
 When adding a new key to inline metadata, the `insert location` value in the config file will specify where in the note it will be inserted.
 
 -   **Add new metadata to the frontmatter**
@@ -78,7 +79,14 @@ When adding a new key to inline metadata, the `insert location` value in the con
 -   **Delete a value from a key**
 -   **Delete an inline tag**
 
+**Move Inline Metadata**: Move inline metadata to a specified location with a note
+
+-   **Move to Top**: Move all inline metadata beneath the frontmatter
+-   **Move to After Title**: Move all inline metadata beneath the first markdown header
+-   **Move to Bottom**: Move all inline metadata to the bottom of the note
+
 **Transpose Metadata**: Move metadata from inline to frontmatter or the reverse.
+
 When transposing to inline metadata, the `insert location` value in the config file will specify where in the note it will be inserted.
 
 -   **Transpose all metadata** - Moves all frontmatter to inline metadata, or the reverse

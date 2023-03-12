@@ -334,11 +334,13 @@ class Application:
 
     def application_transpose_metadata(self) -> None:
         """Transpose metadata."""
-        alerts.usage("Transpose metadata from frontmatter to inline or vice versa.")
+        alerts.usage("Move metadata between types. i.e. from frontmatter to inline or vice versa.")
 
         choices = [
             {"name": "Transpose frontmatter to inline", "value": "frontmatter_to_inline"},
             {"name": "Transpose inline to frontmatter", "value": "inline_to_frontmatter"},
+            questionary.Separator(),
+            {"name": "Back", "value": "back"},
         ]
         match self.questions.ask_selection(
             choices=choices, question="Select metadata to transpose"
@@ -566,6 +568,7 @@ class Application:
             {"name": f"Transpose all {begin.value} to {end.value}", "value": "transpose_all"},
             {"name": "Transpose a key", "value": "transpose_key"},
             {"name": "Transpose a value", "value": "transpose_value"},
+            questionary.Separator(),
             {"name": "Back", "value": "back"},
         ]
         match self.questions.ask_selection(choices=choices, question="Select an action to perform"):

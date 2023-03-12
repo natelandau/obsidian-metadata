@@ -824,7 +824,7 @@ def test_write_delete_inline_metadata_2(sample_note) -> None:
 
     GIVEN a note object with write_delete_inline_metadata() called
     WHEN a key is specified that is within a body of text
-    THEN the key/value is removed from the note content
+    THEN the key and all associated values are removed from the note content
 
     """
     note = Note(note_path=sample_note)
@@ -845,6 +845,26 @@ def test_write_delete_inline_metadata_3(sample_note) -> None:
     assert note.file_content == Regex(r"bottom_key2::")
     note.write_delete_inline_metadata("bottom_key1")
     assert note.file_content != Regex(r"bottom_key1::")
+
+
+def test_write_delete_inline_metadata_4(sample_note) -> None:
+    """Twrite_delete_inline_metadata() method.
+
+    GIVEN a note object with write_delete_inline_metadata() called
+    WHEN no key or value is specified
+    THEN all inline metadata is removed from the note content
+    """
+    note = Note(note_path=sample_note)
+    note.write_delete_inline_metadata()
+    assert note.file_content == Regex(r"codeblock_key::")
+    assert note.file_content != Regex(r"key📅::")
+    assert note.file_content != Regex(r"top_key1::")
+    assert note.file_content != Regex(r"top_key3::")
+    assert note.file_content != Regex(r"intext_key::")
+    assert note.file_content != Regex(r"shared_key1::")
+    assert note.file_content != Regex(r"shared_key2::")
+    assert note.file_content != Regex(r"bottom_key1::")
+    assert note.file_content != Regex(r"bottom_key2::")
 
 
 def test_write_frontmatter_1(sample_note) -> None:

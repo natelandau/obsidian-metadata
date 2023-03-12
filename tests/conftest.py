@@ -9,6 +9,13 @@ import pytest
 from obsidian_metadata._config import Config
 from obsidian_metadata.models.application import Application
 
+CONFIG_1 = """
+["Test Vault"]
+    exclude_paths   = [".git", ".obsidian", "ignore_folder"]
+    insert_location = "TOP"
+    path            = "TMPDIR_VAULT_PATH"
+"""
+
 
 def remove_all(root: Path):
     """Remove all files and directories in a directory."""
@@ -95,10 +102,16 @@ def test_vault(tmp_path) -> Path:
         raise FileNotFoundError(f"Sample vault not found: {source_dir}")
 
     shutil.copytree(source_dir, dest_dir)
-    yield dest_dir
+    config_path = Path(tmp_path / "config.toml")
+    config_path.write_text(CONFIG_1.replace("TMPDIR_VAULT_PATH", str(dest_dir)))
+    config = Config(config_path=config_path)
+    vault_config = config.vaults[0]
+
+    yield vault_config
 
     # after test - remove fixtures
     shutil.rmtree(dest_dir)
+    config_path.unlink()
 
     if backup_dir.exists():
         shutil.rmtree(backup_dir)

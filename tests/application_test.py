@@ -17,7 +17,12 @@ from tests.helpers import Regex, remove_ansi
 
 
 def test_instantiate_application(test_application) -> None:
-    """Test application."""
+    """Test application.
+
+    GIVEN an application
+    WHEN the application is instantiated
+    THEN check the attributes are set correctly
+    """
     app = test_application
     app._load_vault()
 
@@ -29,7 +34,12 @@ def test_instantiate_application(test_application) -> None:
 
 
 def test_abort(test_application, mocker, capsys) -> None:
-    """Test renaming a key."""
+    """Test aborting the application.
+
+    GIVEN an application
+    WHEN the users selects "abort" from the main menu
+    THEN check the application exits
+    """
     app = test_application
     app._load_vault()
     mocker.patch(
@@ -43,7 +53,12 @@ def test_abort(test_application, mocker, capsys) -> None:
 
 
 def test_add_metadata_frontmatter(test_application, mocker, capsys) -> None:
-    """Test adding new metadata to the vault."""
+    """Test adding new metadata to the vault.
+
+    GIVEN an application
+    WHEN the wants to update a key in the frontmatter
+    THEN check the application updates the key
+    """
     app = test_application
     app._load_vault()
     mocker.patch(
@@ -70,7 +85,12 @@ def test_add_metadata_frontmatter(test_application, mocker, capsys) -> None:
 
 
 def test_add_metadata_inline(test_application, mocker, capsys) -> None:
-    """Test adding new metadata to the vault."""
+    """Test adding new metadata to the vault.
+
+    GIVEN an application
+    WHEN the user wants to add a key in the inline metadata
+    THEN check the application updates the key
+    """
     app = test_application
     app._load_vault()
     mocker.patch(
@@ -97,7 +117,12 @@ def test_add_metadata_inline(test_application, mocker, capsys) -> None:
 
 
 def test_add_metadata_tag(test_application, mocker, capsys) -> None:
-    """Test adding new metadata to the vault."""
+    """Test adding new metadata to the vault.
+
+    GIVEN an application
+    WHEN the user wants to add a tag
+    THEN check the application adds the tag
+    """
     app = test_application
     app._load_vault()
     mocker.patch(
@@ -119,8 +144,41 @@ def test_add_metadata_tag(test_application, mocker, capsys) -> None:
     assert captured == Regex(r"SUCCESS +\| Added metadata to \d+ notes", re.DOTALL)
 
 
-def test_delete_inline_tag(test_application, mocker, capsys) -> None:
-    """Test renaming an inline tag."""
+def test_delete_inline_tag_1(test_application, mocker, capsys) -> None:
+    """Test renaming an inline tag.
+
+    GIVEN an application
+    WHEN the user wants to delete an inline tag
+    THEN check the application deletes the tag
+    """
+    app = test_application
+    app._load_vault()
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_application_main",
+        side_effect=["delete_metadata", KeyError],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_selection",
+        side_effect=["delete_inline_tag", "back"],
+    )
+    mocker.patch(
+        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
+        return_value="breakfast",
+    )
+
+    with pytest.raises(KeyError):
+        app.application_main()
+    captured = remove_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"SUCCESS +\| Deleted inline tag: breakfast in \d+ notes", re.DOTALL)
+
+
+def test_delete_inline_tag_2(test_application, mocker, capsys) -> None:
+    """Test renaming an inline tag.
+
+    GIVEN an application
+    WHEN the user wants to delete an inline tag that does not exist
+    THEN check the application does not update any notes
+    """
     app = test_application
     app._load_vault()
     mocker.patch(
@@ -140,24 +198,6 @@ def test_delete_inline_tag(test_application, mocker, capsys) -> None:
         app.application_main()
     captured = remove_ansi(capsys.readouterr().out)
     assert "WARNING  | No notes were changed" in captured
-
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_application_main",
-        side_effect=["delete_metadata", KeyError],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_selection",
-        side_effect=["delete_inline_tag", "back"],
-    )
-    mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
-        return_value="breakfast",
-    )
-
-    with pytest.raises(KeyError):
-        app.application_main()
-    captured = remove_ansi(capsys.readouterr().out)
-    assert captured == Regex(r"SUCCESS +\| Deleted inline tag: breakfast in \d+ notes", re.DOTALL)
 
 
 def test_delete_key(test_application, mocker, capsys) -> None:
@@ -545,15 +585,20 @@ def test_review_changes(test_application, mocker, capsys) -> None:
     assert "+ new_tags:" in captured
 
 
-def test_transpose_metadata(test_application, mocker, capsys) -> None:
-    """Transpose metadata."""
+def test_transpose_metadata_1(test_application, mocker, capsys) -> None:
+    """Transpose metadata.
+
+    GIVEN a test application
+    WHEN the user wants to transpose all inline metadata to frontmatter
+    THEN the metadata is transposed
+    """
     app = test_application
     app._load_vault()
 
     assert app.vault.metadata.inline_metadata["inline_key"] == ["inline_key_value"]
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
-        side_effect=["transpose_metadata", KeyError],
+        side_effect=["reorganize_metadata", KeyError],
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_selection",
@@ -561,18 +606,27 @@ def test_transpose_metadata(test_application, mocker, capsys) -> None:
     )
     with pytest.raises(KeyError):
         app.application_main()
+
     assert app.vault.metadata.inline_metadata == {}
     assert app.vault.metadata.frontmatter["inline_key"] == ["inline_key_value"]
     captured = remove_ansi(capsys.readouterr().out)
     assert "SUCCESS  | Transposed Inline Metadata to Frontmatter in 5 notes" in captured
 
+
+def test_transpose_metadata_2(test_application, mocker, capsys) -> None:
+    """Transpose metadata.
+
+    GIVEN a test application
+    WHEN the user wants to transpose all frontmatter to inline metadata
+    THEN the metadata is transposed
+    """
     app = test_application
     app._load_vault()
 
     assert app.vault.metadata.frontmatter["date_created"] == ["2022-12-21", "2022-12-22"]
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_application_main",
-        side_effect=["transpose_metadata", KeyError],
+        side_effect=["reorganize_metadata", KeyError],
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_selection",

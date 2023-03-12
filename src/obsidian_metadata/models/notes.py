@@ -448,20 +448,27 @@ class Note:
         Returns:
             bool: Whether the note was updated.
         """
-        for _k, _v in self.inline_metadata.dict.items():
-            if re.search(key, _k):
-                for _value in _v:
-                    if value is None:
+        if self.inline_metadata.dict != {}:
+            if key is None:
+                for _k, _v in self.inline_metadata.dict.items():
+                    for _value in _v:
                         _k = re.escape(_k)
                         _value = re.escape(_value)
-                        self.sub(rf"\[?{_k}:: ?{_value}]?", "", is_regex=True)
-                        return True
+                        self.sub(rf"\[?{_k}:: ?\[?\[?{_value}\]?\]?", "", is_regex=True)
+                return True
 
-                    if re.search(value, _value):
-                        _k = re.escape(_k)
-                        _value = re.escape(_value)
-                        self.sub(rf"({_k}::) ?{_value}", r"\1", is_regex=True)
-                        return True
+            for _k, _v in self.inline_metadata.dict.items():
+                if re.search(key, _k):
+                    for _value in _v:
+                        if value is None:
+                            _k = re.escape(_k)
+                            _value = re.escape(_value)
+                            self.sub(rf"\[?{_k}:: \[?\[?{_value}\]?\]?", "", is_regex=True)
+                        elif re.search(value, _value):
+                            _k = re.escape(_k)
+                            _value = re.escape(_value)
+                            self.sub(rf"\[?({_k}::) ?\[?\[?{_value}\]?\]?", r"\1", is_regex=True)
+                    return True
         return False
 
     def write_frontmatter(self, sort_keys: bool = False) -> bool:

@@ -3,35 +3,38 @@
 
 from pathlib import Path
 
+import pytest
+import typer
+from rich import print
+
 from obsidian_metadata._config import Config
 from obsidian_metadata.models import Vault, VaultFilter
 from obsidian_metadata.models.enums import InsertLocation, MetadataType
 from tests.helpers import Regex
 
 
-def test_vault_creation(test_vault):
-    """Test creating a Vault object."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+def test_vault_creation(test_vault, tmp_path):
+    """Test creating a Vault object.
+
+    GIVEN a Config object
+    WHEN a Vault object is created
+    THEN the Vault object is created with the correct attributes.
+    """
+    vault = Vault(config=test_vault)
 
     assert vault.name == "vault"
-    assert vault.vault_path == vault_path
-    assert vault.insert_location == InsertLocation.BOTTOM
-    assert vault.backup_path == Path(f"{vault_path}.bak")
+    assert vault.insert_location == InsertLocation.TOP
+    assert vault.backup_path == Path(tmp_path, "vault.bak")
     assert vault.dry_run is False
     assert str(vault.exclude_paths[0]) == Regex(r".*\.git")
-    assert len(vault.all_notes) == 3
+    assert len(vault.all_notes) == 2
 
     assert vault.metadata.dict == {
-        "author": ["author name"],
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "ignored_frontmatter": ["ignore_me"],
         "intext_key": ["intext_value"],
         "key📅": ["📅_key_value"],
         "shared_key1": [
@@ -43,19 +46,15 @@ def test_vault_creation(test_vault):
         "tags": [
             "frontmatter_tag1",
             "frontmatter_tag2",
-            "frontmatter_tag3",
-            "ignored_file_tag1",
             "shared_tag",
             "📅/frontmatter_tag3",
         ],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value_as_link"],
-        "type": ["article", "note"],
     }
 
     assert vault.metadata.tags == [
-        "ignored_file_tag2",
         "inline_tag_bottom1",
         "inline_tag_bottom2",
         "inline_tag_top1",
@@ -76,55 +75,51 @@ def test_vault_creation(test_vault):
         "top_key3": ["top_key3_value_as_link"],
     }
     assert vault.metadata.frontmatter == {
-        "author": ["author name"],
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "ignored_frontmatter": ["ignore_me"],
         "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
             "frontmatter_tag2",
-            "frontmatter_tag3",
-            "ignored_file_tag1",
             "shared_tag",
             "📅/frontmatter_tag3",
         ],
-        "type": ["article", "note"],
     }
 
 
 def set_insert_location(test_vault):
-    """Test setting a new insert location."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+    """Test setting a new insert location.
+
+    GIVEN a vault object
+    WHEN the insert location is changed
+    THEN the insert location is changed
+    """
+    vault = Vault(config=test_vault)
 
     assert vault.name == "vault"
-    assert vault.vault_path == vault_path
-    assert vault.insert_location == InsertLocation.BOTTOM
-    vault.insert_location = InsertLocation.TOP
     assert vault.insert_location == InsertLocation.TOP
+    vault.insert_location = InsertLocation.BOTTOM
+    assert vault.insert_location == InsertLocation.BOTTOM
 
 
-def test_add_metadata(test_vault) -> None:
-    """Test adding metadata to the vault."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+def test_add_metadata_1(test_vault) -> None:
+    """Test adding metadata to the vault.
 
-    assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key") == 3
+    GIVEN a vault object
+    WHEN a new metadata key is added
+    THEN the metadata is added to the vault
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key") == 2
     assert vault.metadata.dict == {
-        "author": ["author name"],
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "ignored_frontmatter": ["ignore_me"],
         "intext_key": ["intext_value"],
         "key📅": ["📅_key_value"],
         "new_key": [],
@@ -137,47 +132,46 @@ def test_add_metadata(test_vault) -> None:
         "tags": [
             "frontmatter_tag1",
             "frontmatter_tag2",
-            "frontmatter_tag3",
-            "ignored_file_tag1",
             "shared_tag",
             "📅/frontmatter_tag3",
         ],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value_as_link"],
-        "type": ["article", "note"],
     }
     assert vault.metadata.frontmatter == {
-        "author": ["author name"],
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "ignored_frontmatter": ["ignore_me"],
         "new_key": [],
         "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
             "frontmatter_tag2",
-            "frontmatter_tag3",
-            "ignored_file_tag1",
             "shared_tag",
             "📅/frontmatter_tag3",
         ],
-        "type": ["article", "note"],
     }
-    assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key2", "new_key2_value") == 3
+
+
+def test_add_metadata_2(test_vault) -> None:
+    """Test adding metadata to the vault.
+
+    GIVEN a vault object
+    WHEN a new metadata key and value is added
+    THEN the metadata is added to the vault
+    """
+    vault = Vault(config=test_vault)
+    assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key2", "new_key2_value") == 2
     assert vault.metadata.dict == {
-        "author": ["author name"],
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "ignored_frontmatter": ["ignore_me"],
         "intext_key": ["intext_value"],
         "key📅": ["📅_key_value"],
-        "new_key": [],
         "new_key2": ["new_key2_value"],
         "shared_key1": [
             "shared_key1_value",
@@ -188,49 +182,76 @@ def test_add_metadata(test_vault) -> None:
         "tags": [
             "frontmatter_tag1",
             "frontmatter_tag2",
-            "frontmatter_tag3",
-            "ignored_file_tag1",
             "shared_tag",
             "📅/frontmatter_tag3",
         ],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value_as_link"],
-        "type": ["article", "note"],
     }
     assert vault.metadata.frontmatter == {
-        "author": ["author name"],
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "ignored_frontmatter": ["ignore_me"],
-        "new_key": [],
         "new_key2": ["new_key2_value"],
         "shared_key1": ["shared_key1_value", "shared_key1_value3"],
         "shared_key2": ["shared_key2_value1"],
         "tags": [
             "frontmatter_tag1",
             "frontmatter_tag2",
-            "frontmatter_tag3",
-            "ignored_file_tag1",
             "shared_tag",
             "📅/frontmatter_tag3",
         ],
-        "type": ["article", "note"],
     }
 
 
-def test_backup(test_vault, capsys):
-    """Test backing up the vault."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+def test_commit_changes_1(test_vault, tmp_path):
+    """Test committing changes to content in the vault.
+
+    GIVEN a vault object
+    WHEN the commit_changes method is called
+    THEN the changes are committed to the vault
+    """
+    vault = Vault(config=test_vault)
+
+    content = Path(f"{tmp_path}/vault/test1.md").read_text()
+    assert "new_key: new_key_value" not in content
+    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
+    vault.commit_changes()
+    committed_content = Path(f"{tmp_path}/vault/test1.md").read_text()
+    assert "new_key: new_key_value" in committed_content
+
+
+def test_commit_changes_2(test_vault, tmp_path):
+    """Test committing changes to content in the vault in dry run mode.
+
+    GIVEN a vault object
+    WHEN dry_run is set to True
+    THEN no changes are committed to the vault
+    """
+    vault = Vault(config=test_vault, dry_run=True)
+    content = Path(f"{tmp_path}/vault/test1.md").read_text()
+    assert "new_key: new_key_value" not in content
+
+    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
+    vault.commit_changes()
+    committed_content = Path(f"{tmp_path}/vault/test1.md").read_text()
+    assert "new_key: new_key_value" not in committed_content
+
+
+def test_backup_1(test_vault, tmp_path, capsys):
+    """Test the backup method.
+
+    GIVEN a vault object
+    WHEN the backup method is called
+    THEN the vault is backed up
+    """
+    vault = Vault(config=test_vault)
 
     vault.backup()
 
     captured = capsys.readouterr()
-    assert Path(f"{vault_path}.bak").exists() is True
+    assert vault.backup_path.exists() is True
     assert captured.out == Regex(r"SUCCESS +| backed up to")
 
     vault.info()
@@ -239,42 +260,15 @@ def test_backup(test_vault, capsys):
     assert captured.out == Regex(r"Backup path +\│[\s ]+/[\d\w]+")
 
 
-def test_commit(test_vault, tmp_path):
-    """Test committing changes to content in the vault."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
-    content = Path(f"{tmp_path}/vault/test1.md").read_text()
-    assert "new_key: new_key_value" not in content
+def test_backup_2(test_vault, capsys):
+    """Test the backup method.
 
-    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
-    vault.commit_changes()
-    assert "new_key: new_key_value" not in content
+    GIVEN a vault object
+    WHEN dry_run is set to True and the backup method is called
+    THEN the vault is not backed up
+    """
+    vault = Vault(config=test_vault, dry_run=True)
 
-
-def test_commit_dry_run(test_vault, tmp_path):
-    """Test committing changes to content in the vault in dry run mode."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config, dry_run=True)
-    content = Path(f"{tmp_path}/vault/test1.md").read_text()
-    assert "new_key: new_key_value" not in content
-
-    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
-    vault.commit_changes()
-    assert "new_key: new_key_value" not in content
-
-
-def test_backup_dryrun(test_vault, capsys):
-    """Test backing up the vault."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config, dry_run=True)
-
-    print(f"vault.dry_run: {vault.dry_run}")
     vault.backup()
 
     captured = capsys.readouterr()
@@ -282,12 +276,14 @@ def test_backup_dryrun(test_vault, capsys):
     assert captured.out == Regex(r"DRYRUN +| Backup up vault to")
 
 
-def test_delete_backup(test_vault, capsys):
-    """Test deleting the vault backup."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+def test_delete_backup_1(test_vault, capsys):
+    """Test deleting the vault backup.
+
+    GIVEN a vault object
+    WHEN the delete_backup method is called
+    THEN the backup is deleted
+    """
+    vault = Vault(config=test_vault)
 
     vault.backup()
     vault.delete_backup()
@@ -302,12 +298,14 @@ def test_delete_backup(test_vault, capsys):
     assert captured.out == Regex(r"Backup +\│ None")
 
 
-def test_delete_backup_dryrun(test_vault, capsys):
-    """Test deleting the vault backup."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config, dry_run=True)
+def test_delete_backup_2(test_vault, capsys):
+    """Test delete_backup method in dry run mode.
+
+    GIVEN a vault object
+    WHEN the dry_run is True and the delete_backup method is called
+    THEN the backup is not deleted
+    """
+    vault = Vault(config=test_vault, dry_run=True)
 
     Path.mkdir(vault.backup_path)
     vault.delete_backup()
@@ -317,17 +315,17 @@ def test_delete_backup_dryrun(test_vault, capsys):
     assert vault.backup_path.exists() is True
 
 
-def test_delete_inline_tag(test_vault) -> None:
-    """Test deleting an inline tag."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+def test_delete_inline_tag_1(test_vault) -> None:
+    """Test delete_inline_tag() method.
 
-    assert vault.delete_inline_tag("no tag") == 0
-    assert vault.delete_inline_tag("intext_tag2") == 2
+    GIVEN a vault object
+    WHEN the delete_inline_tag method is called
+    THEN the inline tag is deleted
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.delete_inline_tag("intext_tag2") == 1
     assert vault.metadata.tags == [
-        "ignored_file_tag2",
         "inline_tag_bottom1",
         "inline_tag_bottom2",
         "inline_tag_top1",
@@ -337,29 +335,65 @@ def test_delete_inline_tag(test_vault) -> None:
     ]
 
 
-def test_delete_metadata(test_vault) -> None:
-    """Test deleting a metadata key/value."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+def test_delete_inline_tag_2(test_vault) -> None:
+    """Test delete_inline_tag() method.
+
+    GIVEN a vault object
+    WHEN the delete_inline_tag method is called with a tag that does not exist
+    THEN no changes are made
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.delete_inline_tag("no tag") == 0
+
+
+def test_delete_metadata_1(test_vault) -> None:
+    """Test deleting a metadata key/value.
+
+    GIVEN a vault object
+    WHEN the delete_metadata method is called with a key and value
+    THEN the specified metadata key/value is deleted
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.delete_metadata("top_key1", "top_key1_value") == 1
+    assert vault.metadata.dict["top_key1"] == []
+
+
+def test_delete_metadata_2(test_vault) -> None:
+    """Test deleting a metadata key/value.
+
+    GIVEN a vault object
+    WHEN the delete_metadata method is called with a key
+    THEN the specified metadata key is deleted
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.delete_metadata("top_key2") == 1
+    assert "top_key2" not in vault.metadata.dict
+
+
+def test_delete_metadata_3(test_vault) -> None:
+    """Test deleting a metadata key/value.
+
+    GIVEN a vault object
+    WHEN the delete_metadata method is called with a key and/or value that does not exist
+    THEN no changes are made
+    """
+    vault = Vault(config=test_vault)
 
     assert vault.delete_metadata("no key") == 0
     assert vault.delete_metadata("top_key1", "no_value") == 0
 
-    assert vault.delete_metadata("top_key1", "top_key1_value") == 2
-    assert vault.metadata.dict["top_key1"] == []
 
-    assert vault.delete_metadata("top_key2") == 2
-    assert "top_key2" not in vault.metadata.dict
+def test_export_csv_1(tmp_path, test_vault):
+    """Test exporting the vault to a CSV file.
 
-
-def test_export_csv(tmp_path, test_vault):
-    """Test exporting the vault to a CSV file."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+    GIVEN a vault object
+    WHEN the export_metadata method is called with a path and export_format of csv
+    THEN the vault metadata is exported to a CSV file
+    """
+    vault = Vault(config=test_vault)
     export_file = Path(f"{tmp_path}/export.csv")
 
     vault.export_metadata(path=export_file, export_format="csv")
@@ -367,12 +401,29 @@ def test_export_csv(tmp_path, test_vault):
     assert "frontmatter,date_created,2022-12-22" in export_file.read_text()
 
 
+def test_export_csv_2(tmp_path, test_vault):
+    """Test exporting the vault to a CSV file.
+
+    GIVEN a vault object
+    WHEN the export_metadata method is called with a path that does not exist and export_format of csv
+    THEN an error is raised
+    """
+    vault = Vault(config=test_vault)
+    export_file = Path(f"{tmp_path}/does_not_exist/export.csv")
+
+    with pytest.raises(typer.Exit):
+        vault.export_metadata(path=export_file, export_format="csv")
+    assert export_file.exists() is False
+
+
 def test_export_json(tmp_path, test_vault):
-    """Test exporting the vault to a CSV file."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+    """Test exporting the vault to a JSON file.
+
+    GIVEN a vault object
+    WHEN the export_metadata method is called with a path and export_format of csv
+    THEN the vault metadata is exported to a JSON file
+    """
+    vault = Vault(config=test_vault)
     export_file = Path(f"{tmp_path}/export.json")
 
     vault.export_metadata(path=export_file, export_format="json")
@@ -380,8 +431,13 @@ def test_export_json(tmp_path, test_vault):
     assert '"frontmatter": {' in export_file.read_text()
 
 
-def test_get_filtered_notes(sample_vault) -> None:
-    """Test filtering notes."""
+def test_get_filtered_notes_1(sample_vault) -> None:
+    """Test filtering notes.
+
+    GIVEN a vault object
+    WHEN the get_filtered_notes method is called with a path filter
+    THEN the notes in scope are filtered
+    """
     vault_path = sample_vault
     config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
     vault_config = config.vaults[0]
@@ -396,21 +452,66 @@ def test_get_filtered_notes(sample_vault) -> None:
     assert len(vault.all_notes) == 13
     assert len(vault.notes_in_scope) == 1
 
+
+def test_get_filtered_notes_2(sample_vault) -> None:
+    """Test filtering notes.
+
+    GIVEN a vault object
+    WHEN the get_filtered_notes method is called with a key filter
+    THEN the notes in scope are filtered
+    """
+    vault_path = sample_vault
+    config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
+
     filters = [VaultFilter(key_filter="on_one_note")]
     vault = Vault(config=vault_config, filters=filters)
     assert len(vault.all_notes) == 13
     assert len(vault.notes_in_scope) == 1
 
+
+def test_get_filtered_notes_3(sample_vault) -> None:
+    """Test filtering notes.
+
+    GIVEN a vault object
+    WHEN the get_filtered_notes method is called with a key and a value filter
+    THEN the notes in scope are filtered
+    """
+    vault_path = sample_vault
+    config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
     filters = [VaultFilter(key_filter="type", value_filter="book")]
     vault = Vault(config=vault_config, filters=filters)
     assert len(vault.all_notes) == 13
     assert len(vault.notes_in_scope) == 10
 
+
+def test_get_filtered_notes_4(sample_vault) -> None:
+    """Test filtering notes.
+
+    GIVEN a vault object
+    WHEN the get_filtered_notes method is called with a tag filter
+    THEN the notes in scope are filtered
+    """
+    vault_path = sample_vault
+    config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
     filters = [VaultFilter(tag_filter="brunch")]
     vault = Vault(config=vault_config, filters=filters)
     assert len(vault.all_notes) == 13
     assert len(vault.notes_in_scope) == 1
 
+
+def test_get_filtered_notes_5(sample_vault) -> None:
+    """Test filtering notes.
+
+    GIVEN a vault object
+    WHEN the get_filtered_notes method is called with a tag and a path filter
+    THEN the notes in scope are filtered
+    """
+    vault_path = sample_vault
+    config = Config(config_path="tests/fixtures/sample_vault_config.toml", vault_path=vault_path)
+    vault_config = config.vaults[0]
     filters = [VaultFilter(tag_filter="brunch"), VaultFilter(path_filter="inbox")]
     vault = Vault(config=vault_config, filters=filters)
     assert len(vault.all_notes) == 13
@@ -418,11 +519,13 @@ def test_get_filtered_notes(sample_vault) -> None:
 
 
 def test_info(test_vault, capsys):
-    """Test printing vault information."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+    """Test info() method.
+
+    GIVEN a vault object
+    WHEN the info method is called
+    THEN the vault info is printed
+    """
+    vault = Vault(config=test_vault)
 
     vault.info()
 
@@ -433,11 +536,13 @@ def test_info(test_vault, capsys):
 
 
 def test_list_editable_notes(test_vault, capsys) -> None:
-    """Test listing editable notes."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+    """Test list_editable_notes() method.
+
+    GIVEN a vault object
+    WHEN the list_editable_notes() method is called
+    THEN the editable notes in scope are printed
+    """
+    vault = Vault(config=test_vault)
 
     vault.list_editable_notes()
     captured = capsys.readouterr()
@@ -445,17 +550,29 @@ def test_list_editable_notes(test_vault, capsys) -> None:
     assert captured.out == Regex(r"\d +test1\.md")
 
 
-def test_rename_inline_tag(test_vault) -> None:
-    """Test renaming an inline tag."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+def test_move_inline_metadata_1(test_vault) -> None:
+    """Test move_inline_metadata() method.
 
-    assert vault.rename_inline_tag("no tag", "new_tag") == 0
-    assert vault.rename_inline_tag("intext_tag2", "new_tag") == 2
+    GIVEN a vault with inline metadata.
+    WHEN the move_inline_metadata() method is called.
+    THEN the inline metadata is moved to the top of the file.
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.move_inline_metadata(location=InsertLocation.TOP) == 1
+
+
+def test_rename_inline_tag_1(test_vault) -> None:
+    """Test rename_inline_tag() method.
+
+    GIVEN a vault object
+    WHEN the rename_inline_tag() method is called with a tag that is found
+    THEN the inline tag is renamed
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.rename_inline_tag("intext_tag2", "new_tag") == 1
     assert vault.metadata.tags == [
-        "ignored_file_tag2",
         "inline_tag_bottom1",
         "inline_tag_bottom2",
         "inline_tag_top1",
@@ -466,32 +583,62 @@ def test_rename_inline_tag(test_vault) -> None:
     ]
 
 
-def test_rename_metadata(test_vault) -> None:
-    """Test renaming a metadata key/value."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+def test_rename_inline_tag_2(test_vault) -> None:
+    """Test rename_inline_tag() method.
+
+    GIVEN a vault object
+    WHEN the rename_inline_tag() method is called with a tag that is not found
+    THEN the inline tag is not renamed
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.rename_inline_tag("no tag", "new_tag") == 0
+
+
+def test_rename_metadata_1(test_vault) -> None:
+    """Test rename_metadata() method.
+
+    GIVEN a vault object
+    WHEN the rename_metadata() method is called with a key or key/value that is found
+    THEN the metadata is not renamed
+    """
+    vault = Vault(config=test_vault)
 
     assert vault.rename_metadata("no key", "new_key") == 0
     assert vault.rename_metadata("tags", "nonexistent_value", "new_vaule") == 0
 
-    assert vault.rename_metadata("tags", "frontmatter_tag1", "new_vaule") == 2
-    assert vault.metadata.dict["tags"] == [
+
+def test_rename_metadata_2(test_vault) -> None:
+    """Test rename_metadata() method.
+
+    GIVEN a vault object
+    WHEN the rename_metadata() method with a key and no value
+    THEN the metadata key is renamed
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.rename_metadata("tags", "new_key") == 1
+    assert "tags" not in vault.metadata.dict
+    assert vault.metadata.dict["new_key"] == [
+        "frontmatter_tag1",
         "frontmatter_tag2",
-        "frontmatter_tag3",
-        "ignored_file_tag1",
-        "new_vaule",
         "shared_tag",
         "📅/frontmatter_tag3",
     ]
 
-    assert vault.rename_metadata("tags", "new_key") == 2
-    assert "tags" not in vault.metadata.dict
-    assert vault.metadata.dict["new_key"] == [
+
+def test_rename_metadata_3(test_vault) -> None:
+    """Test rename_metadata() method.
+
+    GIVEN a vault object
+    WHEN the rename_metadata() method is called with a key and value
+    THEN the metadata key/value is renamed
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.rename_metadata("tags", "frontmatter_tag1", "new_vaule") == 1
+    assert vault.metadata.dict["tags"] == [
         "frontmatter_tag2",
-        "frontmatter_tag3",
-        "ignored_file_tag1",
         "new_vaule",
         "shared_tag",
         "📅/frontmatter_tag3",
@@ -499,23 +646,23 @@ def test_rename_metadata(test_vault) -> None:
 
 
 def test_transpose_metadata(test_vault) -> None:
-    """Test transposing metadata."""
-    vault_path = test_vault
-    config = Config(config_path="tests/fixtures/test_vault_config.toml", vault_path=vault_path)
-    vault_config = config.vaults[0]
-    vault = Vault(config=vault_config)
+    """Test transpose_metadata() method.
 
-    assert vault.transpose_metadata(begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER) == 2
+    GIVEN a vault object
+    WHEN the transpose_metadata() method is called
+    THEN the metadata is transposed
+    """
+    vault = Vault(config=test_vault)
+
+    assert vault.transpose_metadata(begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER) == 1
 
     assert vault.metadata.inline_metadata == {}
     assert vault.metadata.frontmatter == {
-        "author": ["author name"],
         "bottom_key1": ["bottom_key1_value"],
         "bottom_key2": ["bottom_key2_value"],
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],
         "frontmatter_Key2": ["article", "note"],
-        "ignored_frontmatter": ["ignore_me"],
         "intext_key": ["intext_value"],
         "key📅": ["📅_key_value"],
         "shared_key1": [
@@ -527,15 +674,12 @@ def test_transpose_metadata(test_vault) -> None:
         "tags": [
             "frontmatter_tag1",
             "frontmatter_tag2",
-            "frontmatter_tag3",
-            "ignored_file_tag1",
             "shared_tag",
             "📅/frontmatter_tag3",
         ],
         "top_key1": ["top_key1_value"],
         "top_key2": ["top_key2_value"],
         "top_key3": ["top_key3_value_as_link"],
-        "type": ["article", "note"],
     }
 
     assert (

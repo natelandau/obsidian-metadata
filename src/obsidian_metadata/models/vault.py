@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import rich.repr
+import typer
 from rich import box
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
@@ -53,8 +54,9 @@ class Vault:
         self.insert_location: InsertLocation = self._find_insert_location()
         self.dry_run: bool = dry_run
         self.backup_path: Path = self.vault_path.parent / f"{self.vault_path.name}.bak"
-        self.exclude_paths: list[Path] = []
         self.metadata = VaultMetadata()
+        self.exclude_paths: list[Path] = []
+
         for p in config.exclude_paths:
             self.exclude_paths.append(Path(self.vault_path / p))
 
@@ -76,13 +78,16 @@ class Vault:
 
     def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover
         """Define rich representation of Vault."""
-        yield "vault_path", self.vault_path
-        yield "dry_run", self.dry_run
         yield "backup_path", self.backup_path
-        yield "num_notes", len(self.all_notes)
-        yield "num_notes_in_scope", len(self.notes_in_scope)
+        yield "config", self.config
+        yield "dry_run", self.dry_run
         yield "exclude_paths", self.exclude_paths
+        yield "filters", self.filters
         yield "insert_location", self.insert_location
+        yield "name", self.name
+        yield "num_notes_in_scope", len(self.notes_in_scope)
+        yield "num_notes", len(self.all_notes)
+        yield "vault_path", self.vault_path
 
     def _filter_notes(self) -> list[Note]:
         """Filter notes by path and metadata using the filters defined in self.filters.
@@ -209,6 +214,7 @@ class Vault:
 
         for _note in self.notes_in_scope:
             if _note.add_metadata(area=area, key=key, value=value, location=location):
+                log.trace(f"Added metadata to {_note.note_path}")
                 num_changed += 1
 
         if num_changed > 0:
@@ -279,6 +285,7 @@ class Vault:
 
         for _note in self.notes_in_scope:
             if _note.delete_inline_tag(tag):
+                log.trace(f"Deleted tag from {_note.note_path}")
                 num_changed += 1
 
         if num_changed > 0:
@@ -300,6 +307,7 @@ class Vault:
 
         for _note in self.notes_in_scope:
             if _note.delete_metadata(key, value):
+                log.trace(f"Deleted metadata from {_note.note_path}")
                 num_changed += 1
 
         if num_changed > 0:
@@ -315,6 +323,9 @@ class Vault:
             export_format (str, optional): Export as 'csv' or 'json'. Defaults to "csv".
         """
         export_file = Path(path).expanduser().resolve()
+        if not export_file.parent.exists():
+            alerts.error(f"Path does not exist: {export_file.parent}")
+            raise typer.Exit(code=1)
 
         match export_format:
             case "csv":
@@ -350,7 +361,7 @@ class Vault:
                     json.dump(dict_to_dump, f, indent=4, ensure_ascii=False, sort_keys=True)
 
     def get_changed_notes(self) -> list[Note]:
-        """Returns a list of notes that have changes.
+        """Return a list of notes that have changes.
 
         Returns:
             list[Note]: List of notes that have changes.
@@ -386,6 +397,29 @@ class Vault:
             table.add_row(str(_n), str(_note.note_path.relative_to(self.vault_path)))
         console.print(table)
 
+    def move_inline_metadata(self, location: InsertLocation) -> int:
+        """Move all inline metadata to the selected location.
+
+        Args:
+            location (InsertLocation): Location to move inline metadata to.
+
+        Returns:
+            int: Number of notes that had inline metadata moved.
+        """
+        num_changed = 0
+
+        for _note in self.notes_in_scope:
+            if _note.write_delete_inline_metadata():
+                log.trace(f"Deleted inline metadata from {_note.note_path}")
+                num_changed += 1
+                _note.write_all_inline_metadata(location)
+                log.trace(f"Wrote all inline metadata to {_note.note_path}")
+
+        if num_changed > 0:
+            self._rebuild_vault_metadata()
+
+        return num_changed
+
     def num_excluded_notes(self) -> int:
         """Count number of excluded notes."""
         return len(self.all_notes) - len(self.notes_in_scope)
@@ -404,6 +438,7 @@ class Vault:
 
         for _note in self.notes_in_scope:
             if _note.rename_inline_tag(old_tag, new_tag):
+                log.trace(f"Renamed inline tag in {_note.note_path}")
                 num_changed += 1
 
         if num_changed > 0:
@@ -412,7 +447,7 @@ class Vault:
         return num_changed
 
     def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> int:
-        """Renames a key or key-value pair in the note's metadata.
+        """Rename a key or key-value pair in the note's metadata.
 
         If no value is provided, will rename an entire key.
 
@@ -428,6 +463,7 @@ class Vault:
 
         for _note in self.notes_in_scope:
             if _note.rename_metadata(key, value_1, value_2):
+                log.trace(f"Renamed metadata in {_note.note_path}")
                 num_changed += 1
 
         if num_changed > 0:
@@ -468,6 +504,7 @@ class Vault:
                 location=location,
             ):
                 num_changed += 1
+                log.trace(f"Transposed metadata in {_note.note_path}")
 
         if num_changed > 0:
             self._rebuild_vault_metadata()

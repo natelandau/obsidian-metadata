@@ -12,7 +12,7 @@ from rich.table import Table
 from obsidian_metadata._config import VaultConfig
 from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.console import console
-from obsidian_metadata.models import Vault, VaultFilter
+from obsidian_metadata.models import InsertLocation, Vault, VaultFilter
 from obsidian_metadata.models.enums import MetadataType
 from obsidian_metadata.models.questions import Questions
 
@@ -63,8 +63,8 @@ class Application:
                     self.application_rename_metadata()
                 case "delete_metadata":
                     self.application_delete_metadata()
-                case "transpose_metadata":
-                    self.application_transpose_metadata()
+                case "reorganize_metadata":
+                    self.application_reorganize_metadata()
                 case "review_changes":
                     self.review_changes()
                 case "commit_changes":
@@ -332,11 +332,23 @@ class Application:
                 case _:
                     return
 
-    def application_transpose_metadata(self) -> None:
-        """Transpose metadata."""
-        alerts.usage("Move metadata between types. i.e. from frontmatter to inline or vice versa.")
+    def application_reorganize_metadata(self) -> None:
+        """Reorganize metadata.
+
+        This portion of the application deals with moving metadata between types (inline to frontmatter, etc.) and moving the location of inline metadata within a note.
+
+        """
+        alerts.usage("Move metadata within notes.")
+        alerts.usage("    1. Transpose frontmatter to inline or vice versa.")
+        alerts.usage("    2. Move the location of inline metadata within a note.")
 
         choices = [
+            {"name": "Move inline metadata to top of note", "value": "move_to_top"},
+            {
+                "name": "Move inline metadata beneath the first header",
+                "value": "move_to_after_header",
+            },
+            {"name": "Move inline metadata to bottom of the note", "value": "move_to_bottom"},
             {"name": "Transpose frontmatter to inline", "value": "frontmatter_to_inline"},
             {"name": "Transpose inline to frontmatter", "value": "inline_to_frontmatter"},
             questionary.Separator(),
@@ -349,6 +361,12 @@ class Application:
                 self.transpose_metadata(begin=MetadataType.FRONTMATTER, end=MetadataType.INLINE)
             case "inline_to_frontmatter":
                 self.transpose_metadata(begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER)
+            case "move_to_top":
+                self.move_inline_metadata(location=InsertLocation.TOP)
+            case "move_to_after_header":
+                self.move_inline_metadata(location=InsertLocation.AFTER_TITLE)
+            case "move_to_bottom":
+                self.move_inline_metadata(location=InsertLocation.BOTTOM)
             case _:  # pragma: no cover
                 return
 
@@ -452,6 +470,15 @@ class Application:
         )
 
         return
+
+    def move_inline_metadata(self, location: InsertLocation) -> None:
+        """Move inline metadata to the selected location."""
+        num_changed = self.vault.move_inline_metadata(location)
+        if num_changed == 0:
+            alerts.warning("No notes were changed")
+            return
+
+        alerts.success(f"Moved inline metadata to {location.value} in {num_changed} notes")
 
     def noninteractive_export_csv(self, path: Path) -> None:
         """Export the vault metadata to CSV."""

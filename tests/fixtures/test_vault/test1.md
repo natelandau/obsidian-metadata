@@ -4,7 +4,6 @@ tags:
     - shared_tag
     - frontmatter_tag1
     - frontmatter_tag2
-    -
     - 📅/frontmatter_tag3
 frontmatter_Key1: author name
 frontmatter_Key2: ["article", "note"]

@@ -1,3 +1,13 @@
+## v0.8.0 (2023-03-12)
+
+### Feat
+
+- move inline metadata to specific location in note (#27)
+
+### Fix
+
+- add `back` option to transpose menus
+
 ## v0.7.0 (2023-03-11)
 
 ### Feat

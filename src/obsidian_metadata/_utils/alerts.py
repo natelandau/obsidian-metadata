@@ -126,9 +126,12 @@ def _log_formatter(record: dict) -> str:
         or record["level"].name == "SUCCESS"
         or record["level"].name == "WARNING"
     ):
-        return "<level>{level: <8}</level> | <level>{message}</level>\n{exception}"
+        return "<level><normal>{level: <8} | {message}</normal></level>\n{exception}"
 
-    return "<level>{level: <8}</level> | <level>{message}</level> <fg #c5c5c5>({name}:{function}:{line})</fg #c5c5c5>\n{exception}"
+    if record["level"].name == "TRACE" or record["level"].name == "DEBUG":
+        return "<level><normal>{level: <8} | {message}</normal></level> <fg #c5c5c5>({name}:{function}:{line})</fg #c5c5c5>\n{exception}"
+
+    return "<level>{level: <8} | {message}</level> <fg #c5c5c5>({name}:{function}:{line})</fg #c5c5c5>\n{exception}"
 
 
 @rich.repr.auto

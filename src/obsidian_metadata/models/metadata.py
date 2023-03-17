@@ -210,7 +210,7 @@ class VaultMetadata:
 class Frontmatter:
     """Representation of frontmatter metadata."""
 
-    def __init__(self, file_content: str):
+    def __init__(self, file_content: str) -> None:
         self.dict: dict[str, list[str]] = self._grab_note_frontmatter(file_content)
         self.dict_original: dict[str, list[str]] = copy.deepcopy(self.dict)
 
@@ -389,7 +389,7 @@ class Frontmatter:
 class InlineMetadata:
     """Representation of inline metadata in the form of `key:: value`."""
 
-    def __init__(self, file_content: str):
+    def __init__(self, file_content: str) -> None:
         self.dict: dict[str, list[str]] = self.grab_inline_metadata(file_content)
         self.dict_original: dict[str, list[str]] = copy.deepcopy(self.dict)
 
@@ -535,7 +535,7 @@ class InlineMetadata:
 class InlineTags:
     """Representation of inline tags."""
 
-    def __init__(self, file_content: str):
+    def __init__(self, file_content: str) -> None:
         self.metadata_key = INLINE_TAG_KEY
         self.list: list[str] = self._grab_inline_tags(file_content)
         self.list_original: list[str] = self.list.copy()

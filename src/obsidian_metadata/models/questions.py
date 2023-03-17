@@ -423,7 +423,7 @@ class Questions:
 
         return self.ask_selection(
             choices=choices,
-            question="Select the location for the metadata",
+            question=question,
         )
 
     def ask_new_key(self, question: str = "New key name") -> str:  # pragma: no cover

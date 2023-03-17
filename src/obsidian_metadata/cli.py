@@ -79,7 +79,7 @@ def main(
         help="""Set verbosity level (0=WARN, 1=INFO, 2=DEBUG, 3=TRACE)""",
         count=True,
     ),
-    version: Optional[bool] = typer.Option(
+    version: Optional[bool] = typer.Option(  # noqa: ARG001
         None, "--version", help="Print version and exit", callback=version_callback, is_eager=True
     ),
 ) -> None:

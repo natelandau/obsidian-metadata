@@ -91,7 +91,7 @@ class Config:
     def _load_config(self) -> dict[str, Any]:
         """Load the configuration file."""
         try:
-            with open(self.config_path, encoding="utf-8") as fp:
+            with self.config_path.open(encoding="utf-8") as fp:
                 return tomlkit.load(fp)
         except tomlkit.exceptions.TOMLKitError as e:
             alerts.error(f"Could not parse '{self.config_path}'")

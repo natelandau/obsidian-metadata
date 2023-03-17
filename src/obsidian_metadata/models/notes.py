@@ -41,7 +41,7 @@ class Note:
         inline_metadata (dict): Dictionary of inline metadata in the note.
     """
 
-    def __init__(self, note_path: Path, dry_run: bool = False):
+    def __init__(self, note_path: Path, dry_run: bool = False) -> None:
         log.trace(f"Creating Note object for {note_path}")
         self.note_path: Path = Path(note_path)
         self.dry_run: bool = dry_run
@@ -146,7 +146,7 @@ class Note:
             return
 
         try:
-            with open(p, "w") as f:
+            with p.open(mode="w") as f:
                 log.trace(f"Writing note {p} to disk")
                 f.write(self.file_content)
         except FileNotFoundError as e:
@@ -579,7 +579,7 @@ class Note:
                 except AttributeError:
                     top = ""
 
-                if top == "":
+                if not top:
                     self.file_content = f"{new_string}\n{self.file_content}"
                     return True
 
@@ -593,7 +593,7 @@ class Note:
                 except AttributeError:
                     top = ""
 
-                if top == "":
+                if not top:
                     self.file_content = f"{new_string}\n{self.file_content}"
                     return True
 

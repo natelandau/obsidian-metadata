@@ -47,7 +47,7 @@ class Vault:
         config: VaultConfig,
         dry_run: bool = False,
         filters: list[VaultFilter] = [],
-    ):
+    ) -> None:
         self.config = config.config
         self.vault_path: Path = config.path
         self.name = self.vault_path.name
@@ -329,7 +329,7 @@ class Vault:
 
         match export_format:
             case "csv":
-                with open(export_file, "w", encoding="UTF8") as f:
+                with export_file.open(mode="w", encoding="UTF8") as f:
                     writer = csv.writer(f)
                     writer.writerow(["Metadata Type", "Key", "Value"])
 
@@ -357,7 +357,7 @@ class Vault:
                     "tags": self.metadata.tags,
                 }
 
-                with open(export_file, "w", encoding="UTF8") as f:
+                with export_file.open(mode="w", encoding="UTF8") as f:
                     json.dump(dict_to_dump, f, indent=4, ensure_ascii=False, sort_keys=True)
 
     def get_changed_notes(self) -> list[Note]:

@@ -32,76 +32,32 @@
         pytest-clarity         = "^1.0.1"
         pytest-mock            = "^3.10.0"
         pytest-pretty-terminal = "^1.1.0"
-        pytest-xdist           = "^3.2.0"
+        pytest-xdist           = "^3.2.1"
 
     [tool.poetry.group.dev.dependencies]
         black                 = "^23.1.0"
         commitizen            = "^2.42.1"
-        coverage              = "^7.2.1"
+        coverage              = "^7.2.2"
         interrogate           = "^1.5.0"
         mypy                  = "^1.1.1"
         pdoc                  = "^13.0.0"
         poethepoet            = "^0.18.1"
-        pre-commit            = "^3.1.1"
-        pysnooper             = "^1.1.1"
-        ruff                  = "^0.0.254"
-        typeguard             = "^2.13.3"
+        pre-commit            = "^3.2.0"
+        ruff                  = "^0.0.256"
+        typeguard             = "^3.0.1"
         types-python-dateutil = "^2.8.19.10"
         vulture               = "^2.7"
 
-[tool.ruff] # https://github.com/charliermarsh/ruff
-    fix = true
-    ignore = [
-        "B006",
-        "B008",
-        "D107",
-        "D203",
-        "D204",
-        "D213",
-        "D215",
-        "D404",
-        "D406",
-        "D407",
-        "D408",
-        "D409",
-        "D413",
-        "E501",
-        "N805",
-        "PGH001",
-        "PGH003",
-        "UP007",
-    ]
-    ignore-init-module-imports = true
+[tool.black]
     line-length = 100
-    per-file-ignores = { "cli.py" = ["PLR0912", "PLR0913"], "tests/*.py" = ["PLR0913", "PLR2004"] }
-    select = [
-        "A",
-        "B",
-        "BLE",
-        "C4",
-        "C90",
-        "D",
-        "E",
-        "ERA",
-        "F",
-        "I",
-        "N",
-        "PGH",
-        "PLC",
-        "PLE",
-        "PLR",
-        "PLW",
-        "RET",
-        "RUF",
-        "SIM",
-        "TID",
-        "UP",
-        "W",
-        "YTT",
-    ]
-    src = ["src", "tests"]
-    target-version = "py310"
-    unfixable = ["ERA001", "F401", "F841", "UP007"]
+
+[tool.commitizen]
+    bump_message             = "bump(release): v$current_version → v$new_version"
+    changelog_incremental    = true
+    tag_format               = "v$version"
+    update_changelog_on_bump = true
+    version                  = "0.8.0"
+    version_files            = ["pyproject.toml:version", "src/obsidian_metadata/__version__.py:__version__"]
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/latest/config.html#report
     exclude_lines = [
@@ -133,17 +89,6 @@
 
 [tool.coverage.xml]
     output = "reports/coverage.xml"
-
-[tool.black]
-    line-length = 100
-
-[tool.commitizen]
-    bump_message             = "bump(release): v$current_version → v$new_version"
-    changelog_incremental    = true
-    tag_format               = "v$version"
-    update_changelog_on_bump = true
-    version                  = "0.8.0"
-    version_files            = ["pyproject.toml:version", "src/obsidian_metadata/__version__.py:__version__"]
 
 [tool.interrogate]
     exclude            = ["build", "docs", "tests"]
@@ -178,6 +123,108 @@
     testpaths      = ["src", "tests"]
     xfail_strict   = true
 
+[tool.ruff] # https://github.com/charliermarsh/ruff
+    exclude = [
+        ".bzr",
+        ".direnv",
+        ".eggs",
+        ".git",
+        ".hg",
+        ".mypy_cache",
+        ".nox",
+        ".pants.d",
+        ".pytype",
+        ".ruff_cache",
+        ".svn",
+        ".tox",
+        ".venv",
+        "__pypackages__",
+        "_build",
+        "buck-out",
+        "build",
+        "dist",
+        "node_modules",
+        "venv",
+    ]
+    # Avoiding flagging (and removing) `V101` from any `# noqa`
+    # directives, despite Ruff's lack of support for `vulture`.
+    external = ["V101"]
+    fix = true
+    ignore = [
+        "B006",
+        "B008",
+        "D107",
+        "D203",
+        "D204",
+        "D213",
+        "D215",
+        "D404",
+        "D406",
+        "D407",
+        "D408",
+        "D409",
+        "D413",
+        "E501",
+        "N805",
+        "PGH001",
+        "PGH003",
+        "UP007",
+    ]
+    ignore-init-module-imports = true
+    line-length = 100
+    per-file-ignores = { "cli.py" = [
+        "PLR0912",
+        "PLR0913",
+    ], "tests/*.py" = [
+        "PLR0913",
+        "PLR2004",
+        "S101",
+    ] }
+    select = [
+        "A",   # flake8-builtins
+        "ARG", # flake8-unused-arguments
+        "B",   # flake8-bugbear
+        "BLE", # flake8-blind-exception
+        "C40", # flake8-comprehensions
+        "C90", # McCabe
+        "D",   # pydocstyle
+        "E",   # pycodestyle Errors
+        "ERA", # flake8-eradicate
+        "EXE", # flake8-executable
+        "F",   # pyflakes
+        "I",   # iSort
+        "N",   # Pep8-naming
+        "PGH", # pygrep-hooks
+        "PLC", # pylint Convention
+        "PLE", # pylint Error
+        "PLR", # pylint Refactor
+        "PLW", # pylint Warning
+        "PT",  # flake8-pytest-style
+        "PTH", # flake8-use-pathlib
+        "Q",   # flake8-quotes
+        "RET", # flake8-return
+        "RUF", # Ruff-specific rules
+        "S",   # flake8-bandit
+        "SIM", # flake8-simplify
+        "TID", # flake8-tidy-imports
+        "UP",  # pyupgrade
+        "W",   # pycodestyle Warnings
+        "YTT", # flake8-2020
+    ]
+    src = ["src", "tests"]
+    target-version = "py310"
+    unfixable = ["ERA001", "F401", "F841", "UP007"]
+
+    [tool.ruff.mccabe]
+        # Unlike Flake8, default to a complexity level of 10.
+        max-complexity = 10
+
+    [tool.ruff.pydocstyle]
+        convention = "google"
+
+    [tool.ruff.pylint]
+        max-args = 6
+
 [tool.vulture] # https://pypi.org/project/vulture/
     # exclude = ["file*.py", "dir/"]
     # ignore_decorators = ["@app.route", "@require_*"]
@@ -203,7 +250,7 @@
         help = "Lint this package"
 
         [[tool.poe.tasks.lint.sequence]]
-            shell = "ruff --extend-ignore=I001,D301,D401 src/"
+            shell = "ruff src/ --no-fix"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "black --check src/ tests/"

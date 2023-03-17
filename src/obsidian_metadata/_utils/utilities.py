@@ -86,7 +86,7 @@ def dict_values_to_lists_strings(
                 new_dict[key] = sorted([str(item) for item in value if item is not None])
             elif isinstance(value, dict):
                 new_dict[key] = dict_values_to_lists_strings(value)  # type: ignore[assignment]
-            elif value is None or value == "None" or value == "":
+            elif value is None or value == "None" or not value:
                 new_dict[key] = []
             else:
                 new_dict[key] = [str(value)]
@@ -179,7 +179,7 @@ def remove_markdown_sections(
     if strip_frontmatter:
         text = re.sub(r"^\s*---.*?---", "", text, flags=re.DOTALL)
 
-    return text  # noqa: RET504
+    return text
 
 
 def version_callback(value: bool) -> None:

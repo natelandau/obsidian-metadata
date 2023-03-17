@@ -183,7 +183,7 @@ class Application:
             match self.questions.ask_selection(choices=choices, question="Select an action"):
                 case "apply_path_filter":
                     path = self.questions.ask_filter_path()
-                    if path is None or path == "":  # pragma: no cover
+                    if path is None or not path:  # pragma: no cover
                         return
 
                     self.filters.append(VaultFilter(path_filter=path))
@@ -200,7 +200,7 @@ class Application:
                     )
                     if value is None:  # pragma: no cover
                         return
-                    if value == "":
+                    if not value:
                         self.filters.append(VaultFilter(key_filter=key))
                     else:
                         self.filters.append(VaultFilter(key_filter=key, value_filter=value))
@@ -208,7 +208,7 @@ class Application:
 
                 case "apply_tag_filter":
                     tag = self.questions.ask_existing_inline_tag()
-                    if tag is None or tag == "":
+                    if tag is None or not tag:
                         return
 
                     self.filters.append(VaultFilter(tag_filter=tag))

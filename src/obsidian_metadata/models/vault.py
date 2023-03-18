@@ -471,7 +471,7 @@ class Vault:
 
         return num_changed
 
-    def transpose_metadata(  # noqa: PLR0913
+    def transpose_metadata(
         self,
         begin: MetadataType,
         end: MetadataType,

@@ -73,7 +73,6 @@ class Application:
                     break
 
         console.print("Done!")
-        return
 
     def application_add_metadata(self) -> None:
         """Add metadata."""

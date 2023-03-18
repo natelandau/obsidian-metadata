@@ -354,7 +354,7 @@ class Note:
 
         self.file_content = re.sub(pattern, replacement, self.file_content, re.MULTILINE)
 
-    def transpose_metadata(  # noqa: C901, PLR0912, PLR0911, PLR0913
+    def transpose_metadata(  # noqa: C901, PLR0912, PLR0911
         self,
         begin: MetadataType,
         end: MetadataType,

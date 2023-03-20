@@ -25,7 +25,7 @@ class Patterns:
         ([-_\w\d\/\*\u263a-\U0001f999]+?)::[ ]? # Find key
         (.*?)\]                                 # Find value until closing bracket
         |                                       # Else look for key values at start of line
-        (?:^|[^ \w\d]+| \[)                     # Any non-word or non-digit character
+        (?:^|[^ \w\d]+|^ *>?[-\d\|]?\.? )                     # Any non-word or non-digit character
         ([-_\w\d\/\*\u263a-\U0001f9995]+?)::(?!\n)(?:[ ](?!\n))?  # Capture the key if not a new line
         (.*?)$                                  # Capture the value
         """,

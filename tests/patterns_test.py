@@ -6,17 +6,7 @@ import pytest
 from obsidian_metadata.models.patterns import Patterns
 
 TAG_CONTENT: str = "#1 #2 **#3** [[#4]] [[#5|test]] #6#notag #7_8 #9/10 #11-12 #13; #14, #15. #16: #17* #18(#19) #20[#21] #22\\ #23& #24# #25 **#26** #📅/tag [link](#no_tag) https://example.com/somepage.html_#no_url_tags"
-INLINE_METADATA: str = """
-**1:: 1**
-2_2:: [[2_2]] | 2
-asdfasdf [3:: 3] asdfasdf [7::7] asdf
-[4:: 4] [5:: 5]
-> 6:: 6
-**8**:: **8**
-10::
-📅11:: 11/📅/11
-emoji_📅_key:: 📅emoji_📅_key_value
-    """
+
 FRONTMATTER_CONTENT: str = """
 ---
 tags:
@@ -150,17 +140,64 @@ def test_find_inline_tags():
 def test_find_inline_metadata():
     """Test find_inline_metadata regex."""
     pattern = Patterns()
+    content = """
+**1:: 1**
+2_2:: [[2_2]] | 2
+asdfasdf [3:: 3] asdfasdf [7::7] asdf
+[4:: 4] [5:: 5]
+> 6:: 6
+**8**:: **8**
+10::
+📅11:: 11/📅/11
+emoji_📅_key::emoji_📅_key_value
+key1:: value1
+key1:: value2
+key1:: value3
+    indented_key:: value1
+Paragraph of text with an [inline_key:: value1] and [inline_key:: value2] and [inline_key:: value3] which should do it.
+> blockquote_key:: value1
+> blockquote_key:: value2
 
-    result = pattern.find_inline_metadata.findall(INLINE_METADATA)
+- list_key:: value1
+- list_key:: [[value2]]
+
+1. list_key:: value1
+2. list_key:: value2
+
+| table_key:: value1 | table_key:: value2 |
+---
+frontmatter_key1: frontmatter_key1_value
+---
+not_a_key: not_a_value
+paragraph metadata:: key in text
+    """
+
+    result = pattern.find_inline_metadata.findall(content)
     assert result == [
         ("", "", "1", "1**"),
         ("", "", "2_2", "[[2_2]] | 2"),
         ("3", "3", "", ""),
         ("7", "7", "", ""),
         ("", "", "4", "4] [5:: 5]"),
+        ("", "", "6", "6"),
         ("", "", "8**", "**8**"),
         ("", "", "11", "11/📅/11"),
-        ("", "", "emoji_📅_key", "📅emoji_📅_key_value"),
+        ("", "", "emoji_📅_key", "emoji_📅_key_value"),
+        ("", "", "key1", "value1"),
+        ("", "", "key1", "value2"),
+        ("", "", "key1", "value3"),
+        ("", "", "indented_key", "value1"),
+        ("inline_key", "value1", "", ""),
+        ("inline_key", "value2", "", ""),
+        ("inline_key", "value3", "", ""),
+        ("", "", "blockquote_key", "value1"),
+        ("", "", "blockquote_key", "value2"),
+        ("", "", "list_key", "value1"),
+        ("", "", "list_key", "[[value2]]"),
+        ("", "", "list_key", "value1"),
+        ("", "", "list_key", "value2"),
+        ("", "", "table_key", "value1 | table_key:: value2 |"),
+        ("", "", "metadata", "key in text"),
     ]
 
 

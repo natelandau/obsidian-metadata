@@ -312,7 +312,7 @@ class Frontmatter:
         Returns:
             bool: True if a value was deleted
         """
-        new_dict = dict(self.dict)
+        new_dict = copy.deepcopy(self.dict)
 
         if value_to_delete is None:
             for _k in list(new_dict):
@@ -398,7 +398,7 @@ class InlineMetadata:
     """Representation of inline metadata in the form of `key:: value`."""
 
     def __init__(self, file_content: str) -> None:
-        self.dict: dict[str, list[str]] = self.grab_inline_metadata(file_content)
+        self.dict: dict[str, list[str]] = self._grab_inline_metadata(file_content)
         self.dict_original: dict[str, list[str]] = copy.deepcopy(self.dict)
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -408,6 +408,30 @@ class InlineMetadata:
             str: inline metadata
         """
         return f"InlineMetadata(inline_metadata={self.dict})"
+
+    def _grab_inline_metadata(self, file_content: str) -> dict[str, list[str]]:
+        """Grab inline metadata from a note.
+
+        Returns:
+            dict[str, str]: Inline metadata from the note.
+        """
+        content = remove_markdown_sections(
+            file_content,
+            strip_codeblocks=True,
+            strip_inlinecode=True,
+            strip_frontmatter=True,
+        )
+        all_results = PATTERNS.find_inline_metadata.findall(content)
+        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
+
+        inline_metadata: dict[str, list[str]] = {}
+        for k, v in stripped_null_values:
+            if k in inline_metadata:
+                inline_metadata[k].append(str(v))
+            else:
+                inline_metadata[k] = [str(v)]
+
+        return clean_dictionary(inline_metadata)
 
     def add(self, key: str, value: str | list[str] = None) -> bool:  # noqa: PLR0911
         """Add a key and value to the inline metadata.
@@ -436,6 +460,7 @@ class InlineMetadata:
         if key in self.dict and value not in self.dict[key]:
             if isinstance(value, list):
                 self.dict[key].extend(value)
+                self.dict[key] = list(sorted(set(self.dict[key])))
                 return True
 
             self.dict[key].append(value)
@@ -483,30 +508,6 @@ class InlineMetadata:
             return True
 
         return False
-
-    def grab_inline_metadata(self, file_content: str) -> dict[str, list[str]]:
-        """Grab inline metadata from a note.
-
-        Returns:
-            dict[str, str]: Inline metadata from the note.
-        """
-        content = remove_markdown_sections(
-            file_content,
-            strip_codeblocks=True,
-            strip_inlinecode=True,
-            strip_frontmatter=True,
-        )
-        all_results = PATTERNS.find_inline_metadata.findall(content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
-
-        inline_metadata: dict[str, list[str]] = {}
-        for k, v in stripped_null_values:
-            if k in inline_metadata:
-                inline_metadata[k].append(str(v))
-            else:
-                inline_metadata[k] = [str(v)]
-
-        return clean_dictionary(inline_metadata)
 
     def has_changes(self) -> bool:
         """Check if the metadata has changes.

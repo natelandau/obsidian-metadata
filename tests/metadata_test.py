@@ -68,8 +68,13 @@ repeated_key:: repeated_key_value2
 """
 
 
-def test_frontmatter_create() -> None:
-    """Test frontmatter creation."""
+def test_frontmatter_create_1() -> None:
+    """Test frontmatter creation.
+
+    GIVEN valid frontmatter content
+    WHEN a Frontmatter object is created
+    THEN parse the YAML frontmatter and add it to the object
+    """
     frontmatter = Frontmatter(INLINE_CONTENT)
     assert frontmatter.dict == {}
 
@@ -88,11 +93,11 @@ def test_frontmatter_create() -> None:
     }
 
 
-def test_frontmatter_create_error() -> None:
+def test_frontmatter_create_2() -> None:
     """Test frontmatter creation error.
 
-    GIVEN frontmatter content
-    WHEN frontmatter is invalid
+    GIVEN invalid frontmatter content
+    WHEN a Frontmatter object is created
     THEN raise ValueError
     """
     fn = """---
@@ -104,19 +109,116 @@ invalid = = "content"
         Frontmatter(fn)
 
 
-def test_frontmatter_contains() -> None:
-    """Test frontmatter contains."""
-    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+def test_frontmatter_create_3():
+    """Test frontmatter creation error.
 
+    GIVEN empty frontmatter content
+    WHEN a Frontmatter object is created
+    THEN set the dict to an empty dict
+    """
+    content = "---\n\n---"
+    frontmatter = Frontmatter(content)
+    assert frontmatter.dict == {}
+
+
+def test_frontmatter_create_4():
+    """Test frontmatter creation error.
+
+    GIVEN empty frontmatter content with a yaml marker
+    WHEN a Frontmatter object is created
+    THEN set the dict to an empty dict
+    """
+    content = "---\n-\n---"
+    frontmatter = Frontmatter(content)
+    assert frontmatter.dict == {}
+
+
+def test_frontmatter_contains_1():
+    """Test frontmatter contains() method.
+
+    GIVEN a Frontmatter object
+    WHEN the contains() method is called with a key
+    THEN return True if the key is found
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
     assert frontmatter.contains("frontmatter_Key1") is True
+
+
+def test_frontmatter_contains_2():
+    """Test frontmatter contains() method.
+
+    GIVEN a Frontmatter object
+    WHEN the contains() method is called with a key
+    THEN return False if the key is not found
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    assert frontmatter.contains("no_key") is False
+
+
+def test_frontmatter_contains_3():
+    """Test frontmatter contains() method.
+
+    GIVEN a Frontmatter object
+    WHEN the contains() method is called with a key and a value
+    THEN return True if the key and value is found
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
     assert frontmatter.contains("frontmatter_Key2", "article") is True
-    assert frontmatter.contains("frontmatter_Key3") is False
+
+
+def test_frontmatter_contains_4():
+    """Test frontmatter contains() method.
+
+    GIVEN a Frontmatter object
+    WHEN the contains() method is called with a key and a value
+    THEN return False if the key and value is not found
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
     assert frontmatter.contains("frontmatter_Key2", "no value") is False
 
+
+def test_frontmatter_contains_5():
+    """Test frontmatter contains() method.
+
+    GIVEN a Frontmatter object
+    WHEN the contains() method is called with a key regex
+    THEN return True if a key matches the regex
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
     assert frontmatter.contains(r"\d$", is_regex=True) is True
+
+
+def test_frontmatter_contains_6():
+    """Test frontmatter contains() method.
+
+    GIVEN a Frontmatter object
+    WHEN the contains() method is called with a key regex
+    THEN return False if no key matches the regex
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
     assert frontmatter.contains(r"^\d", is_regex=True) is False
-    assert frontmatter.contains("key", r"_\d", is_regex=True) is False
+
+
+def test_frontmatter_contains_7():
+    """Test frontmatter contains() method.
+
+    GIVEN a Frontmatter object
+    WHEN the contains() method is called with a key and value regex
+    THEN return True if a value matches the regex
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
     assert frontmatter.contains("key", r"\w\d_", is_regex=True) is True
+
+
+def test_frontmatter_contains_8():
+    """Test frontmatter contains() method.
+
+    GIVEN a Frontmatter object
+    WHEN the contains() method is called with a key and value regex
+    THEN return False if a value does not match the regex
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    assert frontmatter.contains("key", r"_\d", is_regex=True) is False
 
 
 def test_frontmatter_add() -> None:
@@ -231,6 +333,18 @@ def test_frontmatter_delete() -> None:
     assert frontmatter.dict["shared_key1"] == []
     assert frontmatter.delete(r"\w.tter") is True
     assert frontmatter.dict == {"shared_key1": []}
+
+
+def test_frontmatter_delete_all():
+    """Test Frontmatter delete_all method.
+
+    GIVEN Frontmatter with multiple keys
+    WHEN delete_all is called
+    THEN all keys and values are deleted
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    frontmatter.delete_all()
+    assert frontmatter.dict == {}
 
 
 def test_frontmatter_yaml_conversion():

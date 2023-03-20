@@ -229,16 +229,17 @@ def test_add_metadata_method_10(sample_note):
     """Test add_metadata() method.
 
     GIVEN a note object
-    WHEN add_metadata() is with a new tag
+    WHEN add_metadata() is called with a new tag
     THEN the tag is added to the InlineTags object and the file content
     """
     note = Note(note_path=sample_note)
-    assert "new_tag" not in note.inline_tags.list
+    assert "new_tag2" not in note.inline_tags.list
     assert (
-        note.add_metadata(MetadataType.TAGS, value="new_tag", location=InsertLocation.TOP) is True
+        note.add_metadata(MetadataType.TAGS, value="new_tag2", location=InsertLocation.BOTTOM)
+        is True
     )
-    assert "new_tag" in note.inline_tags.list
-    assert "#new_tag" in note.file_content
+    assert "new_tag2" in note.inline_tags.list
+    assert "#new_tag2" in note.file_content
 
 
 def test_commit_1(sample_note, tmp_path) -> None:
@@ -311,6 +312,24 @@ def test_contains_metadata(sample_note) -> None:
     assert note.contains_metadata("frontmatter_Key2", "article") is True
     assert note.contains_metadata("bottom_key1", "bottom_key1_value") is True
     assert note.contains_metadata(r"bottom_key\d$", r"bottom_key\d_value", is_regex=True) is True
+
+
+def test_delete_all_metadata(sample_note):
+    """Test delete_all_metadata() method.
+
+    GIVEN a note object
+    WHEN delete_all_metadata() is called
+    THEN all tags, frontmatter, and inline metadata are deleted
+    """
+    note = Note(note_path=sample_note)
+    note.delete_all_metadata()
+    assert note.inline_tags.list == []
+    assert note.frontmatter.dict == {}
+    assert note.inline_metadata.dict == {}
+    assert note.file_content == Regex("consequat.  Duis")
+    assert "codeblock_key:: some text" in note.file_content
+    assert "#ffffff" in note.file_content
+    assert "---" not in note.file_content
 
 
 def test_delete_inline_tag(sample_note) -> None:

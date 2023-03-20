@@ -245,6 +245,9 @@ class Frontmatter:
         except Exception as e:  # noqa: BLE001
             raise AttributeError(e) from e
 
+        if frontmatter is None or frontmatter == [None]:
+            return {}
+
         for k in frontmatter:
             if frontmatter[k] is None:
                 frontmatter[k] = []
@@ -325,6 +328,10 @@ class Frontmatter:
             return True
 
         return False
+
+    def delete_all(self) -> None:
+        """Delete all Frontmatter from the note."""
+        self.dict = {}
 
     def has_changes(self) -> bool:
         """Check if the frontmatter has changes.

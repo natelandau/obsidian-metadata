@@ -58,7 +58,8 @@ def test_usage(capsys):
     assert captured.out == "USAGE    | This prints in usage\n"
 
     alerts.usage(
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"
+        "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
+        width=80,
     )
     captured = capsys.readouterr()
     assert "USAGE    | Lorem ipsum dolor sit amet" in captured.out

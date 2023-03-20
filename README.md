@@ -43,13 +43,18 @@ Once installed, run `obsidian-metadata` in your terminal to enter an interactive
 -   Backup: Create a backup of the vault.
 -   Delete Backup: Delete a backup of the vault.
 
+**Export Metadata**
+
+-   Export all metadata to a CSV organized by metadata type
+-   Export all metadata to a CSV organized by note path
+-   Export all metadata to a JSON file organized by metadata type
+
 **Inspect Metadata**
 
 -   **View all metadata in the vault**
 -   View all **frontmatter**
 -   View all **inline metadata**
 -   View all **inline tags**
--   **Export all metadata to CSV or JSON file**
 
 **Filter Notes in Scope**: Limit the scope of notes to be processed with one or more filters.
 
@@ -58,6 +63,8 @@ Once installed, run `obsidian-metadata` in your terminal to enter an interactive
 -   **Tag filter**: Limit scope based on an in-text tag
 -   **List and clear filters**: List all current filters and clear one or all
 -   **List notes in scope**: List notes that will be processed.
+
+**Bulk Edit Metadata** from a CSV file (See the _making bulk edits_ section below)
 
 **Add Metadata**: Add new metadata to your vault.
 
@@ -132,6 +139,29 @@ Below is an example with two vaults.
 
 To bypass the configuration file and specify a vault to use at runtime use the `--vault-path` option.
 
+### Making bulk edits
+
+Bulk edits are supported by importing a CSV file containing the following columns
+
+1. `Path` - Path to note relative to the vault root folder
+2. `Type` - Type of metadata. One of `frontmatter`, `inline_metadata`, or `tag`
+3. `Key` - The key to add (leave blank for a tag)
+4. `Value` - the value to add to the key
+
+Notes which match a Path in the file will be updated to contain ONLY the information in the CSV file. Notes which do not match a path will be left untouched. The example CSV below will remove any frontmatter, inline metadata, or tags within with `vault/folder 01/note1.md` and then add the specified metadata.
+
+```csv
+path,type,key,value
+folder 1/note1.md,frontmatter,fruits,apple
+folder 1/note1.md,frontmatter,fruits,banana
+folder 1/note1.md,inline_metadata,cars,toyota
+folder 1/note1.md,inline_metadata,cars,honda
+folder 1/note1.md,tag,,tag1
+folder 1/note1.md,tag,,tag2
+```
+
+You can export all your notes with their associated metadata in this format from the "Export Metadata" section of the script to be used as a template for your bulk changes.
+
 # Contributing
 
 ## Setup: Once per project
@@ -163,3 +193,7 @@ There are two ways to contribute to this project.
 -   Run `poetry add {package}` from within the development environment to install a run time dependency and add it to `pyproject.toml` and `poetry.lock`.
 -   Run `poetry remove {package}` from within the development environment to uninstall a run time dependency and remove it from `pyproject.toml` and `poetry.lock`.
 -   Run `poetry update` from within the development environment to upgrade all dependencies to the latest versions allowed by `pyproject.toml`.
+
+```
+
+```

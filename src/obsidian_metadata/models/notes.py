@@ -190,6 +190,17 @@ class Note:
 
         return False
 
+    def delete_all_metadata(self) -> None:
+        """Delete all metadata from the note. Removes all frontmatter and inline metadata and tags from the body of the note and from the associated metadata objects."""
+        for key in self.inline_metadata.dict:
+            self.delete_metadata(key=key, area=MetadataType.INLINE)
+
+        for tag in self.inline_tags.list:
+            self.delete_inline_tag(tag=tag)
+
+        self.frontmatter.delete_all()
+        self.write_frontmatter()
+
     def delete_inline_tag(self, tag: str) -> bool:
         """Delete an inline tag from the `inline_tags` attribute AND removes the tag from the text of the note if it exists.
 

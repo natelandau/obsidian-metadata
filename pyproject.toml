@@ -26,6 +26,7 @@
         shellingham = "^1.5.0.post1"
         tomlkit     = "^0.11.6"
         typer       = "^0.7.0"
+    commitizen = "^2.42.1"
 
     [tool.poetry.group.test.dependencies]
         pytest                 = "^7.2.2"

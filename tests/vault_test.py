@@ -431,6 +431,38 @@ def test_export_json(tmp_path, test_vault):
     assert '"frontmatter": {' in export_file.read_text()
 
 
+def test_export_notes_to_csv_1(tmp_path, test_vault):
+    """Test export_notes_to_csv() method.
+
+    GIVEN a vault object
+    WHEN the export_notes_to_csv method is called with a path
+    THEN the notes are exported to a CSV file
+    """
+    vault = Vault(config=test_vault)
+    export_file = Path(f"{tmp_path}/export.csv")
+    vault.export_notes_to_csv(path=export_file)
+    assert export_file.exists() is True
+    assert "path,type,key,value" in export_file.read_text()
+    assert "test1.md,frontmatter,shared_key1,shared_key1_value" in export_file.read_text()
+    assert "test1.md,inline_metadata,shared_key1,shared_key1_value" in export_file.read_text()
+    assert "test1.md,tag,,shared_tag" in export_file.read_text()
+    assert "test1.md,frontmatter,tags,📅/frontmatter_tag3" in export_file.read_text()
+    assert "test1.md,inline_metadata,key📅,📅_key_value" in export_file.read_text()
+
+
+def test_export_notes_to_csv_2(test_vault):
+    """Test export_notes_to_csv() method.
+
+    GIVEN a vault object
+    WHEN the export_notes_to_csv method is called with a path where the parent directory does not exist
+    THEN an error is raised
+    """
+    vault = Vault(config=test_vault)
+    export_file = Path("/I/do/not/exist/export.csv")
+    with pytest.raises(typer.Exit):
+        vault.export_notes_to_csv(path=export_file)
+
+
 def test_get_filtered_notes_1(sample_vault) -> None:
     """Test filtering notes.
 
@@ -688,3 +720,60 @@ def test_transpose_metadata(test_vault) -> None:
         )
         == 0
     )
+
+
+def test_update_from_dict_1(test_vault):
+    """Test update_from_dict() method.
+
+    GIVEN a vault object and an update dictionary
+    WHEN no dictionary keys match paths in the vault
+    THEN no notes are updated and 0 is returned
+    """
+    vault = Vault(config=test_vault)
+    update_dict = {
+        "path1": {"type": "frontmatter", "key": "new_key", "value": "new_value"},
+        "path2": {"type": "frontmatter", "key": "new_key", "value": "new_value"},
+    }
+
+    assert vault.update_from_dict(update_dict) == 0
+    assert vault.get_changed_notes() == []
+
+
+def test_update_from_dict_2(test_vault):
+    """Test update_from_dict() method.
+
+    GIVEN a vault object and an update dictionary
+    WHEN the dictionary is empty
+    THEN no notes are updated and 0 is returned
+    """
+    vault = Vault(config=test_vault)
+    update_dict = {}
+
+    assert vault.update_from_dict(update_dict) == 0
+    assert vault.get_changed_notes() == []
+
+
+def test_update_from_dict_3(test_vault):
+    """Test update_from_dict() method.
+
+    GIVEN a vault object and an update dictionary
+    WHEN a dictionary key matches a path in the vault
+    THEN the note is updated to match the dictionary values
+    """
+    vault = Vault(config=test_vault)
+
+    update_dict = {
+        "test1.md": [
+            {"type": "frontmatter", "key": "new_key", "value": "new_value"},
+            {"type": "inline_metadata", "key": "new_key2", "value": "new_value"},
+            {"type": "tags", "key": "", "value": "new_tag"},
+        ]
+    }
+    assert vault.update_from_dict(update_dict) == 1
+    assert vault.get_changed_notes()[0].note_path.name == "test1.md"
+    assert vault.get_changed_notes()[0].frontmatter.dict == {"new_key": ["new_value"]}
+    assert vault.get_changed_notes()[0].inline_metadata.dict == {"new_key2": ["new_value"]}
+    assert vault.get_changed_notes()[0].inline_tags.list == ["new_tag"]
+    assert vault.metadata.frontmatter == {"new_key": ["new_value"]}
+    assert vault.metadata.inline_metadata == {"new_key2": ["new_value"]}
+    assert vault.metadata.tags == ["new_tag"]

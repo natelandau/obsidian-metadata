@@ -91,74 +91,7 @@ def main(
     [bold underline]Configuration:[/]
     Configuration is specified in a configuration file. On First run, this file will be created at [tan]~/.{0}.env[/]. Any options specified on the command line will override the configuration file.
 
-    [bold underline]Usage:[/]
-    [tan]Obsidian-metadata[/] provides a menu of sub-commands.
-
-    [bold underline]Vault Actions[/]
-    Create or delete a backup of your vault.
-        • Backup:        Create a backup of the vault.
-        • Delete Backup: Delete a backup of the vault.
-
-    [bold underline]Inspect Metadata[/]
-    Inspect the metadata in your vault.
-        • View all metadata in the vault
-        • View all frontmatter
-        • View all inline metadata
-        • View all inline tags
-        • Export all metadata to CSV or JSON file
-
-    [bold underline]Filter Notes in Scope[/]
-    Limit the scope of notes to be processed with one or more filters.
-        • Path filter (regex):      Limit scope based on the path or filename
-        • Metadata filter:          Limit scope based on a key or key/value pair
-        • Tag filter:               Limit scope based on an in-text tag
-        • List and clear filters:   List all current filters and clear one or all
-        • List notes in scope:      List notes that will be processed.
-
-    [bold underline]Add Metadata[/]
-    Add new metadata to your vault.
-        • Add new metadata to the frontmatter
-        • Add new inline metadata - Set `insert_location` in the config to
-          control where the new metadata is inserted. (Default: Bottom)
-        • Add new inline tag - Set `insert_location` in the config to
-          control where the new tag is inserted. (Default: Bottom)
-
-    [bold underline]Rename Metadata[/]
-    Rename either a key and all associated values, a specific value within a key. or an in-text tag.
-        • Rename a key
-        • Rename a value
-        • rename an inline tag
-
-    [bold underline]Delete Metadata[/]
-    Delete either a key and all associated values, or a specific value.
-        • Delete a key and associated values
-        • Delete a value from a key
-        • Delete an inline tag
-
-    [bold underline]Move Inline Metadata[/]
-    Move inline metadata to a specified location with a note
-
-        • Move to Top - Move all inline metadata beneath the frontmatter
-        • Move to After Title* - Move all inline metadata beneath the first markdown header
-        • Move to Bottom - Move all inline metadata to the bottom of the note
-
-    [bold underline]Transpose Metadata[/]
-    Move metadata from inline to frontmatter or the reverse. When transposing to inline metadata,
-    the `insert location` value in the config file will specify where in the
-    note it will be inserted.
-
-        • Transpose all metadata - Moves all frontmatter to inline
-          metadata, or the reverse
-        • Transpose key - Transposes a specific key and all it's values
-        • Transpose value - Transpose a specific key:value pair
-
-    [bold underline]Review Changes[/]
-    Prior to committing changes, review all changes that will be made.
-        • View a diff of the changes that will be made
-
-    [bold underline]Commit Changes[/]
-    Write the changes to disk. This step is not undoable.
-        • Commit changes to the vault
+    Full usage information is available at https://github.com/natelandau/obsidian-metadata
 
     """
     # Instantiate logger

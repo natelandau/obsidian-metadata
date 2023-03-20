@@ -87,13 +87,16 @@ def info(msg: str) -> None:
     console.print(f"INFO     | {msg}")
 
 
-def usage(msg: str, width: int = 80) -> None:
+def usage(msg: str, width: int = None) -> None:
     """Print a usage message without using logging.
 
     Args:
         msg: Message to print
         width (optional): Width of the message
     """
+    if width is None:
+        width = console.width - 15
+
     for _n, line in enumerate(wrap(msg, width=width)):
         if _n == 0:
             console.print(f"[dim]USAGE    | {line}")

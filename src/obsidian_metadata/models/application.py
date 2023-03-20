@@ -1,6 +1,7 @@
 """Questions for the cli."""
 
 
+import csv
 from pathlib import Path
 from typing import Any
 
@@ -53,8 +54,12 @@ class Application:
             match self.questions.ask_application_main():
                 case "vault_actions":
                     self.application_vault()
+                case "export_metadata":
+                    self.application_export_metadata()
                 case "inspect_metadata":
                     self.application_inspect_metadata()
+                case "import_from_csv":
+                    self.application_import_csv()
                 case "filter_notes":
                     self.application_filter()
                 case "add_metadata":
@@ -124,6 +129,7 @@ class Application:
         alerts.usage("Delete either a key and all associated values, or a specific value.")
 
         choices = [
+            questionary.Separator(),
             {"name": "Delete inline tag", "value": "delete_inline_tag"},
             {"name": "Delete key", "value": "delete_key"},
             {"name": "Delete value", "value": "delete_value"},
@@ -147,6 +153,7 @@ class Application:
         alerts.usage("Select the type of metadata to rename.")
 
         choices = [
+            questionary.Separator(),
             {"name": "Rename inline tag", "value": "rename_inline_tag"},
             {"name": "Rename key", "value": "rename_key"},
             {"name": "Rename value", "value": "rename_value"},
@@ -170,6 +177,7 @@ class Application:
         alerts.usage("Limit the scope of notes to be processed with one or more filters.")
 
         choices = [
+            questionary.Separator(),
             {"name": "Apply new regex path filter", "value": "apply_path_filter"},
             {"name": "Apply new metadata filter", "value": "apply_metadata_filter"},
             {"name": "Apply new in-text tag filter", "value": "apply_tag_filter"},
@@ -276,6 +284,82 @@ class Application:
                 case _:
                     return
 
+    def application_import_csv(self) -> None:
+        """Import CSV for  bulk changes to metadata."""
+        alerts.usage(
+            "Import CSV to make build changes to metadata. The CSV must have the following columns: path, type, key, value. Where type is one of 'frontmatter', 'inline_metadata', or 'tag'. Note: this will not create new notes."
+        )
+
+        path = self.questions.ask_path(question="Enter path to a CSV file", valid_file=True)
+
+        if path is None:
+            return
+
+        csv_path = Path(path).expanduser()
+
+        if "csv" not in csv_path.suffix.lower():
+            alerts.error("File must be a CSV file")
+            return
+
+        csv_dict: dict[str, Any] = {}
+        with csv_path.open("r") as csv_file:
+            csv_reader = csv.DictReader(csv_file, delimiter=",")
+            for row in csv_reader:
+                if row["path"] not in csv_dict:
+                    csv_dict[row["path"]] = []
+
+                csv_dict[row["path"]].append(
+                    {"type": row["type"], "key": row["key"], "value": row["value"]}
+                )
+
+        num_changed = self.vault.update_from_dict(csv_dict)
+
+        if num_changed == 0:
+            alerts.warning("No notes were changed")
+            return
+
+        alerts.success(f"Rewrote metadata for {num_changed} notes.")
+
+    def application_export_metadata(self) -> None:
+        """Export metadata to various formats."""
+        alerts.usage(
+            "Export the metadata in your vault. Note, uncommitted changes will be reflected in these files. The notes csv export can be used as template for importing bulk changes"
+        )
+        choices = [
+            questionary.Separator(),
+            {"name": "Metadata by type to CSV", "value": "export_csv"},
+            {"name": "Metadata by type to JSON", "value": "export_json"},
+            {
+                "name": "Metadata by note to CSV [Bulk import template]",
+                "value": "export_notes_csv",
+            },
+            questionary.Separator(),
+            {"name": "Back", "value": "back"},
+        ]
+        while True:
+            match self.questions.ask_selection(choices=choices, question="Export format"):
+                case "export_csv":
+                    path = self.questions.ask_path(question="Enter a path for the CSV file")
+                    if path is None:
+                        return
+                    self.vault.export_metadata(path=path, export_format="csv")
+                    alerts.success(f"CSV written to {path}")
+                case "export_json":
+                    path = self.questions.ask_path(question="Enter a path for the JSON file")
+                    if path is None:
+                        return
+                    self.vault.export_metadata(path=path, export_format="json")
+                    alerts.success(f"JSON written to {path}")
+                case "export_notes_csv":
+                    path = self.questions.ask_path(question="Enter a path for the CSV file")
+                    if path is None:
+                        return
+                    self.vault.export_notes_to_csv(path=path)
+                    alerts.success(f"CSV written to {path}")
+                    return
+                case _:
+                    return
+
     def application_inspect_metadata(self) -> None:
         """View metadata."""
         alerts.usage(
@@ -283,19 +367,17 @@ class Application:
         )
 
         choices = [
+            questionary.Separator(),
             {"name": "View all frontmatter", "value": "all_frontmatter"},
             {"name": "View all inline metadata", "value": "all_inline"},
             {"name": "View all inline tags", "value": "all_tags"},
             {"name": "View all keys", "value": "all_keys"},
             {"name": "View all metadata", "value": "all_metadata"},
             questionary.Separator(),
-            {"name": "Write all metadata to CSV", "value": "export_csv"},
-            {"name": "Write all metadata to JSON file", "value": "export_json"},
-            questionary.Separator(),
             {"name": "Back", "value": "back"},
         ]
         while True:
-            match self.questions.ask_selection(choices=choices, question="Select a vault action"):
+            match self.questions.ask_selection(choices=choices, question="Select an action"):
                 case "all_metadata":
                     console.print("")
                     self.vault.metadata.print_metadata(area=MetadataType.ALL)
@@ -316,18 +398,6 @@ class Application:
                     console.print("")
                     self.vault.metadata.print_metadata(area=MetadataType.TAGS)
                     console.print("")
-                case "export_csv":
-                    path = self.questions.ask_path(question="Enter a path for the CSV file")
-                    if path is None:
-                        return
-                    self.vault.export_metadata(path=path, export_format="csv")
-                    alerts.success(f"Metadata written to {path}")
-                case "export_json":
-                    path = self.questions.ask_path(question="Enter a path for the JSON file")
-                    if path is None:
-                        return
-                    self.vault.export_metadata(path=path, export_format="json")
-                    alerts.success(f"Metadata written to {path}")
                 case _:
                     return
 
@@ -342,6 +412,7 @@ class Application:
         alerts.usage("    2. Move the location of inline metadata within a note.")
 
         choices = [
+            questionary.Separator(),
             {"name": "Move inline metadata to top of note", "value": "move_to_top"},
             {
                 "name": "Move inline metadata beneath the first header",
@@ -374,6 +445,7 @@ class Application:
         alerts.usage("Create or delete a backup of your vault.")
 
         choices = [
+            questionary.Separator(),
             {"name": "Backup vault", "value": "backup_vault"},
             {"name": "Delete vault backup", "value": "delete_backup"},
             questionary.Separator(),
@@ -564,6 +636,7 @@ class Application:
 
         alerts.info(f"Found {len(changed_notes)} changed notes in the vault")
         choices: list[dict[str, Any] | questionary.Separator] = []
+        choices.append(questionary.Separator())
         for n, note in enumerate(changed_notes, start=1):
             _selection = {
                 "name": f"{n}: {note.note_path.relative_to(self.vault.vault_path)}",

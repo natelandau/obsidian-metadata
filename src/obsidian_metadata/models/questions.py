@@ -200,6 +200,23 @@ class Questions:
 
         return True
 
+    def _validate_path_is_file(self, text: str) -> bool | str:
+        """Validate a path is a file.
+
+        Args:
+            text (str): The path to validate.
+
+        Returns:
+            bool | str: True if the path is valid, otherwise a string with the error message.
+        """
+        path_to_validate: Path = Path(text).expanduser().resolve()
+        if not path_to_validate.exists():
+            return f"Path does not exist: {path_to_validate}"
+        if not path_to_validate.is_file():
+            return f"Path is not a file: {path_to_validate}"
+
+        return True
+
     def _validate_valid_vault_regex(self, text: str) -> bool | str:
         """Validate a valid regex.
 
@@ -276,9 +293,11 @@ class Questions:
             choices=[
                 questionary.Separator("-------------------------------"),
                 {"name": "Vault Actions", "value": "vault_actions"},
+                {"name": "Export Metadata", "value": "export_metadata"},
                 {"name": "Inspect Metadata", "value": "inspect_metadata"},
                 {"name": "Filter Notes in Scope", "value": "filter_notes"},
                 questionary.Separator("-------------------------------"),
+                {"name": "Bulk changes from imported CSV", "value": "import_from_csv"},
                 {"name": "Add Metadata", "value": "add_metadata"},
                 {"name": "Delete Metadata", "value": "delete_metadata"},
                 {"name": "Rename Metadata", "value": "rename_metadata"},
@@ -475,15 +494,27 @@ class Questions:
             question, validate=self._validate_number, style=self.style, qmark="INPUT    |"
         ).ask()
 
-    def ask_path(self, question: str = "Enter a path") -> str:  # pragma: no cover
+    def ask_path(
+        self, question: str = "Enter a path", valid_file: bool = False
+    ) -> str:  # pragma: no cover
         """Ask the user for a path.
 
         Args:
             question (str, optional): The question to ask. Defaults to "Enter a path".
+            valid_file (bool, optional): Whether the path should be a valid file. Defaults to False.
 
         Returns:
             str: A path.
         """
+        if valid_file:
+            return questionary.path(
+                question,
+                only_directories=False,
+                style=self.style,
+                validate=self._validate_path_is_file,
+                qmark="INPUT    |",
+            ).ask()
+
         return questionary.path(question, style=self.style, qmark="INPUT    |").ask()
 
     def ask_selection(
@@ -498,7 +529,6 @@ class Questions:
         Returns:
             any: The selected item value.
         """
-        choices.insert(0, questionary.Separator())
         return questionary.select(
             question,
             choices=choices,

@@ -6,6 +6,7 @@ import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import rich.repr
 import typer
@@ -360,6 +361,44 @@ class Vault:
                 with export_file.open(mode="w", encoding="UTF8") as f:
                     json.dump(dict_to_dump, f, indent=4, ensure_ascii=False, sort_keys=True)
 
+    def export_notes_to_csv(self, path: str) -> None:
+        """Export notes and their associated metadata to a csv file. This is useful as a template for importing metadata changes to a vault.
+
+        Args:
+            path (str): Path to write csv file to.
+        """
+        export_file = Path(path).expanduser().resolve()
+        if not export_file.parent.exists():
+            alerts.error(f"Path does not exist: {export_file.parent}")
+            raise typer.Exit(code=1)
+
+        with export_file.open(mode="w", encoding="UTF8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["path", "type", "key", "value"])
+
+            for _note in self.all_notes:
+                for key, value in _note.frontmatter.dict.items():
+                    for v in value:
+                        writer.writerow(
+                            [_note.note_path.relative_to(self.vault_path), "frontmatter", key, v]
+                        )
+
+                for key, value in _note.inline_metadata.dict.items():
+                    for v in value:
+                        writer.writerow(
+                            [
+                                _note.note_path.relative_to(self.vault_path),
+                                "inline_metadata",
+                                key,
+                                v,
+                            ]
+                        )
+
+                for tag in _note.inline_tags.list:
+                    writer.writerow(
+                        [_note.note_path.relative_to(self.vault_path), "tag", "", f"{tag}"]
+                    )
+
     def get_changed_notes(self) -> list[Note]:
         """Return a list of notes that have changes.
 
@@ -505,6 +544,58 @@ class Vault:
             ):
                 num_changed += 1
                 log.trace(f"Transposed metadata in {_note.note_path}")
+
+        if num_changed > 0:
+            self._rebuild_vault_metadata()
+
+        return num_changed
+
+    def update_from_dict(self, dictionary: dict[str, Any]) -> int:
+        """Update note metadata from a dictionary. This is a destructive operation. All metadata in the specified notes not in the dictionary will be removed.
+
+        Requires a dictionary with the note path as the key and a dictionary of metadata as the value.  Each key must have a list of associated dictionaries in the following format:
+
+            {
+                'type': 'frontmatter|inline_metadata|tag',
+                'key': 'string',
+                'value': 'string'
+            }
+
+        Args:
+            dictionary (dict[str, Any]): Dictionary to update metadata from.
+
+        Returns:
+            int: Number of notes that had metadata updated.
+        """
+        num_changed = 0
+
+        for _note in self.all_notes:
+            path = _note.note_path.relative_to(self.vault_path)
+            if str(path) in dictionary:
+                log.debug(f"Updating metadata for {path}")
+                num_changed += 1
+                _note.delete_all_metadata()
+                for row in dictionary[str(path)]:
+                    if row["type"].lower() == "frontmatter":
+                        _note.add_metadata(
+                            area=MetadataType.FRONTMATTER, key=row["key"], value=row["value"]
+                        )
+
+                    if row["type"].lower() == "inline_metadata":
+                        _note.add_metadata(
+                            area=MetadataType.INLINE,
+                            key=row["key"],
+                            value=row["value"],
+                            location=self.insert_location,
+                        )
+
+                    if row["type"].lower() == "tag" or row["type"].lower() == "tags":
+                        console.print(f"Adding tag {row['value']}")
+                        _note.add_metadata(
+                            area=MetadataType.TAGS,
+                            value=row["value"],
+                            location=self.insert_location,
+                        )
 
         if num_changed > 0:
             self._rebuild_vault_metadata()

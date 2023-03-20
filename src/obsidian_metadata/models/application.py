@@ -1,7 +1,6 @@
 """Questions for the cli."""
 
 
-import csv
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +10,7 @@ from rich import box
 from rich.table import Table
 
 from obsidian_metadata._config import VaultConfig
-from obsidian_metadata._utils import alerts
+from obsidian_metadata._utils import alerts, validate_csv_bulk_imports
 from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import InsertLocation, Vault, VaultFilter
 from obsidian_metadata.models.enums import MetadataType
@@ -301,18 +300,12 @@ class Application:
             alerts.error("File must be a CSV file")
             return
 
-        csv_dict: dict[str, Any] = {}
-        with csv_path.open("r") as csv_file:
-            csv_reader = csv.DictReader(csv_file, delimiter=",")
-            for row in csv_reader:
-                if row["path"] not in csv_dict:
-                    csv_dict[row["path"]] = []
+        note_paths = [
+            str(n.note_path.relative_to(self.vault.vault_path)) for n in self.vault.all_notes
+        ]
 
-                csv_dict[row["path"]].append(
-                    {"type": row["type"], "key": row["key"], "value": row["value"]}
-                )
-
-        num_changed = self.vault.update_from_dict(csv_dict)
+        dict_from_csv = validate_csv_bulk_imports(csv_path, note_paths)
+        num_changed = self.vault.update_from_dict(dict_from_csv)
 
         if num_changed == 0:
             alerts.warning("No notes were changed")

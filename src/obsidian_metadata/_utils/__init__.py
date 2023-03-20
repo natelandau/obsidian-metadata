@@ -6,10 +6,12 @@ from obsidian_metadata._utils.utilities import (
     clean_dictionary,
     clear_screen,
     dict_contains,
+    dict_keys_to_lower,
     dict_values_to_lists_strings,
     docstring_parameter,
     merge_dictionaries,
     remove_markdown_sections,
+    validate_csv_bulk_imports,
     version_callback,
 )
 
@@ -18,11 +20,12 @@ __all__ = [
     "clean_dictionary",
     "clear_screen",
     "dict_contains",
+    "dict_keys_to_lower",
     "dict_values_to_lists_strings",
     "docstring_parameter",
     "LoggerManager",
     "merge_dictionaries",
     "remove_markdown_sections",
-    "vault_validation",
+    "validate_csv_bulk_imports",
     "version_callback",
 ]

@@ -239,7 +239,7 @@ def test_commit_changes_2(test_vault, tmp_path):
     assert "new_key: new_key_value" not in committed_content
 
 
-def test_backup_1(test_vault, tmp_path, capsys):
+def test_backup_1(test_vault, capsys):
     """Test the backup method.
 
     GIVEN a vault object

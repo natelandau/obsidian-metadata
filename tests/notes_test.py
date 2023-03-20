@@ -264,7 +264,7 @@ def test_commit_1(sample_note, tmp_path) -> None:
     assert "Heading 1" not in note2.file_content
 
 
-def test_commit_2(sample_note, tmp_path) -> None:
+def test_commit_2(sample_note) -> None:
     """Test commit() method.
 
     GIVEN a note object with commit() called

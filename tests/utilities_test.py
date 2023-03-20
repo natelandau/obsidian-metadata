@@ -1,13 +1,18 @@
 # type: ignore
 """Test the utilities module."""
 
+import pytest
+import typer
 
 from obsidian_metadata._utils import (
     clean_dictionary,
     dict_contains,
+    dict_keys_to_lower,
     dict_values_to_lists_strings,
     remove_markdown_sections,
+    validate_csv_bulk_imports,
 )
+from tests.helpers import Regex, remove_ansi
 
 
 def test_dict_contains() -> None:
@@ -23,6 +28,17 @@ def test_dict_contains() -> None:
     assert dict_contains(d, r"key\d", r"value\d", is_regex=True) is True
     assert dict_contains(d, "key1$", "^alue", is_regex=True) is False
     assert dict_contains(d, r"key\d", "value5", is_regex=True) is True
+
+
+def test_dict_keys_to_lower() -> None:
+    """Test the dict_keys_to_lower() function.
+
+    GIVEN a dictionary with mixed case keys
+    WHEN the dict_keys_to_lower() function is called
+    THEN the dictionary keys should be converted to lowercase
+    """
+    test_dict = {"Key1": "Value1", "KEY2": "Value2", "key3": "Value3"}
+    assert dict_keys_to_lower(test_dict) == {"key1": "Value1", "key2": "Value2", "key3": "Value3"}
 
 
 def test_dict_values_to_lists_strings():
@@ -106,3 +122,125 @@ def test_clean_dictionary():
 
     new_dict = clean_dictionary(dictionary)
     assert new_dict == {"key": ["value", "value2", "value3"]}
+
+
+def test_validate_csv_bulk_imports_1(tmp_path):
+    """Test the validate_csv_bulk_imports function.
+
+    GIVEN a csv file missing the `path` column
+    WHEN the validate_csv_bulk_imports function is called
+    THEN an exception should be raised
+    """
+    csv_path = tmp_path / "test.csv"
+    csv_content = """\
+PATH,type,key,value
+note1.md,type,key,value"""
+    csv_path.write_text(csv_content)
+
+    with pytest.raises(typer.BadParameter):
+        validate_csv_bulk_imports(csv_path=csv_path, note_paths=[])
+
+
+def test_validate_csv_bulk_imports_2(tmp_path):
+    """Test the validate_csv_bulk_imports function.
+
+    GIVEN a csv file missing the `type` column
+    WHEN the validate_csv_bulk_imports function is called
+    THEN an exception should be raised
+    """
+    csv_path = tmp_path / "test.csv"
+    csv_content = """\
+path,Type,key,value
+note1.md,type,key,value"""
+    csv_path.write_text(csv_content)
+
+    with pytest.raises(typer.BadParameter):
+        validate_csv_bulk_imports(csv_path=csv_path, note_paths=[])
+
+
+def test_validate_csv_bulk_imports_3(tmp_path):
+    """Test the validate_csv_bulk_imports function.
+
+    GIVEN a csv file missing the `key` column
+    WHEN the validate_csv_bulk_imports function is called
+    THEN an exception should be raised
+    """
+    csv_path = tmp_path / "test.csv"
+    csv_content = """\
+path,type,value
+note1.md,type,key,value"""
+    csv_path.write_text(csv_content)
+
+    with pytest.raises(typer.BadParameter):
+        validate_csv_bulk_imports(csv_path=csv_path, note_paths=[])
+
+
+def test_validate_csv_bulk_imports_4(tmp_path):
+    """Test the validate_csv_bulk_imports function.
+
+    GIVEN a csv file missing the `value` column
+    WHEN the validate_csv_bulk_imports function is called
+    THEN an exception should be raised
+    """
+    csv_path = tmp_path / "test.csv"
+    csv_content = """\
+path,type,key,values
+note1.md,type,key,value"""
+    csv_path.write_text(csv_content)
+
+    with pytest.raises(typer.BadParameter):
+        validate_csv_bulk_imports(csv_path=csv_path, note_paths=[])
+
+
+def test_validate_csv_bulk_imports_5(tmp_path):
+    """Test the validate_csv_bulk_imports function.
+
+    GIVEN a csv file with only headers
+    WHEN the validate_csv_bulk_imports function is called
+    THEN an exception should be raised
+    """
+    csv_path = tmp_path / "test.csv"
+    csv_content = "path,type,key,value"
+    csv_path.write_text(csv_content)
+
+    with pytest.raises(typer.BadParameter):
+        validate_csv_bulk_imports(csv_path=csv_path, note_paths=[])
+
+
+def test_validate_csv_bulk_imports_6(tmp_path, capsys):
+    """Test the validate_csv_bulk_imports function.
+
+    GIVEN a valid csv file
+    WHEN a path is given that does not exist in the vault
+    THEN show the user a warning
+    """
+    csv_path = tmp_path / "test.csv"
+    csv_content = """\
+path,type,key,value
+note1.md,type,key,value
+note2.md,type,key,value
+"""
+    csv_path.write_text(csv_content)
+
+    csv_dict = validate_csv_bulk_imports(csv_path=csv_path, note_paths=["note1.md"])
+    captured = remove_ansi(capsys.readouterr().out)
+    assert "WARNING  | 'note2.md' does not exist in vault." in captured
+    assert csv_dict == {"note1.md": [{"key": "key", "type": "type", "value": "value"}]}
+
+
+def test_validate_csv_bulk_imports_7(tmp_path):
+    """Test the validate_csv_bulk_imports function.
+
+    GIVEN a valid csv file
+    WHEN no paths match paths in the vault
+    THEN exit the program
+    """
+    csv_path = tmp_path / "test.csv"
+    csv_content = """\
+path,type,key,value
+note1.md,type,key,value
+note2.md,type,key,value
+"""
+    csv_path.write_text(csv_content)
+    with pytest.raises(typer.Exit):
+        validate_csv_bulk_imports(csv_path=csv_path, note_paths=[])

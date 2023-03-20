@@ -141,14 +141,14 @@ To bypass the configuration file and specify a vault to use at runtime use the `
 
 ### Making bulk edits
 
-Bulk edits are supported by importing a CSV file containing the following columns
+Bulk edits are supported by importing a CSV file containing the following columns. Column headers must be lowercase.
 
-1. `Path` - Path to note relative to the vault root folder
-2. `Type` - Type of metadata. One of `frontmatter`, `inline_metadata`, or `tag`
-3. `Key` - The key to add (leave blank for a tag)
-4. `Value` - the value to add to the key
+1. `path` - Path to note relative to the vault root folder
+2. `type` - Type of metadata. One of `frontmatter`, `inline_metadata`, or `tag`
+3. `key` - The key to add (leave blank for a tag)
+4. `value` - the value to add to the key
 
-Notes which match a Path in the file will be updated to contain ONLY the information in the CSV file. Notes which do not match a path will be left untouched. The example CSV below will remove any frontmatter, inline metadata, or tags within with `vault/folder 01/note1.md` and then add the specified metadata.
+An example valid CSV file is
 
 ```csv
 path,type,key,value
@@ -159,6 +159,13 @@ folder 1/note1.md,inline_metadata,cars,honda
 folder 1/note1.md,tag,,tag1
 folder 1/note1.md,tag,,tag2
 ```
+
+How bulk imports work:
+
+-   Only notes which match the path in the CSV file are updated
+-   Effected notes will have ALL of their metadata changed to reflect the values in the CSV file
+-   Existing metadata in an effected note will be rewritten. This may result in it's location and/or formatting within the note being changed
+-   inline tags ignore any value added to the `key` column
 
 You can export all your notes with their associated metadata in this format from the "Export Metadata" section of the script to be used as a template for your bulk changes.
 

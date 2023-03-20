@@ -1,11 +1,15 @@
 """Utility functions."""
+import csv
 import re
 from os import name, system
+from pathlib import Path
 from typing import Any
 
 import typer
 
 from obsidian_metadata.__version__ import __version__
+from obsidian_metadata._utils import alerts
+from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata._utils.console import console
 
 
@@ -61,6 +65,18 @@ def dict_contains(
         return any(found_keys)
 
     return key in dictionary and value in dictionary[key]
+
+
+def dict_keys_to_lower(dictionary: dict) -> dict:
+    """Convert all keys in a dictionary to lowercase.
+
+    Args:
+        dictionary (dict): Dictionary to convert
+
+    Returns:
+        dict: Dictionary with all keys converted to lowercase
+    """
+    return {key.lower(): value for key, value in dictionary.items()}
 
 
 def dict_values_to_lists_strings(
@@ -180,6 +196,55 @@ def remove_markdown_sections(
         text = re.sub(r"^\s*---.*?---", "", text, flags=re.DOTALL)
 
     return text
+
+
+def validate_csv_bulk_imports(csv_path: Path, note_paths: list) -> dict[str, list[dict[str, str]]]:
+    """Validate the bulk import CSV file.
+
+    Args:
+        csv_path (dict): Dictionary to validate
+        note_paths (list): List of paths to all notes in vault
+
+    Returns:
+        dict: Validated dictionary
+    """
+    csv_dict: dict[str, Any] = {}
+    with csv_path.expanduser().open("r") as csv_file:
+        csv_reader = csv.DictReader(csv_file, delimiter=",")
+        row_num = 0
+        for row in csv_reader:
+            if row_num == 0:
+                if "path" not in row:
+                    raise typer.BadParameter("Missing 'path' column in CSV file")
+                if "type" not in row:
+                    raise typer.BadParameter("Missing 'type' column in CSV file")
+                if "key" not in row:
+                    raise typer.BadParameter("Missing 'key' column in CSV file")
+                if "value" not in row:
+                    raise typer.BadParameter("Missing 'value' column in CSV file")
+            row_num += 1
+
+            if row["path"] not in csv_dict:
+                csv_dict[row["path"]] = []
+
+            csv_dict[row["path"]].append(
+                {"type": row["type"], "key": row["key"], "value": row["value"]}
+            )
+
+        if row_num == 0 or row_num == 1:
+            raise typer.BadParameter("Empty CSV file")
+
+        paths_to_remove = [x for x in csv_dict if x not in note_paths]
+
+        for _path in paths_to_remove:
+            alerts.warning(f"'{_path}' does not exist in vault. Skipping...")
+            del csv_dict[_path]
+
+        if len(csv_dict) == 0:
+            log.error("No paths in the CSV file matched paths in the vault")
+            raise typer.Exit(1)
+
+    return csv_dict
 
 
 def version_callback(value: bool) -> None:

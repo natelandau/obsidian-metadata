@@ -162,10 +162,10 @@ folder 1/note1.md,tag,,tag2
 
 How bulk imports work:
 
--   Only notes which match the path in the CSV file are updated
--   Effected notes will have ALL of their metadata changed to reflect the values in the CSV file
--   Existing metadata in an effected note will be rewritten. This may result in it's location and/or formatting within the note being changed
--   inline tags ignore any value added to the `key` column
+-   **Only notes which match the path in the CSV file are updated**
+-   **Effected notes will have ALL of their metadata changed** to reflect the values in the CSV file
+-   **Existing metadata in a matching note will be rewritten**. This may result in it's location and/or formatting within the note being changed
+-   Inline tags ignore any value added to the `key` column
 
 You can export all your notes with their associated metadata in this format from the "Export Metadata" section of the script to be used as a template for your bulk changes.
 
@@ -200,7 +200,3 @@ There are two ways to contribute to this project.
 -   Run `poetry add {package}` from within the development environment to install a run time dependency and add it to `pyproject.toml` and `poetry.lock`.
 -   Run `poetry remove {package}` from within the development environment to uninstall a run time dependency and remove it from `pyproject.toml` and `poetry.lock`.
 -   Run `poetry update` from within the development environment to upgrade all dependencies to the latest versions allowed by `pyproject.toml`.
-
-```
-
-```

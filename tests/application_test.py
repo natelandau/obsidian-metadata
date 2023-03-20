@@ -613,7 +613,7 @@ def test_transpose_metadata_1(test_application, mocker, capsys) -> None:
     assert "SUCCESS  | Transposed Inline Metadata to Frontmatter in 5 notes" in captured
 
 
-def test_transpose_metadata_2(test_application, mocker, capsys) -> None:
+def test_transpose_metadata_2(test_application, mocker) -> None:
     """Transpose metadata.
 
     GIVEN a test application

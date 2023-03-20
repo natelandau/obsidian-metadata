@@ -133,6 +133,100 @@ def test_frontmatter_create_4():
     assert frontmatter.dict == {}
 
 
+def test_frontmatter_add_1():
+    """Test frontmatter add() method.
+
+    GIVEN a Frontmatter object
+    WHEN the add() method is called with an existing key
+    THEN return False
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+
+    assert frontmatter.add("frontmatter_Key1") is False
+
+
+def test_frontmatter_add_2():
+    """Test frontmatter add() method.
+
+    GIVEN a Frontmatter object
+    WHEN the add() method is called with an existing key and existing value
+    THEN return False
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    assert frontmatter.add("frontmatter_Key1", "frontmatter_Key1_value") is False
+
+
+def test_frontmatter_add_3():
+    """Test frontmatter add() method.
+
+    GIVEN a Frontmatter object
+    WHEN the add() method is called with a new key
+    THEN return True and add the key to the dict
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    assert frontmatter.add("added_key") is True
+    assert "added_key" in frontmatter.dict
+
+
+def test_frontmatter_add_4():
+    """Test frontmatter add() method.
+
+    GIVEN a Frontmatter object
+    WHEN the add() method is called with a new key and a new value
+    THEN return True and add the key and the value to the dict
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    assert frontmatter.add("added_key", "added_value") is True
+    assert frontmatter.dict["added_key"] == ["added_value"]
+
+
+def test_frontmatter_add_5():
+    """Test frontmatter add() method.
+
+    GIVEN a Frontmatter object
+    WHEN the add() method is called with an existing key and a new value
+    THEN return True and add the value to the dict
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    assert frontmatter.add("frontmatter_Key1", "new_value") is True
+    assert frontmatter.dict["frontmatter_Key1"] == ["frontmatter_Key1_value", "new_value"]
+
+
+def test_frontmatter_add_6():
+    """Test frontmatter add() method.
+
+    GIVEN a Frontmatter object
+    WHEN the add() method is called with an existing key and a list of new values
+    THEN return True and add the values to the dict
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    assert frontmatter.add("frontmatter_Key1", ["new_value", "new_value2"]) is True
+    assert frontmatter.dict["frontmatter_Key1"] == [
+        "frontmatter_Key1_value",
+        "new_value",
+        "new_value2",
+    ]
+
+
+def test_frontmatter_add_7():
+    """Test frontmatter add() method.
+
+    GIVEN a Frontmatter object
+    WHEN the add() method is called with an existing key and a list of values including an existing value
+    THEN return True and add the new values to the dict
+    """
+    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
+    assert (
+        frontmatter.add("frontmatter_Key1", ["frontmatter_Key1_value", "new_value", "new_value2"])
+        is True
+    )
+    assert frontmatter.dict["frontmatter_Key1"] == [
+        "frontmatter_Key1_value",
+        "new_value",
+        "new_value2",
+    ]
+
+
 def test_frontmatter_contains_1():
     """Test frontmatter contains() method.
 
@@ -219,71 +313,6 @@ def test_frontmatter_contains_8():
     """
     frontmatter = Frontmatter(FRONTMATTER_CONTENT)
     assert frontmatter.contains("key", r"_\d", is_regex=True) is False
-
-
-def test_frontmatter_add() -> None:
-    """Test frontmatter add."""
-    frontmatter = Frontmatter(FRONTMATTER_CONTENT)
-
-    assert frontmatter.add("frontmatter_Key1") is False
-    assert frontmatter.add("added_key") is True
-    assert frontmatter.dict == {
-        "added_key": [],
-        "frontmatter_Key1": ["frontmatter_Key1_value"],
-        "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
-        "tags": ["tag_1", "tag_2", "📅/tag_3"],
-    }
-
-    assert frontmatter.add("added_key", "added_value") is True
-    assert frontmatter.dict == {
-        "added_key": ["added_value"],
-        "frontmatter_Key1": ["frontmatter_Key1_value"],
-        "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
-        "tags": ["tag_1", "tag_2", "📅/tag_3"],
-    }
-
-    assert frontmatter.add("added_key", "added_value_2") is True
-    assert frontmatter.dict == {
-        "added_key": ["added_value", "added_value_2"],
-        "frontmatter_Key1": ["frontmatter_Key1_value"],
-        "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
-        "tags": ["tag_1", "tag_2", "📅/tag_3"],
-    }
-
-    assert frontmatter.add("added_key", ["added_value_3", "added_value_4"]) is True
-    assert frontmatter.dict == {
-        "added_key": ["added_value", "added_value_2", "added_value_3", "added_value_4"],
-        "frontmatter_Key1": ["frontmatter_Key1_value"],
-        "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
-        "tags": ["tag_1", "tag_2", "📅/tag_3"],
-    }
-
-    assert frontmatter.add("added_key2", ["added_value_1", "added_value_2"]) is True
-    assert frontmatter.dict == {
-        "added_key": ["added_value", "added_value_2", "added_value_3", "added_value_4"],
-        "added_key2": ["added_value_1", "added_value_2"],
-        "frontmatter_Key1": ["frontmatter_Key1_value"],
-        "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
-        "tags": ["tag_1", "tag_2", "📅/tag_3"],
-    }
-
-    assert frontmatter.add("added_key3", "added_value_1") is True
-    assert frontmatter.dict == {
-        "added_key": ["added_value", "added_value_2", "added_value_3", "added_value_4"],
-        "added_key2": ["added_value_1", "added_value_2"],
-        "added_key3": ["added_value_1"],
-        "frontmatter_Key1": ["frontmatter_Key1_value"],
-        "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value"],
-        "tags": ["tag_1", "tag_2", "📅/tag_3"],
-    }
-
-    assert frontmatter.add("added_key3", "added_value_1") is False
 
 
 def test_frontmatter_rename() -> None:

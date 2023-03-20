@@ -716,9 +716,8 @@ def test_transpose_metadata_4(sample_note):
         "key📅": ["📅_key_value"],
         "shared_key1": [
             "shared_key1_value",
-            "shared_key1_value3",
-            "shared_key1_value",
             "shared_key1_value2",
+            "shared_key1_value3",
         ],
         "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
         "tags": [

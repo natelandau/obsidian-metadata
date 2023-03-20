@@ -107,7 +107,7 @@ def test_logging(capsys, tmp_path, verbosity, log_to_file) -> None:
     if verbosity >= 3:
         assert logging.is_trace() is True
         captured = capsys.readouterr()
-        assert captured.out == ""
+        assert not captured.out
 
         assert logging.is_trace("trace text") is True
         captured = capsys.readouterr()
@@ -128,7 +128,7 @@ def test_logging(capsys, tmp_path, verbosity, log_to_file) -> None:
     if verbosity >= 2:
         assert logging.is_debug() is True
         captured = capsys.readouterr()
-        assert captured.out == ""
+        assert not captured.out
 
         assert logging.is_debug("debug text") is True
         captured = capsys.readouterr()
@@ -149,7 +149,7 @@ def test_logging(capsys, tmp_path, verbosity, log_to_file) -> None:
     if verbosity >= 1:
         assert logging.is_info() is True
         captured = capsys.readouterr()
-        assert captured.out == ""
+        assert not captured.out
 
         assert logging.is_info("info text") is True
         captured = capsys.readouterr()
@@ -165,11 +165,11 @@ def test_logging(capsys, tmp_path, verbosity, log_to_file) -> None:
 
         log.info("This is Info logging")
         captured = capsys.readouterr()
-        assert captured.out == ""
+        assert not captured.out
 
     assert logging.is_default() is True
     captured = capsys.readouterr()
-    assert captured.out == ""
+    assert not captured.out
 
     assert logging.is_default("default text") is True
     captured = capsys.readouterr()

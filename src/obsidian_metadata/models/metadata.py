@@ -281,6 +281,7 @@ class Frontmatter:
         if key in self.dict and value not in self.dict[key]:
             if isinstance(value, list):
                 self.dict[key].extend(value)
+                self.dict[key] = list(sorted(set(self.dict[key])))
                 return True
 
             self.dict[key].append(value)

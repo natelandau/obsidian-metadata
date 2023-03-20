@@ -1,3 +1,16 @@
+## v0.9.0 (2023-03-20)
+
+### Feat
+
+- bulk update metadata from a CSV file
+
+### Fix
+
+- find more instances of inline metadata
+- ensure frontmatter values are unique within a key
+- improve validation of bulk imports
+- improve logging to screen
+
 ## v0.8.0 (2023-03-12)
 
 ### Feat

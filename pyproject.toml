@@ -11,7 +11,7 @@
     name        = "obsidian-metadata"
     readme      = "README.md"
     repository  = "https://github.com/natelandau/obsidian-metadata"
-    version     = "0.8.0"
+    version     = "0.9.0"
 
     [tool.poetry.scripts] # https://python-poetry.org/docs/pyproject/#scripts
         obsidian-metadata = "obsidian_metadata.cli:app"
@@ -48,7 +48,7 @@
         typeguard             = "^3.0.1"
         types-python-dateutil = "^2.8.19.10"
         vulture               = "^2.7"
-    sh = "^2.0.2"
+    sh = "2.0.3"
 
 [tool.black]
     line-length = 100
@@ -58,7 +58,7 @@
     changelog_incremental    = true
     tag_format               = "v$version"
     update_changelog_on_bump = true
-    version                  = "0.8.0"
+    version                  = "0.9.0"
     version_files            = ["pyproject.toml:version", "src/obsidian_metadata/__version__.py:__version__"]
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/latest/config.html#report

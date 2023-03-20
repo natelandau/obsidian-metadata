@@ -1131,14 +1131,14 @@ testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (
 
 [[package]]
 name = "sh"
-version = "2.0.2"
+version = "2.0.3"
 description = "Python subprocess replacement"
 category = "dev"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
-    {file = "sh-2.0.2-py3-none-any.whl", hash = "sha256:a6208566c168a47ba46a3b5eeda0c9125091c2335f3cbb29f664519f90feb19f"},
-    {file = "sh-2.0.2.tar.gz", hash = "sha256:364a25cd2380c3170c46718fe3cc6ffc94b36721e30196a064be508f9b3162f4"},
+    {file = "sh-2.0.3-py3-none-any.whl", hash = "sha256:351f8968a2ed99755665fef62f038d60b5245999d73c2f1b1705f48b22e2a853"},
+    {file = "sh-2.0.3.tar.gz", hash = "sha256:800efeda403b63879b0a5625f65a0021fd1ea61ed181954da0346372a7b2a341"},
 ]
 
 [[package]]
@@ -1349,4 +1349,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
         python-versions = "^3.10"
-content-hash = "22aeb1e69b50ce41bcec085e2323e743675f917d617f3e6afa987b5cb98b7fb8"
+content-hash = "e9e2ff35a5ae15991d1d123dffa9f15fdf5afaf00624c26577412555d0464eaf"

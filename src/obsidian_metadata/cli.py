@@ -34,14 +34,21 @@ def main(
     ),
     export_csv: Path = typer.Option(
         None,
-        help="Exports all metadata to a specified CSV file and exits. (Will overwrite any existing file)",
+        help="Exports all metadata to a specified CSV file and exits.",
         show_default=False,
         dir_okay=False,
         file_okay=True,
     ),
     export_json: Path = typer.Option(
         None,
-        help="Exports all metadata to a specified JSON file and exits. (Will overwrite any existing file)",
+        help="Exports all metadata to a specified JSON file and exits.",
+        show_default=False,
+        dir_okay=False,
+        file_okay=True,
+    ),
+    export_template: Path = typer.Option(
+        None,
+        help="Exports all notes and their metadata to a specified CSV file and exits. Use to create a template for batch updates.",
         show_default=False,
         dir_okay=False,
         file_okay=True,
@@ -140,6 +147,10 @@ def main(
         raise typer.Exit(code=0)
     if export_csv is not None:
         path = Path(export_json).expanduser().resolve()
+        application.noninteractive_export_csv(path)
+        raise typer.Exit(code=0)
+    if export_template is not None:
+        path = Path(export_template).expanduser().resolve()
         application.noninteractive_export_csv(path)
         raise typer.Exit(code=0)
 

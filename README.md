@@ -27,6 +27,7 @@ pip install obsidian-metadata
 -   `--dry-run`: Make no destructive changes
 -   `--export-csv`: Specify a path and create a CSV export of all metadata
 -   `--export-json`: Specify a path and create a JSON export of all metadata
+-   `--export-template`: Specify a path and export all notes with their associated metadata to a CSV file for use as a bulk import template
 -   `--help`: Shows interactive help and exits
 -   `--log-file`: Specify a log file location
 -   `--log-to-file`: Will log to a file
@@ -64,7 +65,7 @@ Once installed, run `obsidian-metadata` in your terminal to enter an interactive
 -   **List and clear filters**: List all current filters and clear one or all
 -   **List notes in scope**: List notes that will be processed.
 
-**Bulk Edit Metadata** from a CSV file (See the _making bulk edits_ section below)
+**Bulk Edit Metadata** from a CSV file (See the _[Make Bulk Updates](https://github.com/natelandau/obsidian-metadata#make-bulk-updates)_ section below)
 
 **Add Metadata**: Add new metadata to your vault.
 
@@ -139,7 +140,7 @@ Below is an example with two vaults.
 
 To bypass the configuration file and specify a vault to use at runtime use the `--vault-path` option.
 
-### Making bulk edits
+### Make Bulk Updates
 
 Bulk edits are supported by importing a CSV file containing the following columns. Column headers must be lowercase.
 
@@ -167,7 +168,10 @@ How bulk imports work:
 -   **Existing metadata in a matching note will be rewritten**. This may result in it's location and/or formatting within the note being changed
 -   Inline tags ignore any value added to the `key` column
 
-You can export all your notes with their associated metadata in this format from the "Export Metadata" section of the script to be used as a template for your bulk changes.
+Create a CSV template for making bulk updates containing all your notes and their associated metadata by
+
+1. Using the `--export-template` cli command; or
+2. Selecting the `Metadata by note` option within the `Export Metadata` section of the app
 
 # Contributing
 

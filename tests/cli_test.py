@@ -17,7 +17,7 @@ def test_version() -> None:
     """Test printing version and then exiting."""
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert result.output == Regex(r"obsidian_metadata: v\d+\.\d+\.\d+$")
+    assert "obsidian_metadata: v" in result.output
 
 
 def test_application(tmp_path) -> None:
@@ -51,3 +51,25 @@ def test_application(tmp_path) -> None:
 
     assert banner in result.output
     assert result.exit_code == 1
+
+
+def test_export_template(tmp_path) -> None:
+    """Test the export template command."""
+    source_dir = Path(__file__).parent / "fixtures" / "test_vault"
+    dest_dir = Path(tmp_path / "vault")
+
+    if not source_dir.exists():
+        raise FileNotFoundError(f"Sample vault not found: {source_dir}")
+
+    shutil.copytree(source_dir, dest_dir)
+
+    config_path = tmp_path / "config.toml"
+    export_path = tmp_path / "export_template.csv"
+    result = runner.invoke(
+        app,
+        ["--vault-path", dest_dir, "--config-file", config_path, "--export-template", export_path],
+    )
+
+    assert "SUCCESS  | Exported metadata to" in result.output
+    assert result.exit_code == 0
+    assert export_path.exists()

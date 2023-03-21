@@ -143,7 +143,7 @@ for group in groups:
             notice(
                 f"Updating {p} from {packages[p]['current_version']} to {packages[p]['new_version']}"
             )
-            sh.poetry("add", f"{p}@{packages[p]['new_version']}", "--group", group, _fg=True)
+            sh.poetry("add", f"{p}@latest", "--group", group, _fg=True)
 
 sh.poetry("update", _fg=True)
 success("All dependencies are up to date")

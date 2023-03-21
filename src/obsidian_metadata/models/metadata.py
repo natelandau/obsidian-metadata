@@ -10,10 +10,12 @@ from ruamel.yaml import YAML
 
 from obsidian_metadata._utils import (
     clean_dictionary,
+    delete_from_dict,
     dict_contains,
     dict_values_to_lists_strings,
     merge_dictionaries,
     remove_markdown_sections,
+    rename_in_dict,
 )
 from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import Patterns  # isort: ignore
@@ -24,7 +26,14 @@ INLINE_TAG_KEY: str = "inline_tag"
 
 
 class VaultMetadata:
-    """Representation of all Metadata in the Vault."""
+    """Representation of all Metadata in the Vault.
+
+    Attributes:
+        dict (dict): Dictionary of all frontmatter and inline metadata. Does not include tags.
+        frontmatter (dict): Dictionary of all frontmatter metadata.
+        inline_metadata (dict): Dictionary of all inline metadata.
+        tags (list): List of all tags.
+    """
 
     def __init__(self) -> None:
         self.dict: dict[str, list[str]] = {}
@@ -59,7 +68,7 @@ class VaultMetadata:
             self.tags.extend(metadata)
             self.tags = sorted({s.strip("#") for s in self.tags})
 
-    def contains(  # noqa: PLR0911
+    def contains(
         self, area: MetadataType, key: str = None, value: str = None, is_regex: bool = False
     ) -> bool:
         """Check if a key and/or a value exists in the metadata.
@@ -82,13 +91,7 @@ class VaultMetadata:
 
         match area:
             case MetadataType.ALL:
-                if dict_contains(self.dict, key, value, is_regex):
-                    return True
-                if key is None and value is not None:
-                    if is_regex:
-                        return any(re.search(value, tag) for tag in self.tags)
-                    return value in self.tags
-
+                return dict_contains(self.dict, key, value, is_regex)
             case MetadataType.FRONTMATTER:
                 return dict_contains(self.frontmatter, key, value, is_regex)
             case MetadataType.INLINE:
@@ -102,10 +105,8 @@ class VaultMetadata:
                     return any(re.search(value, tag) for tag in self.tags)
                 return value in self.tags
 
-        return False
-
     def delete(self, key: str, value_to_delete: str = None) -> bool:
-        """Delete a key or a key's value from the metadata. Regex is supported to allow deleting more than one key or value.
+        """Delete a key or a value from the VaultMetadata dict object. Regex is supported to allow deleting more than one key or value.
 
         Args:
             key (str): Key to check.
@@ -114,17 +115,12 @@ class VaultMetadata:
         Returns:
             bool: True if a value was deleted
         """
-        new_dict = copy.deepcopy(self.dict)
-
-        if value_to_delete is None:
-            for _k in list(new_dict):
-                if re.search(key, _k):
-                    del new_dict[_k]
-        else:
-            for _k, _v in new_dict.items():
-                if re.search(key, _k):
-                    new_values = [x for x in _v if not re.search(value_to_delete, x)]
-                    new_dict[_k] = sorted(new_values)
+        new_dict = delete_from_dict(
+            dictionary=self.dict,
+            key=key,
+            value=value_to_delete,
+            is_regex=True,
+        )
 
         if new_dict != self.dict:
             self.dict = dict(new_dict)
@@ -138,28 +134,24 @@ class VaultMetadata:
         Args:
             area (MetadataType): Type of metadata to print
         """
-        dict_to_print: dict[str, list[str]] = None
-        list_to_print: list[str] = None
+        dict_to_print = None
+        list_to_print = None
         match area:
             case MetadataType.INLINE:
-                dict_to_print = self.inline_metadata.copy()
+                dict_to_print = self.inline_metadata
                 header = "All inline metadata"
             case MetadataType.FRONTMATTER:
-                dict_to_print = self.frontmatter.copy()
+                dict_to_print = self.frontmatter
                 header = "All frontmatter"
             case MetadataType.TAGS:
-                list_to_print = []
-                for tag in self.tags:
-                    list_to_print.append(f"#{tag}")
+                list_to_print = [f"#{x}" for x in self.tags]
                 header = "All inline tags"
             case MetadataType.KEYS:
                 list_to_print = sorted(self.dict.keys())
                 header = "All Keys"
             case MetadataType.ALL:
-                dict_to_print = self.dict.copy()
-                list_to_print = []
-                for tag in self.tags:
-                    list_to_print.append(f"#{tag}")
+                dict_to_print = self.dict
+                list_to_print = [f"#{x}" for x in self.tags]
                 header = "All metadata"
 
         if dict_to_print is not None:
@@ -189,19 +181,14 @@ class VaultMetadata:
             key (str): Key to check.
             value_1 (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
             value_2 (str, Optional): New value.
-            bypass_check (bool, optional): Bypass the check if the key exists. Defaults to False.
 
         Returns:
             bool: True if a value was renamed
         """
-        if value_2 is None:
-            if key in self.dict and value_1 not in self.dict:
-                self.dict[value_1] = self.dict.pop(key)
-                return True
-            return False
+        new_dict = rename_in_dict(dictionary=self.dict, key=key, value_1=value_1, value_2=value_2)
 
-        if key in self.dict and value_1 in self.dict[key]:
-            self.dict[key] = sorted({value_2 if x == value_1 else x for x in self.dict[key]})
+        if new_dict != self.dict:
+            self.dict = dict(new_dict)
             return True
 
         return False
@@ -312,17 +299,12 @@ class Frontmatter:
         Returns:
             bool: True if a value was deleted
         """
-        new_dict = copy.deepcopy(self.dict)
-
-        if value_to_delete is None:
-            for _k in list(new_dict):
-                if re.search(key, _k):
-                    del new_dict[_k]
-        else:
-            for _k, _v in new_dict.items():
-                if re.search(key, _k):
-                    new_values = [x for x in _v if not re.search(value_to_delete, x)]
-                    new_dict[_k] = sorted(new_values)
+        new_dict = delete_from_dict(
+            dictionary=self.dict,
+            key=key,
+            value=value_to_delete,
+            is_regex=True,
+        )
 
         if new_dict != self.dict:
             self.dict = dict(new_dict)
@@ -353,14 +335,10 @@ class Frontmatter:
         Returns:
             bool: True if a value was renamed
         """
-        if value_2 is None:
-            if key in self.dict and value_1 not in self.dict:
-                self.dict[value_1] = self.dict.pop(key)
-                return True
-            return False
+        new_dict = rename_in_dict(dictionary=self.dict, key=key, value_1=value_1, value_2=value_2)
 
-        if key in self.dict and value_1 in self.dict[key]:
-            self.dict[key] = sorted({value_2 if x == value_1 else x for x in self.dict[key]})
+        if new_dict != self.dict:
+            self.dict = dict(new_dict)
             return True
 
         return False
@@ -491,17 +469,12 @@ class InlineMetadata:
         Returns:
             bool: True if a value was deleted
         """
-        new_dict = dict(self.dict)
-
-        if value_to_delete is None:
-            for _k in list(new_dict):
-                if re.search(key, _k):
-                    del new_dict[_k]
-        else:
-            for _k, _v in new_dict.items():
-                if re.search(key, _k):
-                    new_values = [x for x in _v if not re.search(value_to_delete, x)]
-                    new_dict[_k] = sorted(new_values)
+        new_dict = delete_from_dict(
+            dictionary=self.dict,
+            key=key,
+            value=value_to_delete,
+            is_regex=True,
+        )
 
         if new_dict != self.dict:
             self.dict = dict(new_dict)
@@ -528,14 +501,10 @@ class InlineMetadata:
         Returns:
             bool: True if a value was renamed
         """
-        if value_2 is None:
-            if key in self.dict and value_1 not in self.dict:
-                self.dict[value_1] = self.dict.pop(key)
-                return True
-            return False
+        new_dict = rename_in_dict(dictionary=self.dict, key=key, value_1=value_1, value_2=value_2)
 
-        if key in self.dict and value_1 in self.dict[key]:
-            self.dict[key] = sorted({value_2 if x == value_1 else x for x in self.dict[key]})
+        if new_dict != self.dict:
+            self.dict = dict(new_dict)
             return True
 
         return False
@@ -580,32 +549,34 @@ class InlineTags:
         """Add a new inline tag.
 
         Args:
-            new_tag (str): Tag to add.
+            new_tag (str, list[str]): Tag to add.
 
         Returns:
             bool: True if a tag was added.
         """
+        added_tag = False
         if isinstance(new_tag, list):
             for _tag in new_tag:
                 if _tag.startswith("#"):
                     _tag = _tag[1:]
                 if _tag in self.list:
-                    return False
-                new_list = self.list.copy()
-                new_list.append(_tag)
-                self.list = sorted(new_list)
-                return True
-        else:
-            if new_tag.startswith("#"):
-                new_tag = new_tag[1:]
-            if new_tag in self.list:
-                return False
-            new_list = self.list.copy()
-            new_list.append(new_tag)
-            self.list = sorted(new_list)
-            return True
+                    continue
+                self.list.append(_tag)
+                added_tag = True
 
-        return False
+            if added_tag:
+                self.list = sorted(self.list)
+                return True
+            return False
+
+        if new_tag.startswith("#"):
+            new_tag = new_tag[1:]
+        if new_tag in self.list:
+            return False
+        new_list = self.list.copy()
+        new_list.append(new_tag)
+        self.list = sorted(new_list)
+        return True
 
     def contains(self, tag: str, is_regex: bool = False) -> bool:
         """Check if a tag exists in the metadata.
@@ -653,13 +624,13 @@ class InlineTags:
         """Replace an inline tag with another string.
 
         Args:
-            old_tag (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
-            new_tag (str, Optional): New value.
+            old_tag (str): `With value_2` this is the value to rename.
+            new_tag (str): New value
 
         Returns:
             bool: True if a value was renamed
         """
-        if old_tag in self.list:
-            self.list = sorted([new_tag if i == old_tag else i for i in self.list])
+        if old_tag in self.list and new_tag is not None and new_tag:
+            self.list = sorted({new_tag if i == old_tag else i for i in self.list})
             return True
         return False

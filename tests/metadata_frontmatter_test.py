@@ -47,7 +47,7 @@ repeated_key:: repeated_key_value2
 """
 
 
-def test_frontmatter_create_1() -> None:
+def test_create_1() -> None:
     """Test frontmatter creation.
 
     GIVEN valid frontmatter content
@@ -72,7 +72,7 @@ def test_frontmatter_create_1() -> None:
     }
 
 
-def test_frontmatter_create_2() -> None:
+def test_create_2() -> None:
     """Test frontmatter creation error.
 
     GIVEN invalid frontmatter content
@@ -88,7 +88,7 @@ invalid = = "content"
         Frontmatter(fn)
 
 
-def test_frontmatter_create_3():
+def test_create_3():
     """Test frontmatter creation error.
 
     GIVEN empty frontmatter content
@@ -100,7 +100,7 @@ def test_frontmatter_create_3():
     assert frontmatter.dict == {}
 
 
-def test_frontmatter_create_4():
+def test_create_4():
     """Test frontmatter creation error.
 
     GIVEN empty frontmatter content with a yaml marker
@@ -112,7 +112,7 @@ def test_frontmatter_create_4():
     assert frontmatter.dict == {}
 
 
-def test_frontmatter_add_1():
+def test_add_1():
     """Test frontmatter add() method.
 
     GIVEN a Frontmatter object
@@ -124,7 +124,7 @@ def test_frontmatter_add_1():
     assert frontmatter.add("frontmatter_Key1") is False
 
 
-def test_frontmatter_add_2():
+def test_add_2():
     """Test frontmatter add() method.
 
     GIVEN a Frontmatter object
@@ -135,7 +135,7 @@ def test_frontmatter_add_2():
     assert frontmatter.add("frontmatter_Key1", "frontmatter_Key1_value") is False
 
 
-def test_frontmatter_add_3():
+def test_add_3():
     """Test frontmatter add() method.
 
     GIVEN a Frontmatter object
@@ -147,7 +147,7 @@ def test_frontmatter_add_3():
     assert "added_key" in frontmatter.dict
 
 
-def test_frontmatter_add_4():
+def test_add_4():
     """Test frontmatter add() method.
 
     GIVEN a Frontmatter object
@@ -159,7 +159,7 @@ def test_frontmatter_add_4():
     assert frontmatter.dict["added_key"] == ["added_value"]
 
 
-def test_frontmatter_add_5():
+def test_add_5():
     """Test frontmatter add() method.
 
     GIVEN a Frontmatter object
@@ -171,7 +171,7 @@ def test_frontmatter_add_5():
     assert frontmatter.dict["frontmatter_Key1"] == ["frontmatter_Key1_value", "new_value"]
 
 
-def test_frontmatter_add_6():
+def test_add_6():
     """Test frontmatter add() method.
 
     GIVEN a Frontmatter object
@@ -187,7 +187,7 @@ def test_frontmatter_add_6():
     ]
 
 
-def test_frontmatter_add_7():
+def test_add_7():
     """Test frontmatter add() method.
 
     GIVEN a Frontmatter object
@@ -206,7 +206,7 @@ def test_frontmatter_add_7():
     ]
 
 
-def test_frontmatter_contains_1():
+def test_contains_1():
     """Test frontmatter contains() method.
 
     GIVEN a Frontmatter object
@@ -217,7 +217,7 @@ def test_frontmatter_contains_1():
     assert frontmatter.contains("frontmatter_Key1") is True
 
 
-def test_frontmatter_contains_2():
+def test_contains_2():
     """Test frontmatter contains() method.
 
     GIVEN a Frontmatter object
@@ -228,7 +228,7 @@ def test_frontmatter_contains_2():
     assert frontmatter.contains("no_key") is False
 
 
-def test_frontmatter_contains_3():
+def test_contains_3():
     """Test frontmatter contains() method.
 
     GIVEN a Frontmatter object
@@ -239,7 +239,7 @@ def test_frontmatter_contains_3():
     assert frontmatter.contains("frontmatter_Key2", "article") is True
 
 
-def test_frontmatter_contains_4():
+def test_contains_4():
     """Test frontmatter contains() method.
 
     GIVEN a Frontmatter object
@@ -250,7 +250,7 @@ def test_frontmatter_contains_4():
     assert frontmatter.contains("frontmatter_Key2", "no value") is False
 
 
-def test_frontmatter_contains_5():
+def test_contains_5():
     """Test frontmatter contains() method.
 
     GIVEN a Frontmatter object
@@ -261,7 +261,7 @@ def test_frontmatter_contains_5():
     assert frontmatter.contains(r"\d$", is_regex=True) is True
 
 
-def test_frontmatter_contains_6():
+def test_contains_6():
     """Test frontmatter contains() method.
 
     GIVEN a Frontmatter object
@@ -272,7 +272,7 @@ def test_frontmatter_contains_6():
     assert frontmatter.contains(r"^\d", is_regex=True) is False
 
 
-def test_frontmatter_contains_7():
+def test_contains_7():
     """Test frontmatter contains() method.
 
     GIVEN a Frontmatter object
@@ -283,7 +283,7 @@ def test_frontmatter_contains_7():
     assert frontmatter.contains("key", r"\w\d_", is_regex=True) is True
 
 
-def test_frontmatter_contains_8():
+def test_contains_8():
     """Test frontmatter contains() method.
 
     GIVEN a Frontmatter object
@@ -294,7 +294,7 @@ def test_frontmatter_contains_8():
     assert frontmatter.contains("key", r"_\d", is_regex=True) is False
 
 
-def test_frontmatter_delete_1():
+def test_delete_1():
     """Test frontmatter delete() method.
 
     GIVEN a Frontmatter object
@@ -305,7 +305,7 @@ def test_frontmatter_delete_1():
     assert frontmatter.delete("no key") is False
 
 
-def test_frontmatter_delete_2():
+def test_delete_2():
     """Test frontmatter delete() method.
 
     GIVEN a Frontmatter object
@@ -316,7 +316,7 @@ def test_frontmatter_delete_2():
     assert frontmatter.delete("tags", "no value") is False
 
 
-def test_frontmatter_delete_3():
+def test_delete_3():
     """Test frontmatter delete() method.
 
     GIVEN a Frontmatter object
@@ -327,7 +327,7 @@ def test_frontmatter_delete_3():
     assert frontmatter.delete(r"\d{3}") is False
 
 
-def test_frontmatter_delete_4():
+def test_delete_4():
     """Test frontmatter delete() method.
 
     GIVEN a Frontmatter object
@@ -338,7 +338,7 @@ def test_frontmatter_delete_4():
     assert frontmatter.delete("tags", r"\d{5}") is False
 
 
-def test_frontmatter_delete_5():
+def test_delete_5():
     """Test frontmatter delete() method.
 
     GIVEN a Frontmatter object
@@ -351,7 +351,7 @@ def test_frontmatter_delete_5():
     assert "tags" in frontmatter.dict
 
 
-def test_frontmatter_delete_6():
+def test_delete_6():
     """Test frontmatter delete() method.
 
     GIVEN a Frontmatter object
@@ -363,7 +363,7 @@ def test_frontmatter_delete_6():
     assert "tags" not in frontmatter.dict
 
 
-def test_frontmatter_delete_7():
+def test_delete_7():
     """Test frontmatter delete() method.
 
     GIVEN a Frontmatter object
@@ -376,7 +376,7 @@ def test_frontmatter_delete_7():
     assert "frontmatter_Key2" not in frontmatter.dict
 
 
-def test_frontmatter_delete_8():
+def test_delete_8():
     """Test frontmatter delete() method.
 
     GIVEN a Frontmatter object
@@ -390,7 +390,7 @@ def test_frontmatter_delete_8():
     assert "tag_1" in frontmatter.dict["tags"]
 
 
-def test_frontmatter_delete_all():
+def test_delete_all():
     """Test Frontmatter delete_all method.
 
     GIVEN Frontmatter with multiple keys
@@ -402,7 +402,7 @@ def test_frontmatter_delete_all():
     assert frontmatter.dict == {}
 
 
-def test_frontmatter_has_changes_1():
+def test_has_changes_1():
     """Test frontmatter has_changes() method.
 
     GIVEN a Frontmatter object
@@ -413,7 +413,7 @@ def test_frontmatter_has_changes_1():
     assert frontmatter.has_changes() is False
 
 
-def test_frontmatter_has_changes_2():
+def test_has_changes_2():
     """Test frontmatter has_changes() method.
 
     GIVEN a Frontmatter object
@@ -425,7 +425,7 @@ def test_frontmatter_has_changes_2():
     assert frontmatter.has_changes() is True
 
 
-def test_frontmatter_rename_1():
+def test_rename_1():
     """Test frontmatter rename() method.
 
     GIVEN a Frontmatter object
@@ -436,7 +436,7 @@ def test_frontmatter_rename_1():
     assert frontmatter.rename("no key", "new key") is False
 
 
-def test_frontmatter_rename_2():
+def test_rename_2():
     """Test frontmatter rename() method.
 
     GIVEN a Frontmatter object
@@ -447,7 +447,7 @@ def test_frontmatter_rename_2():
     assert frontmatter.rename("tags", "no tag", "new key") is False
 
 
-def test_frontmatter_rename_3():
+def test_rename_3():
     """Test frontmatter rename() method.
 
     GIVEN a Frontmatter object
@@ -460,7 +460,7 @@ def test_frontmatter_rename_3():
     assert frontmatter.dict["new key"] == ["frontmatter_Key1_value"]
 
 
-def test_frontmatter_rename_4():
+def test_rename_4():
     """Test frontmatter rename() method.
 
     GIVEN a Frontmatter object
@@ -473,7 +473,7 @@ def test_frontmatter_rename_4():
     assert "new tag" in frontmatter.dict["tags"]
 
 
-def test_frontmatter_rename_5():
+def test_rename_5():
     """Test frontmatter rename() method.
 
     GIVEN a Frontmatter object
@@ -486,7 +486,7 @@ def test_frontmatter_rename_5():
     assert frontmatter.dict["tags"] == ["tag_2", "📅/tag_3"]
 
 
-def test_frontmatter_to_yaml_1():
+def test_to_yaml_1():
     """Test Frontmatter to_yaml method.
 
     GIVEN a dictionary
@@ -508,7 +508,7 @@ shared_key1: shared_key1_value
     assert frontmatter.to_yaml() == new_frontmatter
 
 
-def test_frontmatter_to_yaml_2():
+def test_to_yaml_2():
     """Test Frontmatter to_yaml method.
 
     GIVEN a dictionary

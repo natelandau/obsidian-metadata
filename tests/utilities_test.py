@@ -6,13 +6,172 @@ import typer
 
 from obsidian_metadata._utils import (
     clean_dictionary,
+    delete_from_dict,
     dict_contains,
     dict_keys_to_lower,
     dict_values_to_lists_strings,
     remove_markdown_sections,
+    rename_in_dict,
     validate_csv_bulk_imports,
 )
 from tests.helpers import Regex, remove_ansi
+
+
+def test_delete_from_dict_1():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values
+    WHEN the delete_from_dict() function is called with a key that exists
+    THEN the key should be deleted from the dictionary and the original dictionary should not be modified
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key="key1") == {
+        "key2": ["value2", "value3"],
+        "key3": "value4",
+    }
+    assert test_dict == {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+
+def test_delete_from_dict_2():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values
+    WHEN the delete_from_dict() function is called with a key that does not exist
+    THEN the dictionary should not be modified
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key="key5") == test_dict
+
+
+def test_delete_from_dict_3():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values in a list
+    WHEN the delete_from_dict() function is called with a key and value that exists
+    THEN the value should be deleted from the specified key in dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key="key2", value="value3") == {
+        "key1": ["value1"],
+        "key2": ["value2"],
+        "key3": "value4",
+    }
+
+
+def test_delete_from_dict_4():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values as strings
+    WHEN the delete_from_dict() function is called with a key and value that exists
+    THEN the value and key should be deleted from the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key="key3", value="value4") == {
+        "key1": ["value1"],
+        "key2": ["value2", "value3"],
+    }
+
+
+def test_delete_from_dict_5():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values as strings
+    WHEN the delete_from_dict() function is called with a key and value that does not exist
+    THEN the dictionary should not be modified
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key="key3", value="value5") == test_dict
+
+
+def test_delete_from_dict_6():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values as strings
+    WHEN the delete_from_dict() function is called with a key regex that matches
+    THEN the matching keys should be deleted from the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key="key[23]", is_regex=True) == {
+        "key1": ["value1"]
+    }
+
+
+def test_delete_from_dict_7():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values as strings
+    WHEN the delete_from_dict() function is called with a key regex that does not match
+    THEN no keys should be deleted from the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key=r"key\d\d", is_regex=True) == test_dict
+
+
+def test_delete_from_dict_8():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values as strings
+    WHEN the delete_from_dict() function is called with a key and value regex that matches
+    THEN the matching keys should be deleted from the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key="key2", value=r"\w+", is_regex=True) == {
+        "key1": ["value1"],
+        "key2": [],
+        "key3": "value4",
+    }
+
+
+def test_delete_from_dict_9():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values as strings
+    WHEN the delete_from_dict() function is called with a key and value regex that does not match
+    THEN no keys should be deleted from the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert (
+        delete_from_dict(dictionary=test_dict, key=r"key2", value=r"^\d", is_regex=True)
+        == test_dict
+    )
+
+
+def test_delete_from_dict_10():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values as strings
+    WHEN the delete_from_dict() function is called with a key and value regex that matches
+    THEN the matching keys should be deleted from the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(dictionary=test_dict, key="key3", value=r"\w+", is_regex=True) == {
+        "key1": ["value1"],
+        "key2": ["value2", "value3"],
+    }
+
+
+def test_delete_from_dict_11():
+    """Test delete_from_dict() function.
+
+    GIVEN a dictionary with values as strings
+    WHEN the delete_from_dict() function is called with a key regex that matches multiple and values that match
+    THEN the values matching the associated keys should be deleted from the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"], "key3": "value4"}
+
+    assert delete_from_dict(
+        dictionary=test_dict, key=r"key[23]", value=r"\w+[34]$", is_regex=True
+    ) == {"key1": ["value1"], "key2": ["value2"]}
 
 
 def test_dict_contains() -> None:
@@ -79,6 +238,78 @@ def test_dict_values_to_lists_strings():
         "key6": [],
         "key8": ["1", "3", "4"],
         "key9": ["", "None"],
+    }
+
+
+def test_rename_in_dict_1():
+    """Test rename_in_dict() function.
+
+    GIVEN a dictionary with values as a list
+    WHEN the rename_in_dict() function is called with a key that does not exist
+    THEN no keys should be renamed in the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"]}
+
+    assert rename_in_dict(dictionary=test_dict, key="key4", value_1="key5") == test_dict
+
+
+def test_rename_in_dict_2():
+    """Test rename_in_dict() function.
+
+    GIVEN a dictionary with values as a list
+    WHEN the rename_in_dict() function is called with a key that exists and a new value for the key
+    THEN the key should be renamed in the returned dictionary and the original dictionary should not be modified
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"]}
+
+    assert rename_in_dict(dictionary=test_dict, key="key2", value_1="new_key") == {
+        "key1": ["value1"],
+        "new_key": ["value2", "value3"],
+    }
+    assert test_dict == {"key1": ["value1"], "key2": ["value2", "value3"]}
+
+
+def test_rename_in_dict_3():
+    """Test rename_in_dict() function.
+
+    GIVEN a dictionary with values as a list
+    WHEN the rename_in_dict() function is called with a key that exists value that does not exist
+    THEN the dictionary should not be modified
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"]}
+
+    assert (
+        rename_in_dict(dictionary=test_dict, key="key2", value_1="no_value", value_2="new_value")
+        == test_dict
+    )
+
+
+def test_rename_in_dict_4():
+    """Test rename_in_dict() function.
+
+    GIVEN a dictionary with values as a list
+    WHEN the rename_in_dict() function is called with a key that exists and a new value for a value
+    THEN update the specified value in the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"]}
+
+    assert rename_in_dict(
+        dictionary=test_dict, key="key2", value_1="value2", value_2="new_value"
+    ) == {"key1": ["value1"], "key2": ["new_value", "value3"]}
+
+
+def test_rename_in_dict_5():
+    """Test rename_in_dict() function.
+
+    GIVEN a dictionary with values as a list
+    WHEN the rename_in_dict() function is called with a key that exists and a an existing value for a renamed value
+    THEN only one instance of the new value should be in the key
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"]}
+
+    assert rename_in_dict(dictionary=test_dict, key="key2", value_1="value2", value_2="value3") == {
+        "key1": ["value1"],
+        "key2": ["value3"],
     }
 
 

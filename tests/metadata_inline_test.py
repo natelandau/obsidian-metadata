@@ -77,7 +77,7 @@ def test__grab_inline_metadata_2():
     }
 
 
-def test_inline_metadata_add_1():
+def test_add_1():
     """Test InlineMetadata add() method.
 
     GIVEN a InlineMetadata object
@@ -88,7 +88,7 @@ def test_inline_metadata_add_1():
     assert inline.add("key1") is False
 
 
-def test_inline_metadata_add_2():
+def test_add_2():
     """Test InlineMetadata add() method.
 
     GIVEN a InlineMetadata object
@@ -99,7 +99,7 @@ def test_inline_metadata_add_2():
     assert inline.add("key1", "value1") is False
 
 
-def test_inline_metadata_add_3():
+def test_add_3():
     """Test InlineMetadata add() method.
 
     GIVEN a InlineMetadata object
@@ -111,7 +111,7 @@ def test_inline_metadata_add_3():
     assert "added_key" in inline.dict
 
 
-def test_inline_metadata_add_4():
+def test_add_4():
     """Test InlineMetadata add() method.
 
     GIVEN a InlineMetadata object
@@ -123,7 +123,7 @@ def test_inline_metadata_add_4():
     assert inline.dict["added_key"] == ["added_value"]
 
 
-def test_inline_metadata_add_5():
+def test_add_5():
     """Test InlineMetadata add() method.
 
     GIVEN a InlineMetadata object
@@ -135,7 +135,7 @@ def test_inline_metadata_add_5():
     assert inline.dict["key1"] == ["value1", "value2", "value3", "new_value"]
 
 
-def test_inline_metadata_add_6():
+def test_add_6():
     """Test InlineMetadata add() method.
 
     GIVEN a InlineMetadata object
@@ -147,7 +147,7 @@ def test_inline_metadata_add_6():
     assert inline.dict["key2"] == ["new_value", "new_value2", "value1"]
 
 
-def test_inline_metadata_add_7():
+def test_add_7():
     """Test InlineMetadata add() method.
 
     GIVEN a InlineMetadata object
@@ -159,7 +159,19 @@ def test_inline_metadata_add_7():
     assert inline.dict["key1"] == ["new_value", "new_value2", "value1", "value2", "value3"]
 
 
-def test_inline_metadata_contains_1():
+def test_add_8():
+    """Test InlineMetadata add() method.
+
+    GIVEN a InlineMetadata object
+    WHEN the add() method is called with a new key and a list of values
+    THEN return True and add the new values to the dict
+    """
+    inline = InlineMetadata(INLINE_CONTENT)
+    assert inline.add("new_key", ["value1", "new_value", "new_value2"]) is True
+    assert inline.dict["new_key"] == ["value1", "new_value", "new_value2"]
+
+
+def test_contains_1():
     """Test InlineMetadata contains() method.
 
     GIVEN a InlineMetadata object
@@ -170,7 +182,7 @@ def test_inline_metadata_contains_1():
     assert inline.contains("key1") is True
 
 
-def test_inline_metadata_contains_2():
+def test_contains_2():
     """Test InlineMetadata contains() method.
 
     GIVEN a InlineMetadata object
@@ -181,7 +193,7 @@ def test_inline_metadata_contains_2():
     assert inline.contains("no_key") is False
 
 
-def test_inline_metadata_contains_3():
+def test_contains_3():
     """Test InlineMetadata contains() method.
 
     GIVEN a InlineMetadata object
@@ -192,7 +204,7 @@ def test_inline_metadata_contains_3():
     assert inline.contains("key1", "value1") is True
 
 
-def test_inline_metadata_contains_4():
+def test_contains_4():
     """Test InlineMetadata contains() method.
 
     GIVEN a InlineMetadata object
@@ -203,7 +215,7 @@ def test_inline_metadata_contains_4():
     assert inline.contains("key1", "no value") is False
 
 
-def test_inline_metadata_contains_5():
+def test_contains_5():
     """Test InlineMetadata contains() method.
 
     GIVEN a InlineMetadata object
@@ -214,7 +226,7 @@ def test_inline_metadata_contains_5():
     assert inline.contains(r"\d$", is_regex=True) is True
 
 
-def test_inline_metadata_contains_6():
+def test_contains_6():
     """Test InlineMetadata contains() method.
 
     GIVEN a InlineMetadata object
@@ -225,7 +237,7 @@ def test_inline_metadata_contains_6():
     assert inline.contains(r"^\d", is_regex=True) is False
 
 
-def test_inline_metadata_contains_7():
+def test_contains_7():
     """Test InlineMetadata contains() method.
 
     GIVEN a InlineMetadata object
@@ -236,7 +248,7 @@ def test_inline_metadata_contains_7():
     assert inline.contains(r"key\d", r"\w\d", is_regex=True) is True
 
 
-def test_inline_metadata_contains_8():
+def test_contains_8():
     """Test InlineMetadata contains() method.
 
     GIVEN a InlineMetadata object
@@ -247,7 +259,7 @@ def test_inline_metadata_contains_8():
     assert inline.contains("key1", r"_\d", is_regex=True) is False
 
 
-def test_inline_metadata_delete_1():
+def test_delete_1():
     """Test InlineMetadata delete() method.
 
     GIVEN a InlineMetadata object
@@ -258,7 +270,7 @@ def test_inline_metadata_delete_1():
     assert inline.delete("no key") is False
 
 
-def test_inline_metadata_delete_2():
+def test_delete_2():
     """Test InlineMetadata delete() method.
 
     GIVEN a InlineMetadata object
@@ -269,7 +281,7 @@ def test_inline_metadata_delete_2():
     assert inline.delete("key1", "no value") is False
 
 
-def test_inline_metadata_delete_3():
+def test_delete_3():
     """Test InlineMetadata delete() method.
 
     GIVEN a InlineMetadata object
@@ -280,7 +292,7 @@ def test_inline_metadata_delete_3():
     assert inline.delete(r"\d{3}") is False
 
 
-def test_inline_metadata_delete_4():
+def test_delete_4():
     """Test InlineMetadata delete() method.
 
     GIVEN a InlineMetadata object
@@ -291,7 +303,7 @@ def test_inline_metadata_delete_4():
     assert inline.delete("key1", r"\d{5}") is False
 
 
-def test_inline_metadata_delete_5():
+def test_delete_5():
     """Test InlineMetadata delete() method.
 
     GIVEN a InlineMetadata object
@@ -304,7 +316,7 @@ def test_inline_metadata_delete_5():
     assert "key1" in inline.dict
 
 
-def test_inline_metadata_delete_6():
+def test_delete_6():
     """Test InlineMetadata delete() method.
 
     GIVEN a InlineMetadata object
@@ -316,7 +328,7 @@ def test_inline_metadata_delete_6():
     assert "key1" not in inline.dict
 
 
-def test_inline_metadata_delete_7():
+def test_delete_7():
     """Test InlineMetadata delete() method.
 
     GIVEN a InlineMetadata object
@@ -329,7 +341,7 @@ def test_inline_metadata_delete_7():
     assert "key2" not in inline.dict
 
 
-def test_inline_metadata_delete_8():
+def test_delete_8():
     """Test InlineMetadata delete() method.
 
     GIVEN a InlineMetadata object
@@ -343,7 +355,7 @@ def test_inline_metadata_delete_8():
     assert "value3" not in inline.dict["key1"]
 
 
-def test_inline_metadata_has_changes_1():
+def test_has_changes_1():
     """Test InlineMetadata has_changes() method.
 
     GIVEN a InlineMetadata object
@@ -354,7 +366,7 @@ def test_inline_metadata_has_changes_1():
     assert inline.has_changes() is False
 
 
-def test_inline_metadata_has_changes_2():
+def test_has_changes_2():
     """Test InlineMetadata has_changes() method.
 
     GIVEN a InlineMetadata object
@@ -366,7 +378,7 @@ def test_inline_metadata_has_changes_2():
     assert inline.has_changes() is True
 
 
-def test_inline_metadata_rename_1():
+def test_rename_1():
     """Test InlineMetadata rename() method.
 
     GIVEN a InlineMetadata object
@@ -377,7 +389,7 @@ def test_inline_metadata_rename_1():
     assert inline.rename("no key", "new key") is False
 
 
-def test_inline_metadata_rename_2():
+def test_rename_2():
     """Test InlineMetadata rename() method.
 
     GIVEN a InlineMetadata object
@@ -388,7 +400,7 @@ def test_inline_metadata_rename_2():
     assert inline.rename("key1", "no value", "new value") is False
 
 
-def test_inline_metadata_rename_3():
+def test_rename_3():
     """Test InlineMetadata rename() method.
 
     GIVEN a InlineMetadata object
@@ -401,7 +413,7 @@ def test_inline_metadata_rename_3():
     assert inline.dict["new key"] == ["value1", "value2", "value3"]
 
 
-def test_inline_metadata_rename_4():
+def test_rename_4():
     """Test InlineMetadata rename() method.
 
     GIVEN a InlineMetadata object
@@ -414,7 +426,7 @@ def test_inline_metadata_rename_4():
     assert "new value" in inline.dict["key1"]
 
 
-def test_inline_metadata_rename_5():
+def test_rename_5():
     """Test InlineMetadata rename() method.
 
     GIVEN a InlineMetadata object

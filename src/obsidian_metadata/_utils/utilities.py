@@ -1,4 +1,5 @@
 """Utility functions."""
+import copy
 import csv
 import re
 from os import name, system
@@ -118,6 +119,48 @@ def dict_values_to_lists_strings(
     return new_dict
 
 
+def delete_from_dict(  # noqa: C901
+    dictionary: dict, key: str, value: str = None, is_regex: bool = False
+) -> dict:
+    """Delete a key or a value from a dictionary.
+
+    Args:
+        dictionary (dict): Dictionary to delete from
+        is_regex (bool, optional): Whether the key is a regex. Defaults to False.
+        key (str): Key to delete
+        value (str, optional): Value to delete. Defaults to None.
+
+    Returns:
+        dict: Dictionary without the key
+    """
+    dictionary = copy.deepcopy(dictionary)
+
+    if value is None:
+        if is_regex:
+            return {k: v for k, v in dictionary.items() if not re.search(key, str(k))}
+
+        return {k: v for k, v in dictionary.items() if k != key}
+
+    if is_regex:
+        keys_to_delete = []
+        for _key in dictionary:
+            if re.search(key, str(_key)):
+                if isinstance(dictionary[_key], list):
+                    dictionary[_key] = [v for v in dictionary[_key] if not re.search(value, v)]
+                elif isinstance(dictionary[_key], str) and re.search(value, dictionary[_key]):
+                    keys_to_delete.append(_key)
+
+        for key in keys_to_delete:
+            dictionary.pop(key)
+
+    elif key in dictionary and isinstance(dictionary[key], list):
+        dictionary[key] = [v for v in dictionary[key] if v != value]
+    elif key in dictionary and dictionary[key] == value:
+        dictionary.pop(key)
+
+    return dictionary
+
+
 def docstring_parameter(*sub: Any) -> Any:
     """Replace variables within docstrings.
 
@@ -165,6 +208,31 @@ def merge_dictionaries(dict1: dict, dict2: dict) -> dict:
                     v[kk] = sorted(set(vv))
 
     return dict(sorted(dict1.items()))
+
+
+def rename_in_dict(
+    dictionary: dict[str, list[str]], key: str, value_1: str, value_2: str = None
+) -> dict:
+    """Rename a key or a value in a dictionary who's values are lists of strings.
+
+    Args:
+        dictionary (dict): Dictionary to rename in.
+        key (str): Key to check.
+        value_1 (str): `With value_2` this is the value to rename. If `value_2` is None this is the renamed key
+        value_2 (str, Optional): New value.
+
+    Returns:
+        dict: Dictionary with renamed key or value
+    """
+    dictionary = copy.deepcopy(dictionary)
+
+    if value_2 is None:
+        if key in dictionary and value_1 not in dictionary:
+            dictionary[value_1] = dictionary.pop(key)
+    elif key in dictionary and value_1 in dictionary[key]:
+        dictionary[key] = sorted({value_2 if x == value_1 else x for x in dictionary[key]})
+
+    return dictionary
 
 
 def remove_markdown_sections(

@@ -8,8 +8,6 @@ from typing import Any
 import typer
 
 from obsidian_metadata.__version__ import __version__
-from obsidian_metadata._utils import alerts
-from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata._utils.console import console
 
 
@@ -224,6 +222,11 @@ def validate_csv_bulk_imports(csv_path: Path, note_paths: list) -> dict[str, lis
                     raise typer.BadParameter("Missing 'value' column in CSV file")
             row_num += 1
 
+            if row_num > 0 and row["type"] not in ["tag", "frontmatter", "inline_metadata"]:
+                raise typer.BadParameter(
+                    f"Invalid type '{row['type']}' in CSV file. Must be one of 'tag', 'frontmatter', 'inline_metadata'"
+                )
+
             if row["path"] not in csv_dict:
                 csv_dict[row["path"]] = []
 
@@ -237,12 +240,9 @@ def validate_csv_bulk_imports(csv_path: Path, note_paths: list) -> dict[str, lis
         paths_to_remove = [x for x in csv_dict if x not in note_paths]
 
         for _path in paths_to_remove:
-            alerts.warning(f"'{_path}' does not exist in vault. Skipping...")
-            del csv_dict[_path]
-
-        if len(csv_dict) == 0:
-            log.error("No paths in the CSV file matched paths in the vault")
-            raise typer.Exit(1)
+            raise typer.BadParameter(
+                f"'{_path}' in CSV does not exist in vault. Ensure all paths are relative to the vault root."
+            )
 
     return csv_dict
 

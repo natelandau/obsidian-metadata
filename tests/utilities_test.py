@@ -134,7 +134,7 @@ def test_validate_csv_bulk_imports_1(tmp_path):
     csv_path = tmp_path / "test.csv"
     csv_content = """\
 PATH,type,key,value
-note1.md,type,key,value"""
+note1.md,frontmatter,key,value"""
     csv_path.write_text(csv_content)
 
     with pytest.raises(typer.BadParameter):
@@ -151,7 +151,7 @@ def test_validate_csv_bulk_imports_2(tmp_path):
     csv_path = tmp_path / "test.csv"
     csv_content = """\
 path,Type,key,value
-note1.md,type,key,value"""
+note1.md,frontmatter,key,value"""
     csv_path.write_text(csv_content)
 
     with pytest.raises(typer.BadParameter):
@@ -168,7 +168,7 @@ def test_validate_csv_bulk_imports_3(tmp_path):
     csv_path = tmp_path / "test.csv"
     csv_content = """\
 path,type,value
-note1.md,type,key,value"""
+note1.md,frontmatter,key,value"""
     csv_path.write_text(csv_content)
 
     with pytest.raises(typer.BadParameter):
@@ -185,7 +185,7 @@ def test_validate_csv_bulk_imports_4(tmp_path):
     csv_path = tmp_path / "test.csv"
     csv_content = """\
 path,type,key,values
-note1.md,type,key,value"""
+note1.md,frontmatter,key,value"""
     csv_path.write_text(csv_content)
 
     with pytest.raises(typer.BadParameter):
@@ -207,7 +207,7 @@ def test_validate_csv_bulk_imports_5(tmp_path):
         validate_csv_bulk_imports(csv_path=csv_path, note_paths=[])
 
 
-def test_validate_csv_bulk_imports_6(tmp_path, capsys):
+def test_validate_csv_bulk_imports_6(tmp_path):
     """Test the validate_csv_bulk_imports function.
 
     GIVEN a valid csv file
@@ -217,30 +217,77 @@ def test_validate_csv_bulk_imports_6(tmp_path, capsys):
     csv_path = tmp_path / "test.csv"
     csv_content = """\
 path,type,key,value
-note1.md,type,key,value
-note2.md,type,key,value
+note1.md,frontmatter,key,value
+note1.md,tag,key,value
+note1.md,inline_metadata,key,value
+note1.md,inline_metadata,key2,value
+note1.md,inline_metadata,key2,value2
+note2.md,frontmatter,key,value
+note2.md,tag,key,value
+note2.md,inline_metadata,key,value
+note2.md,inline_metadata,key2,value
+note2.md,inline_metadata,key2,value2
 """
     csv_path.write_text(csv_content)
 
-    csv_dict = validate_csv_bulk_imports(csv_path=csv_path, note_paths=["note1.md"])
-    captured = remove_ansi(capsys.readouterr().out)
-    assert "WARNING  | 'note2.md' does not exist in vault." in captured
-    assert csv_dict == {"note1.md": [{"key": "key", "type": "type", "value": "value"}]}
+    with pytest.raises(typer.BadParameter):
+        validate_csv_bulk_imports(csv_path=csv_path, note_paths=["note1.md"])
 
 
 def test_validate_csv_bulk_imports_7(tmp_path):
     """Test the validate_csv_bulk_imports function.
 
     GIVEN a valid csv file
-    WHEN no paths match paths in the vault
+    WHEN if a type is not 'frontmatter' or 'inline_metadata', 'tag'
     THEN exit the program
     """
     csv_path = tmp_path / "test.csv"
     csv_content = """\
 path,type,key,value
-note1.md,type,key,value
-note2.md,type,key,value
+note1.md,frontmatter,key,value
+note2.md,notvalid,key,value
 """
     csv_path.write_text(csv_content)
-    with pytest.raises(typer.Exit):
-        validate_csv_bulk_imports(csv_path=csv_path, note_paths=[])
+    with pytest.raises(typer.BadParameter):
+        validate_csv_bulk_imports(csv_path=csv_path, note_paths=["note1.md", "note2.md"])
+
+
+def test_validate_csv_bulk_imports_8(tmp_path):
+    """Test the validate_csv_bulk_imports function.
+
+    GIVEN a valid csv file
+    WHEN more than one row has the same path
+    THEN add the row to the list of rows for that path
+    """
+    csv_path = tmp_path / "test.csv"
+    csv_content = """\
+path,type,key,value
+note1.md,frontmatter,key,value
+note1.md,tag,key,value
+note1.md,inline_metadata,key,value
+note1.md,inline_metadata,key2,value
+note1.md,inline_metadata,key2,value2
+note2.md,frontmatter,key,value
+note2.md,tag,key,value
+note2.md,inline_metadata,key,value
+note2.md,inline_metadata,key2,value
+note2.md,inline_metadata,key2,value2
+"""
+    csv_path.write_text(csv_content)
+    csv_dict = validate_csv_bulk_imports(csv_path=csv_path, note_paths=["note1.md", "note2.md"])
+    assert csv_dict == {
+        "note1.md": [
+            {"key": "key", "type": "frontmatter", "value": "value"},
+            {"key": "key", "type": "tag", "value": "value"},
+            {"key": "key", "type": "inline_metadata", "value": "value"},
+            {"key": "key2", "type": "inline_metadata", "value": "value"},
+            {"key": "key2", "type": "inline_metadata", "value": "value2"},
+        ],
+        "note2.md": [
+            {"key": "key", "type": "frontmatter", "value": "value"},
+            {"key": "key", "type": "tag", "value": "value"},
+            {"key": "key", "type": "inline_metadata", "value": "value"},
+            {"key": "key2", "type": "inline_metadata", "value": "value"},
+            {"key": "key2", "type": "inline_metadata", "value": "value2"},
+        ],
+    }

@@ -572,7 +572,7 @@ class Vault:
         for _note in self.all_notes:
             path = _note.note_path.relative_to(self.vault_path)
             if str(path) in dictionary:
-                log.info(f"Updating metadata for '{path}'")
+                log.debug(f"Bulk update metadata for '{path}'")
                 num_changed += 1
                 _note.delete_all_metadata()
                 for row in dictionary[str(path)]:
@@ -589,7 +589,7 @@ class Vault:
                             location=self.insert_location,
                         )
 
-                    if row["type"].lower() == "tag" or row["type"].lower() == "tags":
+                    if row["type"].lower() == "tag":
                         _note.add_metadata(
                             area=MetadataType.TAGS,
                             value=row["value"],

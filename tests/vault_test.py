@@ -766,7 +766,7 @@ def test_update_from_dict_3(test_vault):
         "test1.md": [
             {"type": "frontmatter", "key": "new_key", "value": "new_value"},
             {"type": "inline_metadata", "key": "new_key2", "value": "new_value"},
-            {"type": "tags", "key": "", "value": "new_tag"},
+            {"type": "tag", "key": "", "value": "new_tag"},
         ]
     }
     assert vault.update_from_dict(update_dict) == 1

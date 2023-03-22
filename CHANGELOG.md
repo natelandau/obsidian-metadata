@@ -1,3 +1,21 @@
+## v0.10.0 (2023-03-21)
+
+### Feat
+
+- add `--export-template` cli option
+
+### Fix
+
+- `--export-template` correctly exports all notes
+- `--export-csv` exports csv not json
+- **csv-import**: fail if `type` does not validate
+
+### Refactor
+
+- pave the way for non-regex key/value deletions
+- remove unused code
+- cleanup rename and delete from dict functions
+
 ## v0.9.0 (2023-03-20)
 
 ### Feat

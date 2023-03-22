@@ -551,7 +551,7 @@ class Application:
     def noninteractive_export_csv(self, path: Path) -> None:
         """Export the vault metadata to CSV."""
         self._load_vault()
-        self.vault.export_metadata(export_format="json", path=str(path))
+        self.vault.export_metadata(export_format="csv", path=str(path))
         alerts.success(f"Exported metadata to {path}")
 
     def noninteractive_export_json(self, path: Path) -> None:

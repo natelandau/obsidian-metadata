@@ -289,7 +289,7 @@ def test_delete_3():
     THEN return False
     """
     inline = InlineMetadata(INLINE_CONTENT)
-    assert inline.delete(r"\d{3}") is False
+    assert inline.delete(r"\d{3}", is_regex=True) is False
 
 
 def test_delete_4():
@@ -300,7 +300,7 @@ def test_delete_4():
     THEN return False
     """
     inline = InlineMetadata(INLINE_CONTENT)
-    assert inline.delete("key1", r"\d{5}") is False
+    assert inline.delete("key1", r"\d{5}", is_regex=True) is False
 
 
 def test_delete_5():
@@ -336,7 +336,7 @@ def test_delete_7():
     THEN return True and delete the matching keys from the dict
     """
     inline = InlineMetadata(INLINE_CONTENT)
-    assert inline.delete(r"key\w+") is True
+    assert inline.delete(r"key\w+", is_regex=True) is True
     assert "key1" not in inline.dict
     assert "key2" not in inline.dict
 
@@ -349,7 +349,7 @@ def test_delete_8():
     THEN return True and delete the matching values
     """
     inline = InlineMetadata(INLINE_CONTENT)
-    assert inline.delete("key1", r"\w+\d") is True
+    assert inline.delete("key1", r"\w+\d", is_regex=True) is True
     assert "value1" not in inline.dict["key1"]
     assert "value2" not in inline.dict["key1"]
     assert "value3" not in inline.dict["key1"]

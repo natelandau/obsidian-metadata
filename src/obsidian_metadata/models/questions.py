@@ -86,7 +86,7 @@ class Questions:
         self.vault = vault
         self.key = key
 
-    def _validate_existing_inline_tag(self, text: str) -> bool | str:
+    def _validate_existing_tag(self, text: str) -> bool | str:
         """Validate an existing inline tag.
 
         Returns:
@@ -344,11 +344,11 @@ class Questions:
             question, default=default, style=self.style, qmark="INPUT    |"
         ).ask()
 
-    def ask_existing_inline_tag(self, question: str = "Enter a tag") -> str:  # pragma: no cover
+    def ask_existing_tag(self, question: str = "Enter a tag") -> str:  # pragma: no cover
         """Ask the user for an existing inline tag."""
         return questionary.text(
             question,
-            validate=self._validate_existing_inline_tag,
+            validate=self._validate_existing_tag,
             style=self.style,
             qmark="INPUT    |",
         ).ask()

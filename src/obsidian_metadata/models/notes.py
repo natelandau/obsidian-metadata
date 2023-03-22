@@ -37,8 +37,9 @@ class Note:
         dry_run (bool): Whether to run in dry-run mode.
         file_content (str): Total contents of the note file (frontmatter and content).
         frontmatter (dict): Frontmatter of the note.
-        inline_tags (list): List of inline tags in the note.
+        tags (list): List of inline tags in the note.
         inline_metadata (dict): Dictionary of inline metadata in the note.
+        original_file_content (str): Original contents of the note file (frontmatter and content)
     """
 
     def __init__(self, note_path: Path, dry_run: bool = False) -> None:
@@ -59,7 +60,7 @@ class Note:
             alerts.error(f"Note {self.note_path} has invalid frontmatter.\n{e}")
             raise typer.Exit(code=1) from e
 
-        self.inline_tags: InlineTags = InlineTags(self.file_content)
+        self.tags: InlineTags = InlineTags(self.file_content)
         self.inline_metadata: InlineMetadata = InlineMetadata(self.file_content)
         self.original_file_content: str = self.file_content
 
@@ -68,7 +69,7 @@ class Note:
         yield "note_path", self.note_path
         yield "dry_run", self.dry_run
         yield "frontmatter", self.frontmatter
-        yield "inline_tags", self.inline_tags
+        yield "tags", self.tags
         yield "inline_metadata", self.inline_metadata
 
     def add_metadata(  # noqa: C901
@@ -114,8 +115,8 @@ class Note:
             case MetadataType.TAGS:
                 new_values = []
                 if isinstance(value, list):
-                    new_values = [_v for _v in value if self.inline_tags.add(_v)]
-                elif self.inline_tags.add(value):
+                    new_values = [_v for _v in value if self.tags.add(_v)]
+                elif self.tags.add(value):
                     new_values = [value]
 
                 if new_values:
@@ -153,7 +154,7 @@ class Note:
             alerts.error(f"Note {p} not found. Exiting")
             raise typer.Exit(code=1) from e
 
-    def contains_inline_tag(self, tag: str, is_regex: bool = False) -> bool:
+    def contains_tag(self, tag: str, is_regex: bool = False) -> bool:
         """Check if a note contains the specified inline tag.
 
         Args:
@@ -163,7 +164,7 @@ class Note:
         Returns:
             bool: Whether the note has inline tags.
         """
-        return self.inline_tags.contains(tag, is_regex=is_regex)
+        return self.tags.contains(tag, is_regex=is_regex)
 
     def contains_metadata(self, key: str, value: str = None, is_regex: bool = False) -> bool:
         """Check if a note has a key or a key-value pair in its Frontmatter or InlineMetadata.
@@ -195,14 +196,14 @@ class Note:
         for key in self.inline_metadata.dict:
             self.delete_metadata(key=key, area=MetadataType.INLINE)
 
-        for tag in self.inline_tags.list:
-            self.delete_inline_tag(tag=tag)
+        for tag in self.tags.list:
+            self.delete_tag(tag=tag)
 
         self.frontmatter.delete_all()
         self.write_frontmatter()
 
-    def delete_inline_tag(self, tag: str) -> bool:
-        """Delete an inline tag from the `inline_tags` attribute AND removes the tag from the text of the note if it exists.
+    def delete_tag(self, tag: str) -> bool:
+        """Delete an inline tag from the `tags` attribute AND removes the tag from the text of the note if it exists.
 
         Args:
             tag (str): Tag to delete.
@@ -210,30 +211,35 @@ class Note:
         Returns:
             bool: Whether the tag was deleted.
         """
-        new_list = self.inline_tags.list.copy()
+        new_list = self.tags.list.copy()
 
         for _t in new_list:
             if re.search(tag, _t):
                 _t = re.escape(_t)
                 self.sub(rf"#{_t}([ \|,;:\*\(\)\[\]\\\.\n#&])", r"\1", is_regex=True)
-                self.inline_tags.delete(tag)
+                self.tags.delete(tag)
 
-        if new_list != self.inline_tags.list:
+        if new_list != self.tags.list:
             return True
 
         return False
 
     def delete_metadata(
-        self, key: str, value: str = None, area: MetadataType = MetadataType.ALL
+        self,
+        key: str,
+        value: str = None,
+        area: MetadataType = MetadataType.ALL,
+        is_regex: bool = False,
     ) -> bool:
         """Delete a key or key-value pair from the note's Metadata object and the content of the note.  Regex is supported.
 
         If no value is provided, will delete an entire specified key.
 
         Args:
+            area (MetadataType, optional): Area to delete metadata from. Defaults to MetadataType.ALL.
+            is_regex (bool, optional): Whether to use regex to match the key/value.
             key (str): Key to delete.
             value (str, optional): Value to delete.
-            area (MetadataType, optional): Area to delete metadata from. Defaults to MetadataType.ALL.
 
         Returns:
             bool: Whether the key or key-value pair was deleted.
@@ -242,15 +248,15 @@ class Note:
 
         if (
             area == MetadataType.FRONTMATTER or area == MetadataType.ALL
-        ) and self.frontmatter.delete(key, value):
+        ) and self.frontmatter.delete(key=key, value_to_delete=value, is_regex=is_regex):
             self.write_frontmatter()
             changed_value = True
 
         if (
             area == MetadataType.INLINE or area == MetadataType.ALL
         ) and self.inline_metadata.contains(key, value):
-            self.write_delete_inline_metadata(key, value)
-            self.inline_metadata.delete(key, value)
+            self.write_delete_inline_metadata(key=key, value=value, is_regex=is_regex)
+            self.inline_metadata.delete(key=key, value_to_delete=value, is_regex=is_regex)
             changed_value = True
 
         if changed_value:
@@ -266,7 +272,7 @@ class Note:
         if self.frontmatter.has_changes():
             return True
 
-        if self.inline_tags.has_changes():
+        if self.tags.has_changes():
             return True
 
         if self.inline_metadata.has_changes():
@@ -298,7 +304,7 @@ class Note:
         """Print the note to the console."""
         console.print(self.file_content)
 
-    def rename_inline_tag(self, tag_1: str, tag_2: str) -> bool:
+    def rename_tag(self, tag_1: str, tag_2: str) -> bool:
         """Rename an inline tag. Updates the Metadata object and the text of the note.
 
         Args:
@@ -308,13 +314,13 @@ class Note:
         Returns:
             bool: Whether the tag was renamed.
         """
-        if tag_1 in self.inline_tags.list:
+        if tag_1 in self.tags.list:
             self.sub(
                 rf"#{tag_1}([ \|,;:\*\(\)\[\]\\\.\n#&])",
                 rf"#{tag_2}\1",
                 is_regex=True,
             )
-            self.inline_tags.rename(tag_1, tag_2)
+            self.tags.rename(tag_1, tag_2)
             return True
         return False
 
@@ -447,12 +453,15 @@ class Note:
 
         return False
 
-    def write_delete_inline_metadata(self, key: str = None, value: str = None) -> bool:
+    def write_delete_inline_metadata(
+        self, key: str = None, value: str = None, is_regex: bool = False
+    ) -> bool:
         """For a given inline metadata key and/or key-value pair, delete it from the text of the note. If no key is provided, will delete all inline metadata from the text of the note.
 
         IMPORTANT: This method makes no changes to the InlineMetadata object.
 
         Args:
+            is_regex (bool, optional): Whether the key is a regex pattern or plain text. Defaults to False.
             key (str, optional): Key to delete.
             value (str, optional): Value to delete.
 
@@ -469,13 +478,15 @@ class Note:
                 return True
 
             for _k, _v in self.inline_metadata.dict.items():
-                if re.search(key, _k):
+                if (is_regex and re.search(key, _k)) or (not is_regex and key == _k):
                     for _value in _v:
                         if value is None:
                             _k = re.escape(_k)
                             _value = re.escape(_value)
                             self.sub(rf"\[?{_k}:: \[?\[?{_value}\]?\]?", "", is_regex=True)
-                        elif re.search(value, _value):
+                        elif (is_regex and re.search(value, _value)) or (
+                            not is_regex and value == _value
+                        ):
                             _k = re.escape(_k)
                             _value = re.escape(_value)
                             self.sub(rf"\[?({_k}::) ?\[?\[?{_value}\]?\]?", r"\1", is_regex=True)

@@ -107,7 +107,7 @@ class Vault:
                 ]
 
             if _filter.tag_filter is not None:
-                notes_list = [n for n in notes_list if n.contains_inline_tag(_filter.tag_filter)]
+                notes_list = [n for n in notes_list if n.contains_tag(_filter.tag_filter)]
 
             if _filter.key_filter is not None and _filter.value_filter is not None:
                 notes_list = [
@@ -187,7 +187,7 @@ class Vault:
                 )
                 self.metadata.index_metadata(
                     area=MetadataType.TAGS,
-                    metadata=_note.inline_tags.list,
+                    metadata=_note.tags.list,
                 )
 
     def add_metadata(
@@ -273,7 +273,7 @@ class Vault:
         else:
             alerts.info("No backup found")
 
-    def delete_inline_tag(self, tag: str) -> int:
+    def delete_tag(self, tag: str) -> int:
         """Delete an inline tag in the vault.
 
         Args:
@@ -285,7 +285,7 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.delete_inline_tag(tag):
+            if _note.delete_tag(tag):
                 log.trace(f"Deleted tag from {_note.note_path}")
                 num_changed += 1
 
@@ -294,10 +294,18 @@ class Vault:
 
         return num_changed
 
-    def delete_metadata(self, key: str, value: str = None) -> int:
+    def delete_metadata(
+        self,
+        key: str,
+        value: str = None,
+        area: MetadataType = MetadataType.ALL,
+        is_regex: bool = False,
+    ) -> int:
         """Delete metadata in the vault.
 
         Args:
+            area (MetadataType): Area of metadata to delete from.
+            is_regex (bool): Whether to use regex for key and value. Defaults to False.
             key (str): Key to delete. Regex is supported
             value (str, optional): Value to delete. Regex is supported
 
@@ -307,7 +315,7 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.delete_metadata(key, value):
+            if _note.delete_metadata(key=key, value=value, area=area, is_regex=is_regex):
                 log.trace(f"Deleted metadata from {_note.note_path}")
                 num_changed += 1
 
@@ -394,7 +402,7 @@ class Vault:
                             ]
                         )
 
-                for tag in _note.inline_tags.list:
+                for tag in _note.tags.list:
                     writer.writerow(
                         [_note.note_path.relative_to(self.vault_path), "tag", "", f"{tag}"]
                     )
@@ -463,7 +471,7 @@ class Vault:
         """Count number of excluded notes."""
         return len(self.all_notes) - len(self.notes_in_scope)
 
-    def rename_inline_tag(self, old_tag: str, new_tag: str) -> int:
+    def rename_tag(self, old_tag: str, new_tag: str) -> int:
         """Rename an inline tag in the vault.
 
         Args:
@@ -476,7 +484,7 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.rename_inline_tag(old_tag, new_tag):
+            if _note.rename_tag(old_tag, new_tag):
                 log.trace(f"Renamed inline tag in {_note.note_path}")
                 num_changed += 1
 

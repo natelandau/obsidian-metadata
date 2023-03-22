@@ -144,7 +144,7 @@ def test_add_metadata_tag(test_application, mocker, capsys) -> None:
     assert captured == Regex(r"SUCCESS +\| Added metadata to \d+ notes", re.DOTALL)
 
 
-def test_delete_inline_tag_1(test_application, mocker, capsys) -> None:
+def test_delete_tag_1(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag.
 
     GIVEN an application
@@ -159,10 +159,10 @@ def test_delete_inline_tag_1(test_application, mocker, capsys) -> None:
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_selection",
-        side_effect=["delete_inline_tag", "back"],
+        side_effect=["delete_tag", "back"],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
+        "obsidian_metadata.models.application.Questions.ask_existing_tag",
         return_value="breakfast",
     )
 
@@ -172,7 +172,7 @@ def test_delete_inline_tag_1(test_application, mocker, capsys) -> None:
     assert captured == Regex(r"SUCCESS +\| Deleted inline tag: breakfast in \d+ notes", re.DOTALL)
 
 
-def test_delete_inline_tag_2(test_application, mocker, capsys) -> None:
+def test_delete_tag_2(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag.
 
     GIVEN an application
@@ -187,10 +187,10 @@ def test_delete_inline_tag_2(test_application, mocker, capsys) -> None:
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_selection",
-        side_effect=["delete_inline_tag", "back"],
+        side_effect=["delete_tag", "back"],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
+        "obsidian_metadata.models.application.Questions.ask_existing_tag",
         return_value="not_a_tag_in_vault",
     )
 
@@ -388,7 +388,7 @@ def test_inspect_metadata_all(test_application, mocker, capsys) -> None:
     assert captured == Regex(r"type +│ article", re.DOTALL)
 
 
-def test_rename_inline_tag(test_application, mocker, capsys) -> None:
+def test_rename_tag(test_application, mocker, capsys) -> None:
     """Test renaming an inline tag."""
     app = test_application
     app._load_vault()
@@ -398,10 +398,10 @@ def test_rename_inline_tag(test_application, mocker, capsys) -> None:
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_selection",
-        side_effect=["rename_inline_tag", "back"],
+        side_effect=["rename_tag", "back"],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
+        "obsidian_metadata.models.application.Questions.ask_existing_tag",
         return_value="not_a_tag",
     )
     mocker.patch(
@@ -420,10 +420,10 @@ def test_rename_inline_tag(test_application, mocker, capsys) -> None:
     )
     mocker.patch(
         "obsidian_metadata.models.application.Questions.ask_selection",
-        side_effect=["rename_inline_tag", "back"],
+        side_effect=["rename_tag", "back"],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_existing_inline_tag",
+        "obsidian_metadata.models.application.Questions.ask_existing_tag",
         return_value="breakfast",
     )
     mocker.patch(

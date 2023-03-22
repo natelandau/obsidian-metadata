@@ -324,7 +324,7 @@ def test_delete_3():
     THEN return False
     """
     frontmatter = Frontmatter(FRONTMATTER_CONTENT)
-    assert frontmatter.delete(r"\d{3}") is False
+    assert frontmatter.delete(r"\d{3}", is_regex=True) is False
 
 
 def test_delete_4():
@@ -335,7 +335,7 @@ def test_delete_4():
     THEN return False
     """
     frontmatter = Frontmatter(FRONTMATTER_CONTENT)
-    assert frontmatter.delete("tags", r"\d{5}") is False
+    assert frontmatter.delete("tags", r"\d{5}", is_regex=True) is False
 
 
 def test_delete_5():
@@ -371,7 +371,7 @@ def test_delete_7():
     THEN return True and delete the matching keys from the dict
     """
     frontmatter = Frontmatter(FRONTMATTER_CONTENT)
-    assert frontmatter.delete(r"front\w+") is True
+    assert frontmatter.delete(r"front\w+", is_regex=True) is True
     assert "frontmatter_Key1" not in frontmatter.dict
     assert "frontmatter_Key2" not in frontmatter.dict
 
@@ -384,7 +384,7 @@ def test_delete_8():
     THEN return True and delete the matching values
     """
     frontmatter = Frontmatter(FRONTMATTER_CONTENT)
-    assert frontmatter.delete("tags", r"\w+_[23]") is True
+    assert frontmatter.delete("tags", r"\w+_[23]", is_regex=True) is True
     assert "tag_2" not in frontmatter.dict["tags"]
     assert "📅/tag_3" not in frontmatter.dict["tags"]
     assert "tag_1" in frontmatter.dict["tags"]

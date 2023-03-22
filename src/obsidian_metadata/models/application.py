@@ -129,7 +129,7 @@ class Application:
 
         choices = [
             questionary.Separator(),
-            {"name": "Delete inline tag", "value": "delete_inline_tag"},
+            {"name": "Delete inline tag", "value": "delete_tag"},
             {"name": "Delete key", "value": "delete_key"},
             {"name": "Delete value", "value": "delete_value"},
             questionary.Separator(),
@@ -142,8 +142,8 @@ class Application:
                 self.delete_key()
             case "delete_value":
                 self.delete_value()
-            case "delete_inline_tag":
-                self.delete_inline_tag()
+            case "delete_tag":
+                self.delete_tag()
             case _:  # pragma: no cover
                 return
 
@@ -153,7 +153,7 @@ class Application:
 
         choices = [
             questionary.Separator(),
-            {"name": "Rename inline tag", "value": "rename_inline_tag"},
+            {"name": "Rename inline tag", "value": "rename_tag"},
             {"name": "Rename key", "value": "rename_key"},
             {"name": "Rename value", "value": "rename_value"},
             questionary.Separator(),
@@ -166,8 +166,8 @@ class Application:
                 self.rename_key()
             case "rename_value":
                 self.rename_value()
-            case "rename_inline_tag":
-                self.rename_inline_tag()
+            case "rename_tag":
+                self.rename_tag()
             case _:  # pragma: no cover
                 return
 
@@ -213,7 +213,7 @@ class Application:
                     self._load_vault()
 
                 case "apply_tag_filter":
-                    tag = self.questions.ask_existing_inline_tag()
+                    tag = self.questions.ask_existing_tag()
                     if tag is None or not tag:
                         return
 
@@ -482,11 +482,11 @@ class Application:
 
         return True
 
-    def delete_inline_tag(self) -> None:
+    def delete_tag(self) -> None:
         """Delete an inline tag."""
-        tag = self.questions.ask_existing_inline_tag(question="Which tag would you like to delete?")
+        tag = self.questions.ask_existing_tag(question="Which tag would you like to delete?")
 
-        num_changed = self.vault.delete_inline_tag(tag)
+        num_changed = self.vault.delete_tag(tag)
         if num_changed == 0:
             alerts.warning("No notes were changed")
             return
@@ -502,7 +502,9 @@ class Application:
         if key_to_delete is None:  # pragma: no cover
             return
 
-        num_changed = self.vault.delete_metadata(key_to_delete)
+        num_changed = self.vault.delete_metadata(
+            key=key_to_delete, area=MetadataType.ALL, is_regex=True
+        )
         if num_changed == 0:
             alerts.warning(f"No notes found with a key matching: [reverse]{key_to_delete}[/]")
             return
@@ -524,7 +526,9 @@ class Application:
         if value is None:  # pragma: no cover
             return
 
-        num_changed = self.vault.delete_metadata(key, value)
+        num_changed = self.vault.delete_metadata(
+            key=key, value=value, area=MetadataType.ALL, is_regex=True
+        )
         if num_changed == 0:
             alerts.warning(f"No notes found matching: {key}: {value}")
             return
@@ -577,9 +581,9 @@ class Application:
             f"Renamed [reverse]{original_key}[/] to [reverse]{new_key}[/] in {num_changed} notes"
         )
 
-    def rename_inline_tag(self) -> None:
+    def rename_tag(self) -> None:
         """Rename an inline tag."""
-        original_tag = self.questions.ask_existing_inline_tag(question="Which tag to rename?")
+        original_tag = self.questions.ask_existing_tag(question="Which tag to rename?")
         if original_tag is None:  # pragma: no cover
             return
 
@@ -587,7 +591,7 @@ class Application:
         if new_tag is None:  # pragma: no cover
             return
 
-        num_changed = self.vault.rename_inline_tag(original_tag, new_tag)
+        num_changed = self.vault.rename_tag(original_tag, new_tag)
         if num_changed == 0:
             alerts.warning("No notes were changed")
             return

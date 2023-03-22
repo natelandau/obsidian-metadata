@@ -289,10 +289,11 @@ class Frontmatter:
         """
         return dict_contains(self.dict, key, value, is_regex)
 
-    def delete(self, key: str, value_to_delete: str = None) -> bool:
+    def delete(self, key: str, value_to_delete: str = None, is_regex: bool = False) -> bool:
         """Delete a value or key in the frontmatter.  Regex is supported to allow deleting more than one key or value.
 
         Args:
+            is_regex (bool, optional): Use regex to check. Defaults to False.
             key (str): If no value, key to delete. If value, key containing the value.
             value_to_delete (str, optional): Value to delete.
 
@@ -303,7 +304,7 @@ class Frontmatter:
             dictionary=self.dict,
             key=key,
             value=value_to_delete,
-            is_regex=True,
+            is_regex=is_regex,
         )
 
         if new_dict != self.dict:
@@ -459,10 +460,11 @@ class InlineMetadata:
         """
         return dict_contains(self.dict, key, value, is_regex)
 
-    def delete(self, key: str, value_to_delete: str = None) -> bool:
+    def delete(self, key: str, value_to_delete: str = None, is_regex: bool = False) -> bool:
         """Delete a value or key in the inline metadata. Regex is supported to allow deleting more than one key or value.
 
         Args:
+            is_regex (bool, optional): If True, key and value are treated as regex. Defaults to False.
             key (str): If no value, key to delete. If value, key containing the value.
             value_to_delete (str, optional): Value to delete.
 
@@ -473,7 +475,7 @@ class InlineMetadata:
             dictionary=self.dict,
             key=key,
             value=value_to_delete,
-            is_regex=True,
+            is_regex=is_regex,
         )
 
         if new_dict != self.dict:

@@ -48,7 +48,7 @@ def test_create_note_1(sample_note):
         ],
     }
 
-    assert note.inline_tags.list == [
+    assert note.tags.list == [
         "inline_tag_bottom1",
         "inline_tag_bottom2",
         "inline_tag_top1",
@@ -233,12 +233,12 @@ def test_add_metadata_method_10(sample_note):
     THEN the tag is added to the InlineTags object and the file content
     """
     note = Note(note_path=sample_note)
-    assert "new_tag2" not in note.inline_tags.list
+    assert "new_tag2" not in note.tags.list
     assert (
         note.add_metadata(MetadataType.TAGS, value="new_tag2", location=InsertLocation.BOTTOM)
         is True
     )
-    assert "new_tag2" in note.inline_tags.list
+    assert "new_tag2" in note.tags.list
     assert "#new_tag2" in note.file_content
 
 
@@ -279,19 +279,19 @@ def test_commit_2(sample_note) -> None:
     assert "Heading 1" in note.file_content
 
 
-def test_contains_inline_tag(sample_note) -> None:
-    """Test contains_inline_tag method.
+def test_contains_tag(sample_note) -> None:
+    """Test contains_tag method.
 
     GIVEN a note object
-    WHEN contains_inline_tag() is called
+    WHEN contains_tag() is called
     THEN the method returns True if the tag is found and False if not
 
     """
     note = Note(note_path=sample_note)
-    assert note.contains_inline_tag("intext_tag1") is True
-    assert note.contains_inline_tag("nonexistent_tag") is False
-    assert note.contains_inline_tag(r"\d$", is_regex=True) is True
-    assert note.contains_inline_tag(r"^\d", is_regex=True) is False
+    assert note.contains_tag("intext_tag1") is True
+    assert note.contains_tag("nonexistent_tag") is False
+    assert note.contains_tag(r"\d$", is_regex=True) is True
+    assert note.contains_tag(r"^\d", is_regex=True) is False
 
 
 def test_contains_metadata(sample_note) -> None:
@@ -323,7 +323,7 @@ def test_delete_all_metadata(sample_note):
     """
     note = Note(note_path=sample_note)
     note.delete_all_metadata()
-    assert note.inline_tags.list == []
+    assert note.tags.list == []
     assert note.frontmatter.dict == {}
     assert note.inline_metadata.dict == {}
     assert note.file_content == Regex("consequat.  Duis")
@@ -332,17 +332,17 @@ def test_delete_all_metadata(sample_note):
     assert "---" not in note.file_content
 
 
-def test_delete_inline_tag(sample_note) -> None:
-    """Test delete_inline_tag method.
+def test_delete_tag(sample_note) -> None:
+    """Test delete_tag method.
 
     GIVEN a note object
-    WHEN delete_inline_tag() is called
+    WHEN delete_tag() is called
     THEN the method returns True if the tag is found and deleted and False if not
     """
     note = Note(note_path=sample_note)
-    assert note.delete_inline_tag("not_a_tag") is False
-    assert note.delete_inline_tag("intext_tag[1]") is True
-    assert "intext_tag1" not in note.inline_tags.list
+    assert note.delete_tag("not_a_tag") is False
+    assert note.delete_tag("intext_tag[1]") is True
+    assert "intext_tag1" not in note.tags.list
     assert note.file_content == Regex("consequat.  Duis")
 
 
@@ -454,7 +454,7 @@ def test_has_changes(sample_note) -> None:
 
     note = Note(note_path=sample_note)
     assert note.has_changes() is False
-    note.delete_inline_tag("intext_tag1")
+    note.delete_tag("intext_tag1")
     assert note.has_changes() is True
 
 
@@ -494,29 +494,29 @@ def test_print_note(sample_note, capsys) -> None:
     assert "#shared_tag" in captured.out
 
 
-def test_rename_inline_tag_1(sample_note) -> None:
-    """Test rename_inline_tag() method.
+def test_rename_tag_1(sample_note) -> None:
+    """Test rename_tag() method.
 
     GIVEN a note object
-    WHEN rename_inline_tag() is called with a tag that does not exist
+    WHEN rename_tag() is called with a tag that does not exist
     THEN the method returns False
     """
     note = Note(note_path=sample_note)
-    assert note.rename_inline_tag("no_note_tag", "intext_tag2") is False
+    assert note.rename_tag("no_note_tag", "intext_tag2") is False
 
 
-def test_rename_inline_tag_2(sample_note) -> None:
-    """Test rename_inline_tag() method.
+def test_rename_tag_2(sample_note) -> None:
+    """Test rename_tag() method.
 
     GIVEN a note object
-    WHEN rename_inline_tag() is called with a tag exists
-    THEN the tag is renamed in the InlineTags object and the file content
+    WHEN rename_tag() is called with a tag exists
+    THEN the tag is renamed in the InlineTag object and the file content
     """
     note = Note(note_path=sample_note)
-    assert "intext_tag1" in note.inline_tags.list
-    assert note.rename_inline_tag("intext_tag1", "intext_tag26") is True
-    assert "intext_tag1" not in note.inline_tags.list
-    assert "intext_tag26" in note.inline_tags.list
+    assert "intext_tag1" in note.tags.list
+    assert note.rename_tag("intext_tag1", "intext_tag26") is True
+    assert "intext_tag1" not in note.tags.list
+    assert "intext_tag26" in note.tags.list
     assert note.file_content == Regex(r"#intext_tag26")
     assert note.file_content != Regex(r"#intext_tag1")
 
@@ -846,7 +846,7 @@ def test_write_delete_inline_metadata_2(sample_note) -> None:
 
     """
     note = Note(note_path=sample_note)
-    note.write_delete_inline_metadata("intext_key")
+    note.write_delete_inline_metadata("intext_key", is_regex=False)
     assert note.file_content == Regex(r"dolore eu  fugiat", re.DOTALL)
 
 
@@ -858,7 +858,7 @@ def test_write_delete_inline_metadata_3(sample_note) -> None:
     THEN the key/value is removed from the note content
     """
     note = Note(note_path=sample_note)
-    note.write_delete_inline_metadata("bottom_key2", "bottom_key2_value")
+    note.write_delete_inline_metadata("bottom_key2", "bottom_key2_value", is_regex=False)
     assert note.file_content != Regex(r"bottom_key2_value")
     assert note.file_content == Regex(r"bottom_key2::")
     note.write_delete_inline_metadata("bottom_key1")

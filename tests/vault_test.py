@@ -315,16 +315,16 @@ def test_delete_backup_2(test_vault, capsys):
     assert vault.backup_path.exists() is True
 
 
-def test_delete_inline_tag_1(test_vault) -> None:
-    """Test delete_inline_tag() method.
+def test_delete_tag_1(test_vault) -> None:
+    """Test delete_tag() method.
 
     GIVEN a vault object
-    WHEN the delete_inline_tag method is called
+    WHEN the delete_tag method is called
     THEN the inline tag is deleted
     """
     vault = Vault(config=test_vault)
 
-    assert vault.delete_inline_tag("intext_tag2") == 1
+    assert vault.delete_tag("intext_tag2") == 1
     assert vault.metadata.tags == [
         "inline_tag_bottom1",
         "inline_tag_bottom2",
@@ -335,16 +335,16 @@ def test_delete_inline_tag_1(test_vault) -> None:
     ]
 
 
-def test_delete_inline_tag_2(test_vault) -> None:
-    """Test delete_inline_tag() method.
+def test_delete_tag_2(test_vault) -> None:
+    """Test delete_tag() method.
 
     GIVEN a vault object
-    WHEN the delete_inline_tag method is called with a tag that does not exist
+    WHEN the delete_tag method is called with a tag that does not exist
     THEN no changes are made
     """
     vault = Vault(config=test_vault)
 
-    assert vault.delete_inline_tag("no tag") == 0
+    assert vault.delete_tag("no tag") == 0
 
 
 def test_delete_metadata_1(test_vault) -> None:
@@ -594,16 +594,16 @@ def test_move_inline_metadata_1(test_vault) -> None:
     assert vault.move_inline_metadata(location=InsertLocation.TOP) == 1
 
 
-def test_rename_inline_tag_1(test_vault) -> None:
-    """Test rename_inline_tag() method.
+def test_rename_tag_1(test_vault) -> None:
+    """Test rename_tag() method.
 
     GIVEN a vault object
-    WHEN the rename_inline_tag() method is called with a tag that is found
+    WHEN the rename_tag() method is called with a tag that is found
     THEN the inline tag is renamed
     """
     vault = Vault(config=test_vault)
 
-    assert vault.rename_inline_tag("intext_tag2", "new_tag") == 1
+    assert vault.rename_tag("intext_tag2", "new_tag") == 1
     assert vault.metadata.tags == [
         "inline_tag_bottom1",
         "inline_tag_bottom2",
@@ -615,16 +615,16 @@ def test_rename_inline_tag_1(test_vault) -> None:
     ]
 
 
-def test_rename_inline_tag_2(test_vault) -> None:
-    """Test rename_inline_tag() method.
+def test_rename_tag_2(test_vault) -> None:
+    """Test rename_tag() method.
 
     GIVEN a vault object
-    WHEN the rename_inline_tag() method is called with a tag that is not found
+    WHEN the rename_tag() method is called with a tag that is not found
     THEN the inline tag is not renamed
     """
     vault = Vault(config=test_vault)
 
-    assert vault.rename_inline_tag("no tag", "new_tag") == 0
+    assert vault.rename_tag("no tag", "new_tag") == 0
 
 
 def test_rename_metadata_1(test_vault) -> None:
@@ -773,7 +773,7 @@ def test_update_from_dict_3(test_vault):
     assert vault.get_changed_notes()[0].note_path.name == "test1.md"
     assert vault.get_changed_notes()[0].frontmatter.dict == {"new_key": ["new_value"]}
     assert vault.get_changed_notes()[0].inline_metadata.dict == {"new_key2": ["new_value"]}
-    assert vault.get_changed_notes()[0].inline_tags.list == ["new_tag"]
+    assert vault.get_changed_notes()[0].tags.list == ["new_tag"]
     assert vault.metadata.frontmatter == {"new_key": ["new_value"]}
     assert vault.metadata.inline_metadata == {"new_key2": ["new_value"]}
     assert vault.metadata.tags == ["new_tag"]

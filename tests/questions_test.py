@@ -68,12 +68,12 @@ def test_validate_number() -> None:
     assert questions._validate_number("1") is True
 
 
-def test_validate_existing_inline_tag() -> None:
+def test_validate_existing_tag() -> None:
     """Test existing tag validation."""
     questions = Questions(vault=VAULT)
-    assert "Tag cannot be empty" in questions._validate_existing_inline_tag("")
-    assert "'test' does not exist" in questions._validate_existing_inline_tag("test")
-    assert questions._validate_existing_inline_tag("shared_tag") is True
+    assert "Tag cannot be empty" in questions._validate_existing_tag("")
+    assert "'test' does not exist" in questions._validate_existing_tag("test")
+    assert questions._validate_existing_tag("shared_tag") is True
 
 
 def test_validate_key_exists_regex() -> None:

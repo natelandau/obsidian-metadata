@@ -560,6 +560,16 @@ class Application:
         self.vault.export_metadata(export_format="json", path=str(path))
         alerts.success(f"Exported metadata to {path}")
 
+    def noninteractive_export_template(self, path: Path) -> None:
+        """Export the vault metadata to CSV."""
+        self._load_vault()
+        with console.status(
+            "Preparing export...  [dim](Can take a while for large vaults)[/]",
+            spinner="bouncingBall",
+        ):
+            self.vault.export_notes_to_csv(path=str(path))
+        alerts.success(f"Exported metadata to {path}")
+
     def rename_key(self) -> None:
         """Rename a key in the vault."""
         original_key = self.questions.ask_existing_key(

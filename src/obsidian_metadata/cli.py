@@ -151,7 +151,7 @@ def main(
         raise typer.Exit(code=0)
     if export_template is not None:
         path = Path(export_template).expanduser().resolve()
-        application.noninteractive_export_csv(path)
+        application.noninteractive_export_template(path)
         raise typer.Exit(code=0)
 
     application.application_main()

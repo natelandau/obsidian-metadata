@@ -11,7 +11,6 @@ from typing import Any
 import rich.repr
 import typer
 from rich import box
-from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 from rich.table import Table
 
@@ -64,12 +63,10 @@ class Vault:
         self.filters = filters
         self.all_note_paths = self._find_markdown_notes()
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            transient=True,
-        ) as progress:
-            progress.add_task(description="Processing notes...", total=None)
+        with console.status(
+            "Processing notes...  [dim](Can take a while for a large vault)[/]",
+            spinner="bouncingBall",
+        ):
             self.all_notes: list[Note] = [
                 Note(note_path=p, dry_run=self.dry_run) for p in self.all_note_paths
             ]
@@ -172,12 +169,10 @@ class Vault:
     def _rebuild_vault_metadata(self) -> None:
         """Rebuild vault metadata."""
         self.metadata = VaultMetadata()
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            transient=True,
-        ) as progress:
-            progress.add_task(description="Processing notes...", total=None)
+        with console.status(
+            "Processing notes...  [dim](Can take a while for a large vault)[/]",
+            spinner="bouncingBall",
+        ):
             for _note in self.notes_in_scope:
                 self.metadata.index_metadata(
                     area=MetadataType.FRONTMATTER, metadata=_note.frontmatter.dict

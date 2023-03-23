@@ -21,24 +21,26 @@ def clean_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
     Returns:
         dict: Cleaned dictionary
     """
-    new_dict = {key.strip(): value for key, value in dictionary.items()}
-    new_dict = {key.strip("*[]#"): value for key, value in new_dict.items()}
+    new_dict = copy.deepcopy(dictionary)
+    new_dict = {key.strip("*[]# "): value for key, value in new_dict.items()}
     for key, value in new_dict.items():
-        new_dict[key] = [s.strip("*[]#") for s in value if isinstance(value, list)]
+        if isinstance(value, list):
+            new_dict[key] = [s.strip("*[]# ") for s in value if isinstance(value, list)]
+        elif isinstance(value, str):
+            new_dict[key] = value.strip("*[]# ")
 
     return new_dict
 
 
 def clear_screen() -> None:  # pragma: no cover
     """Clear the screen."""
-    # for windows
     _ = system("cls") if name == "nt" else system("clear")
 
 
 def dict_contains(
     dictionary: dict[str, list[str]], key: str, value: str = None, is_regex: bool = False
 ) -> bool:
-    """Check if a dictionary contains a key or if a specified key contains a value.
+    """Check if a dictionary contains a key or if a key contains a value.
 
     Args:
         dictionary (dict): Dictionary to check
@@ -47,7 +49,7 @@ def dict_contains(
         is_regex (bool, optional): Whether the key is a regex. Defaults to False.
 
     Returns:
-        bool: Whether the dictionary contains the key
+        bool: Whether the dictionary contains the key or value
     """
     if value is None:
         if is_regex:
@@ -55,13 +57,11 @@ def dict_contains(
         return key in dictionary
 
     if is_regex:
-        found_keys = []
         for _key in dictionary:
-            if re.search(key, str(_key)):
-                found_keys.append(
-                    any(re.search(value, _v) for _v in dictionary[_key]),
-                )
-        return any(found_keys)
+            if re.search(key, str(_key)) and any(re.search(value, _v) for _v in dictionary[_key]):
+                return True
+
+        return False
 
     return key in dictionary and value in dictionary[key]
 
@@ -93,6 +93,7 @@ def dict_values_to_lists_strings(
 
         {key: sorted(new_dict[key]) for key in sorted(new_dict)}
     """
+    dictionary = copy.deepcopy(dictionary)
     new_dict = {}
 
     if strip_null_values:
@@ -100,7 +101,7 @@ def dict_values_to_lists_strings(
             if isinstance(value, list):
                 new_dict[key] = sorted([str(item) for item in value if item is not None])
             elif isinstance(value, dict):
-                new_dict[key] = dict_values_to_lists_strings(value)  # type: ignore[assignment]
+                new_dict[key] = dict_values_to_lists_strings(value, strip_null_values=True)  # type: ignore[assignment]
             elif value is None or value == "None" or not value:
                 new_dict[key] = []
             else:
@@ -110,11 +111,11 @@ def dict_values_to_lists_strings(
 
     for key, value in dictionary.items():
         if isinstance(value, list):
-            new_dict[key] = sorted([str(item) for item in value])
+            new_dict[key] = sorted([str(item) if item is not None else "" for item in value])
         elif isinstance(value, dict):
             new_dict[key] = dict_values_to_lists_strings(value)  # type: ignore[assignment]
         else:
-            new_dict[key] = [str(value)]
+            new_dict[key] = [str(value) if value is not None else ""]
 
     return new_dict
 
@@ -192,22 +193,24 @@ def merge_dictionaries(dict1: dict, dict2: dict) -> dict:
     Returns:
         dict: Merged dictionary.
     """
-    for k, v in dict2.items():
-        if k in dict1:
-            if isinstance(v, list):
-                dict1[k].extend(v)
+    d1 = copy.deepcopy(dict1)
+    d2 = copy.deepcopy(dict2)
+
+    for _key in d1:
+        if not isinstance(d1[_key], list):
+            raise TypeError(f"Key {_key} is not a list.")
+    for _key in d2:
+        if not isinstance(d2[_key], list):
+            raise TypeError(f"Key {_key} is not a list.")
+
+    for k, v in d2.items():
+        if k in d1:
+            d1[k].extend(v)
+            d1[k] = sorted(set(d1[k]))
         else:
-            dict1[k] = v
+            d1[k] = sorted(set(v))
 
-    for k, v in dict1.items():
-        if isinstance(v, list):
-            dict1[k] = sorted(set(v))
-        elif isinstance(v, dict):  # pragma: no cover
-            for kk, vv in v.items():
-                if isinstance(vv, list):
-                    v[kk] = sorted(set(vv))
-
-    return dict(sorted(dict1.items()))
+    return dict(sorted(d1.items()))
 
 
 def rename_in_dict(
@@ -241,7 +244,7 @@ def remove_markdown_sections(
     strip_inlinecode: bool = False,
     strip_frontmatter: bool = False,
 ) -> str:
-    """Strip markdown sections from text.
+    """Strip unwanted markdown sections from text. This is used to remove code blocks and frontmatter from the body of notes before tags and inline metadata are processed.
 
     Args:
         text (str): Text to remove code blocks from
@@ -256,7 +259,7 @@ def remove_markdown_sections(
         text = re.sub(r"`{3}.*?`{3}", "", text, flags=re.DOTALL)
 
     if strip_inlinecode:
-        text = re.sub(r"`.*?`", "", text)
+        text = re.sub(r"(?<!`{2})`[^`]+?`", "", text)
 
     if strip_frontmatter:
         text = re.sub(r"^\s*---.*?---", "", text, flags=re.DOTALL)

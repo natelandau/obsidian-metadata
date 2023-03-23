@@ -10,11 +10,78 @@ from obsidian_metadata._utils import (
     dict_contains,
     dict_keys_to_lower,
     dict_values_to_lists_strings,
+    merge_dictionaries,
     remove_markdown_sections,
     rename_in_dict,
     validate_csv_bulk_imports,
 )
 from tests.helpers import Regex, remove_ansi
+
+
+def test_clean_dictionary_1():
+    """Test clean_dictionary() function.
+
+    GIVEN a dictionary passed to clean_dictionary()
+    WHEN the dictionary is empty
+    THEN return an empty dictionary
+    """
+    assert clean_dictionary({}) == {}
+
+
+def test_clean_dictionary_2():
+    """Test clean_dictionary() function.
+
+    GIVEN a dictionary passed to clean_dictionary()
+    WHEN keys contain leading/trailing spaces
+    THEN remove the spaces from the keys
+    """
+    assert clean_dictionary({" key 1 ": "value 1"}) == {"key 1": "value 1"}
+
+
+def test_clean_dictionary_3():
+    """Test clean_dictionary() function.
+
+    GIVEN a dictionary passed to clean_dictionary()
+    WHEN values contain leading/trailing spaces
+    THEN remove the spaces from the values
+    """
+    assert clean_dictionary({"key 1": " value 1 "}) == {"key 1": "value 1"}
+
+
+def test_clean_dictionary_4():
+    """Test clean_dictionary() function.
+
+    GIVEN a dictionary passed to clean_dictionary()
+    WHEN keys or values contain leading/trailing asterisks
+    THEN remove the asterisks from the keys or values
+    """
+    assert clean_dictionary({"**key_1**": ["**value 1**", "value 2"]}) == {
+        "key_1": ["value 1", "value 2"]
+    }
+
+
+def test_clean_dictionary_5():
+    """Test clean_dictionary() function.
+
+    GIVEN a dictionary passed to clean_dictionary()
+    WHEN keys or values contain leading/trailing brackets
+    THEN remove the brackets from the keys and values
+    """
+    assert clean_dictionary({"[[key_1]]": ["[[value 1]]", "[value 2]"]}) == {
+        "key_1": ["value 1", "value 2"]
+    }
+
+
+def test_clean_dictionary_6():
+    """Test clean_dictionary() function.
+
+    GIVEN a dictionary passed to clean_dictionary()
+    WHEN keys or values contain leading/trailing hashtags
+    THEN remove the hashtags from the keys and values
+    """
+    assert clean_dictionary({"#key_1": ["#value 1", "value 2#"]}) == {
+        "key_1": ["value 1", "value 2"]
+    }
 
 
 def test_delete_from_dict_1():
@@ -174,19 +241,94 @@ def test_delete_from_dict_11():
     ) == {"key1": ["value1"], "key2": ["value2"]}
 
 
-def test_dict_contains() -> None:
-    """Test dict_contains."""
-    d = {"key1": ["value1", "value2"], "key2": ["value3", "value4"], "key3": ["value5", "value6"]}
+def test_dict_contains_1():
+    """Test dict_contains() function.
 
-    assert dict_contains(d, "key1") is True
-    assert dict_contains(d, "key5") is False
-    assert dict_contains(d, "key1", "value1") is True
-    assert dict_contains(d, "key1", "value5") is False
-    assert dict_contains(d, "key[1-2]", is_regex=True) is True
-    assert dict_contains(d, "^1", is_regex=True) is False
-    assert dict_contains(d, r"key\d", r"value\d", is_regex=True) is True
-    assert dict_contains(d, "key1$", "^alue", is_regex=True) is False
-    assert dict_contains(d, r"key\d", "value5", is_regex=True) is True
+    GIVEN calling dict_contains() with a dictionary
+    WHEN the dictionary is empty
+    THEN the function should return False
+    """
+    assert dict_contains({}, "key1") is False
+
+
+def test_dict_contains_2():
+    """Test dict_contains() function.
+
+    GIVEN calling dict_contains() with a dictionary
+    WHEN when the key is not in the dictionary
+    THEN the function should return False
+    """
+    assert dict_contains({"key1": "value1"}, "key2") is False
+
+
+def test_dict_contains_3():
+    """Test dict_contains() function.
+
+    GIVEN calling dict_contains() with a dictionary
+    WHEN when the key is in the dictionary
+    THEN the function should return True
+    """
+    assert dict_contains({"key1": "value1"}, "key1") is True
+
+
+def test_dict_contains_4():
+    """Test dict_contains() function.
+
+    GIVEN calling dict_contains() with a dictionary
+    WHEN when the key and value are in the dictionary
+    THEN the function should return True
+    """
+    assert dict_contains({"key1": "value1"}, "key1", "value1") is True
+
+
+def test_dict_contains_5():
+    """Test dict_contains() function.
+
+    GIVEN calling dict_contains() with a dictionary
+    WHEN when the key and value are not in the dictionary
+    THEN the function should return False
+    """
+    assert dict_contains({"key1": "value1"}, "key1", "value2") is False
+
+
+def test_dict_contains_6():
+    """Test dict_contains() function.
+
+    GIVEN calling dict_contains() with a dictionary
+    WHEN a regex is used for the key and the key is in the dictionary
+    THEN the function should return True
+    """
+    assert dict_contains({"key1": "value1"}, r"key\d", is_regex=True) is True
+
+
+def test_dict_contains_7():
+    """Test dict_contains() function.
+
+    GIVEN calling dict_contains() with a dictionary
+    WHEN a regex is used for the key and the key is not in the dictionary
+    THEN the function should return False
+    """
+    assert dict_contains({"key1": "value1"}, r"key\d\d", is_regex=True) is False
+
+
+def test_dict_contains_8():
+    """Test dict_contains() function.
+
+    GIVEN calling dict_contains() with a dictionary
+    WHEN a regex is used for a value and the value is in the dictionary
+    THEN the function should return True
+    """
+    assert dict_contains({"key1": "value1"}, "key1", r"\w+", is_regex=True) is True
+
+
+def test_dict_contains_9():
+    """Test dict_contains() function.
+
+    GIVEN calling dict_contains() with a dictionary
+    WHEN a regex is used for a value and the value is not in the dictionary
+    THEN the function should return False
+    """
+    assert dict_contains({"key1": "value1"}, "key1", r"\d{2}", is_regex=True) is False
 
 
 def test_dict_keys_to_lower() -> None:
@@ -200,45 +342,202 @@ def test_dict_keys_to_lower() -> None:
     assert dict_keys_to_lower(test_dict) == {"key1": "Value1", "key2": "Value2", "key3": "Value3"}
 
 
-def test_dict_values_to_lists_strings():
-    """Test converting dictionary values to lists of strings."""
-    dictionary = {
-        "key1": "value1",
-        "key2": ["value2", "value3", None],
-        "key3": {"key4": "value4"},
-        "key5": {"key6": {"key7": "value7"}},
-        "key6": None,
-        "key8": [1, 3, None, 4],
-        "key9": [None, "", "None"],
-        "key10": "None",
-        "key11": "",
-    }
+def test_dict_values_to_lists_strings_1():
+    """Test the dict_values_to_lists_strings() function.
 
-    result = dict_values_to_lists_strings(dictionary)
-    assert result == {
-        "key1": ["value1"],
-        "key10": ["None"],
-        "key11": [""],
-        "key2": ["None", "value2", "value3"],
-        "key3": {"key4": ["value4"]},
-        "key5": {"key6": {"key7": ["value7"]}},
-        "key6": ["None"],
-        "key8": ["1", "3", "4", "None"],
-        "key9": ["", "None", "None"],
-    }
+    GIVEN a dictionary passed to the dict_values_to_lists_strings() function
+    WHEN the dictionary is empty
+    THEN the function should return an empty dictionary
+    """
+    assert dict_values_to_lists_strings({}) == {}
+    assert dict_values_to_lists_strings({}, strip_null_values=True) == {}
 
-    result = dict_values_to_lists_strings(dictionary, strip_null_values=True)
-    assert result == {
+
+def test_dict_values_to_lists_strings_2():
+    """Test the dict_values_to_lists_strings() function.
+
+    GIVEN a dictionary passed to the dict_values_to_lists_strings() function
+    WHEN the dictionary values are already lists of strings
+    THEN the function should return the dictionary
+    """
+    test_dict = {"key1": ["value1"], "key2": ["value2", "value3"]}
+    assert dict_values_to_lists_strings(test_dict) == {
         "key1": ["value1"],
-        "key10": [],
-        "key11": [],
         "key2": ["value2", "value3"],
-        "key3": {"key4": ["value4"]},
-        "key5": {"key6": {"key7": ["value7"]}},
-        "key6": [],
-        "key8": ["1", "3", "4"],
-        "key9": ["", "None"],
     }
+    assert dict_values_to_lists_strings(test_dict, strip_null_values=True) == {
+        "key1": ["value1"],
+        "key2": ["value2", "value3"],
+    }
+
+
+def test_dict_values_to_lists_strings_3():
+    """Test the dict_values_to_lists_strings() function.
+
+    GIVEN a dictionary passed to the dict_values_to_lists_strings() function
+    WHEN the a value is None and strip_null_values is False
+    THEN then convert None to an empty string
+    """
+    test_dict = {"key1": None, "key2": ["value", None]}
+    assert dict_values_to_lists_strings(test_dict) == {"key1": [""], "key2": ["", "value"]}
+
+
+def test_dict_values_to_lists_strings_4():
+    """Test the dict_values_to_lists_strings() function.
+
+    GIVEN a dictionary passed to the dict_values_to_lists_strings() function
+    WHEN the a value is None and strip_null_values is True
+    THEN remove null values
+    """
+    test_dict = {"key1": None, "key2": ["value", None]}
+    assert dict_values_to_lists_strings(test_dict, strip_null_values=True) == {
+        "key1": [],
+        "key2": ["value"],
+    }
+
+
+def test_dict_values_to_lists_strings_5():
+    """Test the dict_values_to_lists_strings() function.
+
+    GIVEN a dictionary passed to the dict_values_to_lists_strings() function
+    WHEN the a value is a string "None" and strip_null_values is True or False
+    THEN ensure the value is not removed
+    """
+    test_dict = {"key1": "None", "key2": [None, "None"]}
+    assert dict_values_to_lists_strings(test_dict) == {"key1": ["None"], "key2": ["", "None"]}
+    assert dict_values_to_lists_strings(test_dict, strip_null_values=True) == {
+        "key1": [],
+        "key2": ["None"],
+    }
+
+
+def test_dict_values_to_lists_strings_6():
+    """Test the dict_values_to_lists_strings() function.
+
+    GIVEN a dictionary passed to the dict_values_to_lists_strings() function
+    WHEN the a value is another dictionary
+    THEN ensure the values in the inner dictionary are converted to lists of strings
+    """
+    test_dict = {"key1": {"key2": "value2", "key3": ["value3", None]}}
+    assert dict_values_to_lists_strings(test_dict) == {
+        "key1": {"key2": ["value2"], "key3": ["", "value3"]}
+    }
+    assert dict_values_to_lists_strings(test_dict, strip_null_values=True) == {
+        "key1": {"key2": ["value2"], "key3": ["value3"]}
+    }
+
+
+def test_merge_dictionaries_1():
+    """Test merge_dictionaries() function.
+
+    GIVEN two dictionaries supplied to the merge_dictionaries() function
+    WHEN a value in dict1 is not a list
+    THEN raise a TypeError
+    """
+    test_dict_1 = {"key1": "value1", "key2": "value2"}
+    test_dict_2 = {"key3": ["value3"], "key4": ["value4"]}
+
+    with pytest.raises(TypeError, match=r"key.*is not a list"):
+        merge_dictionaries(test_dict_1, test_dict_2)
+
+
+def test_merge_dictionaries_2():
+    """Test merge_dictionaries() function.
+
+    GIVEN two dictionaries supplied to the merge_dictionaries() function
+    WHEN a value in dict2 is not a list
+    THEN raise a TypeError
+    """
+    test_dict_1 = {"key3": ["value3"], "key4": ["value4"]}
+    test_dict_2 = {"key1": "value1", "key2": "value2"}
+
+    with pytest.raises(TypeError, match=r"key.*is not a list"):
+        merge_dictionaries(test_dict_1, test_dict_2)
+
+
+def test_merge_dictionaries_3():
+    """Test merge_dictionaries() function.
+
+    GIVEN two dictionaries supplied to the merge_dictionaries() function
+    WHEN keys and values in both dictionaries are unique
+    THEN return a dictionary with the keys and values from both dictionaries
+    """
+    test_dict_1 = {"key1": ["value1"], "key2": ["value2"]}
+    test_dict_2 = {"key3": ["value3"], "key4": ["value4"]}
+
+    assert merge_dictionaries(test_dict_1, test_dict_2) == {
+        "key1": ["value1"],
+        "key2": ["value2"],
+        "key3": ["value3"],
+        "key4": ["value4"],
+    }
+
+
+def test_merge_dictionaries_4():
+    """Test merge_dictionaries() function.
+
+    GIVEN two dictionaries supplied to the merge_dictionaries() function
+    WHEN keys in both dictionaries are not unique
+    THEN return a dictionary with the merged keys and values from both dictionaries
+    """
+    test_dict_1 = {"key1": ["value1"], "key2": ["value2"]}
+    test_dict_2 = {"key1": ["value3"], "key2": ["value4"]}
+
+    assert merge_dictionaries(test_dict_1, test_dict_2) == {
+        "key1": ["value1", "value3"],
+        "key2": ["value2", "value4"],
+    }
+
+
+def test_merge_dictionaries_5():
+    """Test merge_dictionaries() function.
+
+    GIVEN two dictionaries supplied to the merge_dictionaries() function
+    WHEN keys and values both dictionaries are not unique
+    THEN return a dictionary with the merged keys and values from both dictionaries
+    """
+    test_dict_1 = {"key1": ["a", "c"], "key2": ["a", "b"]}
+    test_dict_2 = {"key1": ["a", "b"], "key2": ["a", "c"]}
+
+    assert merge_dictionaries(test_dict_1, test_dict_2) == {
+        "key1": ["a", "b", "c"],
+        "key2": ["a", "b", "c"],
+    }
+
+
+def test_merge_dictionaries_6():
+    """Test merge_dictionaries() function.
+
+    GIVEN two dictionaries supplied to the merge_dictionaries() function
+    WHEN one of the dictionaries is empty
+    THEN return a dictionary the other dictionary
+    """
+    test_dict_1 = {"key1": ["a", "c"], "key2": ["a", "b"]}
+    test_dict_2 = {}
+
+    assert merge_dictionaries(test_dict_1, test_dict_2) == {"key1": ["a", "c"], "key2": ["a", "b"]}
+
+    test_dict_1 = {}
+    test_dict_2 = {"key1": ["a", "c"], "key2": ["a", "b"]}
+    assert merge_dictionaries(test_dict_1, test_dict_2) == {"key1": ["a", "c"], "key2": ["a", "b"]}
+
+
+def test_merge_dictionaries_7():
+    """Test merge_dictionaries() function.
+
+    GIVEN two dictionaries supplied to the merge_dictionaries() function
+    WHEN keys and values both dictionaries are not unique
+    THEN ensure the original dictionaries objects are not modified
+    """
+    test_dict_1 = {"key1": ["a", "c"], "key2": ["a", "b"]}
+    test_dict_2 = {"key1": ["a", "b"], "key2": ["a", "c"]}
+
+    assert merge_dictionaries(test_dict_1, test_dict_2) == {
+        "key1": ["a", "b", "c"],
+        "key2": ["a", "b", "c"],
+    }
+    assert test_dict_1 == {"key1": ["a", "c"], "key2": ["a", "b"]}
+    assert test_dict_2 == {"key1": ["a", "b"], "key2": ["a", "c"]}
 
 
 def test_rename_in_dict_1():
@@ -313,46 +612,197 @@ def test_rename_in_dict_5():
     }
 
 
-def test_remove_markdown_sections():
-    """Test removing markdown sections."""
+def test_remove_markdown_sections_1():
+    """Test remove_markdown_sections() function.
+
+    GIVEN a string with markdown sections
+    WHEN the remove_markdown_sections() function is called with the default arguments
+    THEN return the string without removing any markdown sections
+    """
     text: str = """
 ---
 key: value
 ---
 
-Lorem ipsum `dolor sit` amet.
+# heading
 
 ```bash
-    echo "Hello World"
+echo "Hello world"
 ```
+
+Lorem ipsum `inline_code` lorem ipsum.
+```
+echo "foo bar"
+```
+
+---
+dd
+---
+    """
+
+    assert remove_markdown_sections(text) == text
+
+
+def test_remove_markdown_sections_2():
+    """Test remove_markdown_sections() function.
+
+    GIVEN a string with markdown sections
+    WHEN the remove_markdown_sections() function is called with strip_codeblocks set to True
+    THEN return the string without the codeblocks
+    """
+    text: str = """
+---
+key: value
+---
+
+# heading
+
+```bash
+echo "Hello world"
+```
+
+Lorem ipsum `inline_code` lorem ipsum.
+```
+echo "foo bar"
+```
+
+---
+dd
+---
+    """
+    result = remove_markdown_sections(text, strip_codeblocks=True)
+    assert "inline_code" in result
+    assert "```bash" not in result
+    assert "```" not in result
+    assert "foo" not in result
+    assert "world" not in result
+    assert "key: value" in result
+    assert "heading" in result
+    assert "Lorem ipsum" in result
+    assert "---\n" in result
+    assert "dd" in result
+
+
+def test_remove_markdown_sections_3():
+    """Test remove_markdown_sections() function.
+
+    GIVEN a string with markdown sections
+    WHEN the remove_markdown_sections() function is called with strip_inlinecode set to True
+    THEN return the string without the inline code
+    """
+    text: str = """
+---
+key: value
+---
+
+# heading
+
+```bash
+echo "Hello world"
+```
+
+Lorem ipsum `inline_code` lorem ipsum.
+```
+echo "foo bar"
+```
+
+---
+dd
+---
+    """
+    result = remove_markdown_sections(text, strip_inlinecode=True)
+    assert "`inline_code`" not in result
+    assert "```bash" in result
+    assert "```" in result
+    assert "foo" in result
+    assert "world" in result
+    assert "key: value" in result
+    assert "heading" in result
+    assert "Lorem ipsum" in result
+    assert "---\n" in result
+    assert "dd" in result
+
+
+def test_remove_markdown_sections_4():
+    """Test remove_markdown_sections() function.
+
+    GIVEN a string with markdown sections
+    WHEN the remove_markdown_sections() function is called with strip_frontmatter set to True
+    THEN return the string without the frontmatter
+    """
+    text: str = """
+---
+key: value
+---
+
+# heading
+
+```bash
+echo "Hello world"
+```
+
+Lorem ipsum `inline_code` lorem ipsum.
+```
+echo "foo bar"
+```
+
+---
+dd
+---
+    """
+    result = remove_markdown_sections(text, strip_frontmatter=True)
+    assert "`inline_code`" in result
+    assert "```bash" in result
+    assert "```" in result
+    assert "foo" in result
+    assert "world" in result
+    assert "key: value" not in result
+    assert "heading" in result
+    assert "Lorem ipsum" in result
+    assert "---\n" in result
+    assert "dd" in result
+
+
+def test_remove_markdown_sections_5():
+    """Test remove_markdown_sections() function.
+
+    GIVEN a string with markdown sections
+    WHEN the remove_markdown_sections() function is called with all arguments set to True
+    THEN return the string without the frontmatter, inline code, and codeblocks
+    """
+    text: str = """
+---
+key: value
+---
+
+# heading
+
+```bash
+echo "Hello world"
+```
+
+Lorem ipsum `inline_code` lorem ipsum.
+```
+echo "foo bar"
+```
+
 ---
 dd
 ---
     """
     result = remove_markdown_sections(
-        text,
-        strip_codeblocks=True,
-        strip_frontmatter=True,
-        strip_inlinecode=True,
+        text, strip_frontmatter=True, strip_inlinecode=True, strip_codeblocks=True
     )
-    assert "```bash" not in result
-    assert "`dolor sit`" not in result
-    assert "---\nkey: value" not in result
-    assert "`" not in result
-
-    result = remove_markdown_sections(text)
-    assert "```bash" in result
-    assert "`dolor sit`" in result
-    assert "---\nkey: value" in result
-    assert "`" in result
-
-
-def test_clean_dictionary():
-    """Test cleaning a dictionary."""
-    dictionary = {" *key* ": ["**value**", "[[value2]]", "#value3"]}
-
-    new_dict = clean_dictionary(dictionary)
-    assert new_dict == {"key": ["value", "value2", "value3"]}
+    assert "`inline_code`" not in result
+    assert "bash" not in result
+    assert "```" not in result
+    assert "foo" not in result
+    assert "world" not in result
+    assert "key: value" not in result
+    assert "heading" in result
+    assert "Lorem ipsum" in result
+    assert "---\n" in result
+    assert "dd" in result
 
 
 def test_validate_csv_bulk_imports_1(tmp_path):

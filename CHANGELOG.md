@@ -1,3 +1,9 @@
+## v0.11.0 (2023-03-24)
+
+### Feat
+
+- add `--import-csv` option to cli
+
 ## v0.10.0 (2023-03-21)
 
 ### Feat

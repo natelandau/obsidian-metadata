@@ -297,7 +297,7 @@ class Questions:
                 {"name": "Inspect Metadata", "value": "inspect_metadata"},
                 {"name": "Filter Notes in Scope", "value": "filter_notes"},
                 questionary.Separator("-------------------------------"),
-                {"name": "Bulk changes from imported CSV", "value": "import_from_csv"},
+                {"name": "Import bulk changes from CSV", "value": "import_from_csv"},
                 {"name": "Add Metadata", "value": "add_metadata"},
                 {"name": "Delete Metadata", "value": "delete_metadata"},
                 {"name": "Rename Metadata", "value": "rename_metadata"},

@@ -53,6 +53,13 @@ def main(
         dir_okay=False,
         file_okay=True,
     ),
+    import_csv: Path = typer.Option(
+        None,
+        help="Import a CSV file with bulk updates to metadata.",
+        show_default=False,
+        dir_okay=False,
+        file_okay=True,
+    ),
     vault_path: Path = typer.Option(
         None,
         help="Path to Obsidian vault",
@@ -152,6 +159,10 @@ def main(
     if export_template is not None:
         path = Path(export_template).expanduser().resolve()
         application.noninteractive_export_template(path)
+        raise typer.Exit(code=0)
+    if import_csv is not None:
+        path = Path(import_csv).expanduser().resolve()
+        application.noninteractive_bulk_import(path)
         raise typer.Exit(code=0)
 
     application.application_main()

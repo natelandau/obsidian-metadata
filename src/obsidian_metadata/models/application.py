@@ -548,6 +548,41 @@ class Application:
 
         alerts.success(f"Moved inline metadata to {location.value} in {num_changed} notes")
 
+    def noninteractive_bulk_import(self, path: Path) -> None:
+        """Bulk update metadata from a CSV from the command line.
+
+        Args:
+            path: Path to the CSV file containing the metadata to update.
+        """
+        self._load_vault()
+        note_paths = [
+            str(n.note_path.relative_to(self.vault.vault_path)) for n in self.vault.all_notes
+        ]
+        dict_from_csv = validate_csv_bulk_imports(path, note_paths)
+        num_changed = self.vault.update_from_dict(dict_from_csv)
+        if num_changed == 0:
+            alerts.warning("No notes were changed")
+            return
+
+        alerts.success(f"{num_changed} notes specified in '{path}'")
+        alerts.info("Review changes and commit.")
+        while True:
+            self.vault.info()
+
+            match self.questions.ask_application_main():
+                case "vault_actions":
+                    self.application_vault()
+                case "inspect_metadata":
+                    self.application_inspect_metadata()
+                case "review_changes":
+                    self.review_changes()
+                case "commit_changes":
+                    self.commit_changes()
+                case _:
+                    break
+
+        console.print("Done!")
+
     def noninteractive_export_csv(self, path: Path) -> None:
         """Export the vault metadata to CSV."""
         self._load_vault()

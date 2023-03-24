@@ -25,6 +25,7 @@ pip install obsidian-metadata
 
 -   `--config-file`: Specify a custom configuration file location
 -   `--dry-run`: Make no destructive changes
+-   `--import-csv` Import a CSV file with bulk updates
 -   `--export-csv`: Specify a path and create a CSV export of all metadata
 -   `--export-json`: Specify a path and create a JSON export of all metadata
 -   `--export-template`: Specify a path and export all notes with their associated metadata to a CSV file for use as a bulk import template
@@ -172,6 +173,8 @@ Create a CSV template for making bulk updates containing all your notes and thei
 
 1. Using the `--export-template` cli command; or
 2. Selecting the `Metadata by note` option within the `Export Metadata` section of the app
+
+Once you have a template created you can import it using the `--import-csv` flag or by navigating to the `Import bulk changes from CSV` option.
 
 # Contributing
 

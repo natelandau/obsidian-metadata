@@ -54,14 +54,14 @@ repos:
             types: [python]
 
     - repo: "https://github.com/adrienverge/yamllint.git"
-      rev: v1.29.0
+      rev: v1.30.0
       hooks:
           - id: yamllint
             files: ^.*\.(yaml|yml)$
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.0.257"
+      rev: "v0.0.259"
       hooks:
           - id: ruff
             args: ["--extend-ignore", "I001,D301,D401"]

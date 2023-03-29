@@ -21,10 +21,10 @@
         python      = "^3.10"
         questionary = "^1.10.0"
         regex       = "^2023.3.23"
-        rich        = "^13.3.2"
+        rich        = "^13.3.3"
         ruamel-yaml = "^0.17.21"
         shellingham = "^1.5.0.post1"
-        tomlkit     = "^0.11.6"
+        tomlkit     = "^0.11.7"
         typer       = "^0.7.0"
 
     [tool.poetry.group.test.dependencies]
@@ -35,7 +35,7 @@
         pytest-xdist           = "^3.2.1"
 
     [tool.poetry.group.dev.dependencies]
-        black                 = "^23.1.0"
+        black                 = "^23.3.0"
         commitizen            = "^2.42.1"
         coverage              = "^7.2.2"
         interrogate           = "^1.5.0"
@@ -46,7 +46,7 @@
         ruff                  = "^0.0.259"
         sh                    = "2.0.3"
         typeguard             = "^3.0.2"
-        types-python-dateutil = "^2.8.19.10"
+        types-python-dateutil = "^2.8.19.11"
         vulture               = "^2.7"
 
 [tool.black]

@@ -10,7 +10,7 @@ import rich.repr
 import typer
 from rich.table import Table
 
-from obsidian_metadata._utils import alerts
+from obsidian_metadata._utils import alerts, inline_metadata_from_string
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import (
@@ -20,6 +20,11 @@ from obsidian_metadata.models import (
     InsertLocation,
     MetadataType,
     Patterns,
+)
+from obsidian_metadata.models.exceptions import (
+    FrontmatterError,
+    InlineMetadataError,
+    InlineTagError,
 )
 
 PATTERNS = Patterns()
@@ -50,19 +55,24 @@ class Note:
         try:
             with self.note_path.open():
                 self.file_content: str = self.note_path.read_text()
+                self.original_file_content: str = self.file_content
         except FileNotFoundError as e:
             alerts.error(f"Note {self.note_path} not found. Exiting")
             raise typer.Exit(code=1) from e
 
         try:
             self.frontmatter: Frontmatter = Frontmatter(self.file_content)
-        except AttributeError as e:
-            alerts.error(f"Note {self.note_path} has invalid frontmatter.\n{e}")
+            self.inline_metadata: InlineMetadata = InlineMetadata(self.file_content)
+            self.tags: InlineTags = InlineTags(self.file_content)
+        except FrontmatterError as e:
+            alerts.error(f"Invalid frontmatter: {self.note_path}\n{e}")
             raise typer.Exit(code=1) from e
-
-        self.tags: InlineTags = InlineTags(self.file_content)
-        self.inline_metadata: InlineMetadata = InlineMetadata(self.file_content)
-        self.original_file_content: str = self.file_content
+        except InlineMetadataError as e:
+            alerts.error(f"Error parsing inline metadata: {self.note_path}.\n{e}")
+            raise typer.Exit(code=1) from e
+        except InlineTagError as e:
+            alerts.error(f"Error parsing inline tags: {self.note_path}\n{e}")
+            raise typer.Exit(code=1) from e
 
     def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover
         """Define rich representation of Vault."""
@@ -552,10 +562,9 @@ class Note:
             value_2 (str, optional): New value.
 
         """
-        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
+        found_inline_metadata = inline_metadata_from_string(self.file_content)
 
-        for _k, _v in stripped_null_values:
+        for _k, _v in found_inline_metadata:
             if re.search(key, _k):
                 if value_2 is None:
                     if re.search(rf"{key}[^\\w\\d_-]+", _k):

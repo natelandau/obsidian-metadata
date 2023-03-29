@@ -3,6 +3,7 @@
 
 import pytest
 
+from obsidian_metadata.models.exceptions import FrontmatterError
 from obsidian_metadata.models.metadata import Frontmatter
 
 FRONTMATTER_CONTENT: str = """
@@ -84,7 +85,7 @@ tags: tag
 invalid = = "content"
 ---
     """
-    with pytest.raises(AttributeError):
+    with pytest.raises(FrontmatterError):
         Frontmatter(fn)
 
 

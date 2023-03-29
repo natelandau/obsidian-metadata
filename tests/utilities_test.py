@@ -10,12 +10,12 @@ from obsidian_metadata._utils import (
     dict_contains,
     dict_keys_to_lower,
     dict_values_to_lists_strings,
+    inline_metadata_from_string,
     merge_dictionaries,
     remove_markdown_sections,
     rename_in_dict,
     validate_csv_bulk_imports,
 )
-from tests.helpers import Regex, remove_ansi
 
 
 def test_clean_dictionary_1():
@@ -425,6 +425,55 @@ def test_dict_values_to_lists_strings_6():
     assert dict_values_to_lists_strings(test_dict, strip_null_values=True) == {
         "key1": {"key2": ["value2"], "key3": ["value3"]}
     }
+
+
+def test_inline_metadata_from_string_1():
+    """Test inline_metadata_from_string() function.
+
+    GIVEN a string
+    WHEN the string is empty
+    THEN the function should return an empty list.
+    """
+    assert inline_metadata_from_string("") == []
+
+
+def test_inline_metadata_from_string_2():
+    """Test inline_metadata_from_string() function.
+
+    GIVEN a string
+    WHEN the string contains nothing matching the inline metadata regex
+    THEN the function should return an empty list.
+    """
+    assert inline_metadata_from_string("this is content that has no inline metadata") == []
+
+
+def test_inline_metadata_from_string_3():
+    """Test inline_metadata_from_string() function.
+
+    GIVEN a string
+    WHEN the string contains inline metadata
+    THEN the function should return the key value pair as a tuple within a list.
+    """
+    assert inline_metadata_from_string("test::test") == [("test", "test")]
+
+
+def test_inline_metadata_from_string_4():
+    """Test inline_metadata_from_string() function.
+
+    GIVEN a string
+    WHEN the string contains multiple matches of inline metadata
+    THEN the function should return the key value pairs as a tuple within a list.
+    """
+    content = """
+    test::test
+    paragraph [key::value] paragraph
+    > test2::test2
+    """
+    assert inline_metadata_from_string(content) == [
+        ("test", "test"),
+        ("key", "value"),
+        ("test2", "test2"),
+    ]
 
 
 def test_merge_dictionaries_1():

@@ -178,8 +178,7 @@ class LoggerManager:
         self.log_level = log_level
 
         if self.log_file == Path("/logs") and self.log_to_file:  # pragma: no cover
-            console.print("No log file specified")
-            raise typer.Exit(1)
+            raise typer.BadParameter("No log file specified")
 
         if self.verbosity >= VerboseLevel.TRACE.value:
             logger.remove()

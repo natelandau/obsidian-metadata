@@ -21,6 +21,11 @@ from obsidian_metadata.models import (
     MetadataType,
     Patterns,
 )
+from obsidian_metadata.models.exceptions import (
+    FrontmatterError,
+    InlinedMetadataError,
+    InlineTagError,
+)
 
 PATTERNS = Patterns()
 
@@ -50,19 +55,24 @@ class Note:
         try:
             with self.note_path.open():
                 self.file_content: str = self.note_path.read_text()
+                self.original_file_content: str = self.file_content
         except FileNotFoundError as e:
             alerts.error(f"Note {self.note_path} not found. Exiting")
             raise typer.Exit(code=1) from e
 
         try:
             self.frontmatter: Frontmatter = Frontmatter(self.file_content)
-        except AttributeError as e:
-            alerts.error(f"Note {self.note_path} has invalid frontmatter.\n{e}")
+            self.inline_metadata: InlineMetadata = InlineMetadata(self.file_content)
+            self.tags: InlineTags = InlineTags(self.file_content)
+        except FrontmatterError as e:
+            alerts.error(f"{self.note_path} has invalid frontmatter.\n{e}")
             raise typer.Exit(code=1) from e
-
-        self.tags: InlineTags = InlineTags(self.file_content)
-        self.inline_metadata: InlineMetadata = InlineMetadata(self.file_content)
-        self.original_file_content: str = self.file_content
+        except InlinedMetadataError as e:
+            alerts.error(f"{self.note_path} has invalid inline metadata.\n{e}")
+            raise typer.Exit(code=1) from e
+        except InlineTagError as e:
+            alerts.error(f"{self.note_path} has invalid inline tags.\n{e}")
+            raise typer.Exit(code=1) from e
 
     def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover
         """Define rich representation of Vault."""

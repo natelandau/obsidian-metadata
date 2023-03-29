@@ -20,6 +20,11 @@ from obsidian_metadata._utils import (
 from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import Patterns  # isort: ignore
 from obsidian_metadata.models.enums import MetadataType
+from obsidian_metadata.models.exceptions import (
+    FrontmatterError,
+    InlinedMetadataError,
+    InlineTagError,
+)
 
 PATTERNS = Patterns()
 INLINE_TAG_KEY: str = "inline_tag"
@@ -230,7 +235,7 @@ class Frontmatter:
         try:
             frontmatter: dict = yaml.load(frontmatter_block)
         except Exception as e:  # noqa: BLE001
-            raise AttributeError(e) from e
+            raise FrontmatterError(e) from e
 
         if frontmatter is None or frontmatter == [None]:
             return {}
@@ -404,11 +409,17 @@ class InlineMetadata:
         stripped_null_values = [tuple(filter(None, x)) for x in all_results]
 
         inline_metadata: dict[str, list[str]] = {}
-        for k, v in stripped_null_values:
-            if k in inline_metadata:
-                inline_metadata[k].append(str(v))
-            else:
-                inline_metadata[k] = [str(v)]
+
+        try:
+            for k, v in stripped_null_values:
+                if k in inline_metadata:
+                    inline_metadata[k].append(str(v))
+                else:
+                    inline_metadata[k] = [str(v)]
+        except ValueError as e:
+            raise InlinedMetadataError("Error parsing inline metadata.") from e
+        except AttributeError as e:
+            raise InlinedMetadataError("Error parsing inline metadata.") from e
 
         return clean_dictionary(inline_metadata)
 
@@ -537,15 +548,22 @@ class InlineTags:
         Returns:
             list[str]: Inline tags from the note.
         """
-        return sorted(
-            PATTERNS.find_inline_tags.findall(
-                remove_markdown_sections(
-                    file_content,
-                    strip_codeblocks=True,
-                    strip_inlinecode=True,
+        try:
+            return sorted(
+                PATTERNS.find_inline_tags.findall(
+                    remove_markdown_sections(
+                        file_content,
+                        strip_codeblocks=True,
+                        strip_inlinecode=True,
+                    )
                 )
             )
-        )
+        except AttributeError as e:
+            raise InlineTagError("Error parsing inline tags.") from e
+        except TypeError as e:
+            raise InlineTagError("Error parsing inline tags.") from e
+        except ValueError as e:
+            raise InlineTagError("Error parsing inline tags.") from e
 
     def add(self, new_tag: str | list[str]) -> bool:
         """Add a new inline tag.

@@ -8,6 +8,7 @@ import pytest
 import typer
 
 from obsidian_metadata.models.enums import InsertLocation, MetadataType
+from obsidian_metadata.models.exceptions import InlineMetadataError, InlineTagError
 from obsidian_metadata.models.notes import Note
 from tests.helpers import Regex
 
@@ -86,6 +87,38 @@ def test_create_note_2() -> None:
     broken_fm = Path("tests/fixtures/broken_frontmatter.md")
     with pytest.raises(typer.Exit):
         Note(note_path=broken_fm)
+
+
+def test_create_note_3(sample_note, mocker) -> None:
+    """Test creating a note object.
+
+    GIVEN a text file with invalid inline metadata
+    WHEN the note is initialized
+    THEN a typer exit is raised
+    """
+    mocker.patch(
+        "obsidian_metadata.models.notes.InlineMetadata",
+        side_effect=InlineMetadataError("error message"),
+    )
+
+    with pytest.raises(typer.Exit):
+        Note(note_path=sample_note)
+
+
+def test_create_note_4(sample_note, mocker) -> None:
+    """Test creating a note object.
+
+    GIVEN a text file
+    WHEN there is an error parsing the inline tags
+    THEN a typer exit is raised
+    """
+    mocker.patch(
+        "obsidian_metadata.models.notes.InlineTags",
+        side_effect=InlineTagError("error message"),
+    )
+
+    with pytest.raises(typer.Exit):
+        Note(note_path=sample_note)
 
 
 def test_add_metadata_method_1(short_notes):

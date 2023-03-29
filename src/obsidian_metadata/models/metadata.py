@@ -18,12 +18,13 @@ from obsidian_metadata._utils import (
     remove_markdown_sections,
     rename_in_dict,
 )
+from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import Patterns  # isort: ignore
 from obsidian_metadata.models.enums import MetadataType
 from obsidian_metadata.models.exceptions import (
     FrontmatterError,
-    InlinedMetadataError,
+    InlineMetadataError,
     InlineTagError,
 )
 
@@ -411,14 +412,21 @@ class InlineMetadata:
 
         try:
             for k, v in found_inline_metadata:
+                if not k:
+                    log.trace(f"Skipping empty key associated with value: {v}")
+                    continue
                 if k in inline_metadata:
                     inline_metadata[k].append(str(v))
                 else:
                     inline_metadata[k] = [str(v)]
         except ValueError as e:
-            raise InlinedMetadataError("Error parsing inline metadata.") from e
+            raise InlineMetadataError(
+                f"Error parsing inline metadata: {found_inline_metadata}"
+            ) from e
         except AttributeError as e:
-            raise InlinedMetadataError("Error parsing inline metadata.") from e
+            raise InlineMetadataError(
+                f"Error parsing inline metadata: {found_inline_metadata}"
+            ) from e
 
         return clean_dictionary(inline_metadata)
 

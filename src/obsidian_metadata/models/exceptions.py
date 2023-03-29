@@ -9,7 +9,7 @@ class FrontmatterError(ObsidianMetadataError):
     """Exception for errors in the frontmatter."""
 
 
-class InlinedMetadataError(ObsidianMetadataError):
+class InlineMetadataError(ObsidianMetadataError):
     """Exception for errors in the inlined metadata."""
 
 

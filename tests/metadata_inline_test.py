@@ -1,6 +1,8 @@
 # type: ignore
 """Test inline metadata from metadata.py."""
+import pytest
 
+from obsidian_metadata.models.exceptions import InlineMetadataError
 from obsidian_metadata.models.metadata import InlineMetadata
 
 FRONTMATTER_CONTENT: str = """
@@ -75,6 +77,21 @@ def test__grab_inline_metadata_2():
         "key2": ["value1"],
         "list_key": ["value1", "value2", "value1", "value2"],
     }
+
+
+def test__grab_inline_metadata_3(mocker):
+    """Test grab inline metadata.
+
+    GIVEN content that has inline metadata
+    WHEN an error occurs parsing the inline metadata
+    THEN raise an InlineMetadataError and pass the error message
+    """
+    mocker.patch(
+        "obsidian_metadata.models.metadata.inline_metadata_from_string",
+        return_value=[("key")],
+    )
+    with pytest.raises(InlineMetadataError, match=r"Error parsing inline metadata: \['key'\]"):
+        InlineMetadata("")
 
 
 def test_add_1():

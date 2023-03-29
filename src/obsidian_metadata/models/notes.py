@@ -23,7 +23,7 @@ from obsidian_metadata.models import (
 )
 from obsidian_metadata.models.exceptions import (
     FrontmatterError,
-    InlinedMetadataError,
+    InlineMetadataError,
     InlineTagError,
 )
 
@@ -67,7 +67,7 @@ class Note:
         except FrontmatterError as e:
             alerts.error(f"{self.note_path} has invalid frontmatter.\n{e}")
             raise typer.Exit(code=1) from e
-        except InlinedMetadataError as e:
+        except InlineMetadataError as e:
             alerts.error(f"{self.note_path} has invalid inline metadata.\n{e}")
             raise typer.Exit(code=1) from e
         except InlineTagError as e:

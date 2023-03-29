@@ -183,6 +183,21 @@ def docstring_parameter(*sub: Any) -> Any:
     return dec
 
 
+def inline_metadata_from_string(string: str) -> list[tuple[Any, ...]]:
+    """Search for inline metadata in a string and return a list tuples containing (key, value).
+
+    Args:
+        string (str): String to get metadata from
+
+    Returns:
+        tuple[str]: (key, value)
+    """
+    from obsidian_metadata.models import Patterns
+
+    results = Patterns().find_inline_metadata.findall(string)
+    return [tuple(filter(None, x)) for x in results]
+
+
 def merge_dictionaries(dict1: dict, dict2: dict) -> dict:
     """Merge two dictionaries. When the values are lists, they are merged and sorted.
 

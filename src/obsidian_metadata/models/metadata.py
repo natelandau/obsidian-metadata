@@ -13,6 +13,7 @@ from obsidian_metadata._utils import (
     delete_from_dict,
     dict_contains,
     dict_values_to_lists_strings,
+    inline_metadata_from_string,
     merge_dictionaries,
     remove_markdown_sections,
     rename_in_dict,
@@ -405,13 +406,11 @@ class InlineMetadata:
             strip_inlinecode=True,
             strip_frontmatter=True,
         )
-        all_results = PATTERNS.find_inline_metadata.findall(content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
-
+        found_inline_metadata = inline_metadata_from_string(content)
         inline_metadata: dict[str, list[str]] = {}
 
         try:
-            for k, v in stripped_null_values:
+            for k, v in found_inline_metadata:
                 if k in inline_metadata:
                     inline_metadata[k].append(str(v))
                 else:

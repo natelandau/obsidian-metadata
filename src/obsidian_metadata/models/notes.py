@@ -10,7 +10,7 @@ import rich.repr
 import typer
 from rich.table import Table
 
-from obsidian_metadata._utils import alerts
+from obsidian_metadata._utils import alerts, inline_metadata_from_string
 from obsidian_metadata._utils.alerts import logger as log
 from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import (
@@ -562,10 +562,9 @@ class Note:
             value_2 (str, optional): New value.
 
         """
-        all_results = PATTERNS.find_inline_metadata.findall(self.file_content)
-        stripped_null_values = [tuple(filter(None, x)) for x in all_results]
+        found_inline_metadata = inline_metadata_from_string(self.file_content)
 
-        for _k, _v in stripped_null_values:
+        for _k, _v in found_inline_metadata:
             if re.search(key, _k):
                 if value_2 is None:
                     if re.search(rf"{key}[^\\w\\d_-]+", _k):

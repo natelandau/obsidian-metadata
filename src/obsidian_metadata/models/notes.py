@@ -65,13 +65,13 @@ class Note:
             self.inline_metadata: InlineMetadata = InlineMetadata(self.file_content)
             self.tags: InlineTags = InlineTags(self.file_content)
         except FrontmatterError as e:
-            alerts.error(f"{self.note_path} has invalid frontmatter.\n{e}")
+            alerts.error(f"Invalid frontmatter: {self.note_path}\n{e}")
             raise typer.Exit(code=1) from e
         except InlineMetadataError as e:
-            alerts.error(f"{self.note_path} has invalid inline metadata.\n{e}")
+            alerts.error(f"Error parsing inline metadata: {self.note_path}.\n{e}")
             raise typer.Exit(code=1) from e
         except InlineTagError as e:
-            alerts.error(f"{self.note_path} has invalid inline tags.\n{e}")
+            alerts.error(f"Error parsing inline tags: {self.note_path}\n{e}")
             raise typer.Exit(code=1) from e
 
     def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover

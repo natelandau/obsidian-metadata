@@ -132,7 +132,7 @@ def main(
     config: Config = Config(config_path=config_file, vault_path=vault_path)
     if len(config.vaults) == 0:
         typer.echo("No vaults configured. Exiting.")
-        raise typer.Exit(1)
+        raise typer.BadParameter("No vaults configured. Exiting.")
 
     if len(config.vaults) == 1:
         application = Application(dry_run=dry_run, config=config.vaults[0])

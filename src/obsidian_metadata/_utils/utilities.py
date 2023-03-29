@@ -337,4 +337,4 @@ def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
         console.print(f"{__package__.split('.')[0]}: v{__version__}")
-        raise typer.Exit()
+        raise typer.Exit(0)

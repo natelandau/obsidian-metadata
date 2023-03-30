@@ -35,6 +35,7 @@ def test_create_note_1(sample_note):
     assert note.note_path == Path(sample_note)
     assert note.dry_run is True
     assert "Lorem ipsum dolor" in note.file_content
+    assert note.encoding == "utf_8"
     assert note.frontmatter.dict == {
         "date_created": ["2022-12-22"],
         "frontmatter_Key1": ["author name"],

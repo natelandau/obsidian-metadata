@@ -8,6 +8,7 @@ from pathlib import Path
 
 import rich.repr
 import typer
+from charset_normalizer import from_path
 from rich.table import Table
 
 from obsidian_metadata._utils import alerts, inline_metadata_from_string
@@ -53,11 +54,17 @@ class Note:
         self.dry_run: bool = dry_run
 
         try:
-            with self.note_path.open():
-                self.file_content: str = self.note_path.read_text()
-                self.original_file_content: str = self.file_content
+            result = from_path(self.note_path).best()
+            self.encoding: str = result.encoding
+            self.file_content: str = str(result)
+            self.original_file_content: str = str(result)
         except FileNotFoundError as e:
             alerts.error(f"Note {self.note_path} not found. Exiting")
+            raise typer.Exit(code=1) from e
+        except UnicodeDecodeError as e:
+            alerts.error(
+                f"Error decoding note {self.note_path}.\nDetected encoding: {self.encoding}\nExiting"
+            )
             raise typer.Exit(code=1) from e
 
         try:
@@ -76,11 +83,12 @@ class Note:
 
     def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover
         """Define rich representation of Vault."""
-        yield "note_path", self.note_path
         yield "dry_run", self.dry_run
+        yield "encoding", self.encoding
         yield "frontmatter", self.frontmatter
-        yield "tags", self.tags
         yield "inline_metadata", self.inline_metadata
+        yield "note_path", self.note_path
+        yield "tags", self.tags
 
     def add_metadata(  # noqa: C901
         self,
@@ -157,9 +165,8 @@ class Note:
             return
 
         try:
-            with p.open(mode="w") as f:
-                log.trace(f"Writing note {p} to disk")
-                f.write(self.file_content)
+            log.trace(f"Writing note {p} to disk")
+            p.write_text(self.file_content)
         except FileNotFoundError as e:
             alerts.error(f"Note {p} not found. Exiting")
             raise typer.Exit(code=1) from e

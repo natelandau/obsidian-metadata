@@ -122,6 +122,8 @@ Below is an example with two vaults.
 ["Vault One"] # Name of the vault.
 
     # Path to your obsidian vault
+    # Note for Windows users: Windows paths must use `\\` as the path separator due to a limitation with how TOML parses strings.
+    #       Example: "C:\\Users\\username\\Documents\\Obsidian"
     path = "/path/to/vault"
 
     # Folders within the vault to ignore when indexing metadata
@@ -140,6 +142,10 @@ Below is an example with two vaults.
 ```
 
 To bypass the configuration file and specify a vault to use at runtime use the `--vault-path` option.
+
+**Note for Windows users:**
+Due to how TOMML parses strings, Windows paths must use `\\` as the path separator.
+For example: `C:\\Users\\username\\Documents\\Obsidian`
 
 ### Make Bulk Updates
 

@@ -77,10 +77,11 @@ class Config:
                 VaultConfig(vault_name=key, vault_config=self.config[key]) for key in self.config
             ]
         except TypeError as e:
-            log.error(f"Configuration file is invalid: '{self.config_path}'")
+            log.error(f"Configuration file is invalid: '{self.config_path}'\n{e}")
             raise typer.Exit(code=1) from e
 
         log.debug(f"Loaded configuration from '{self.config_path}'")
+        log.trace("Configuration:")
         log.trace(self.config)
 
     def __rich_repr__(self) -> rich.repr.Result:  # pragma: no cover
@@ -91,10 +92,10 @@ class Config:
     def _load_config(self) -> dict[str, Any]:
         """Load the configuration file."""
         try:
-            with self.config_path.open(encoding="utf-8") as fp:
+            with self.config_path.open(mode="rt", encoding="utf-8") as fp:
                 return tomlkit.load(fp)
         except tomlkit.exceptions.TOMLKitError as e:
-            alerts.error(f"Could not parse '{self.config_path}'")
+            alerts.error(f"Could not parse '{self.config_path}'\n{e}")
             raise typer.Exit(code=1) from e
 
     def _validate_config_path(self, config_path: Path | None) -> Path:
@@ -117,6 +118,8 @@ class Config:
         ["Vault 1"] # Name of the vault.
 
             # Path to your obsidian vault
+            # Note for Windows users: Windows paths must use `\\` as the path separator due to a limitation with how TOML parses strings.
+            #   Example: "C:\\Users\\username\\Documents\\Obsidian"
             path = "{vault_path}"
 
             # Folders within the vault to ignore when indexing metadata

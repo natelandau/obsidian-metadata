@@ -333,7 +333,7 @@ class Vault:
 
         match export_format:
             case "csv":
-                with export_file.open(mode="w", encoding="UTF8") as f:
+                with export_file.open(mode="w", encoding="utf-8") as f:
                     writer = csv.writer(f)
                     writer.writerow(["Metadata Type", "Key", "Value"])
 
@@ -361,7 +361,7 @@ class Vault:
                     "tags": self.metadata.tags,
                 }
 
-                with export_file.open(mode="w", encoding="UTF8") as f:
+                with export_file.open(mode="w", encoding="utf-8") as f:
                     json.dump(dict_to_dump, f, indent=4, ensure_ascii=False, sort_keys=True)
 
     def export_notes_to_csv(self, path: str) -> None:
@@ -375,7 +375,7 @@ class Vault:
             alerts.error(f"Path does not exist: {export_file.parent}")
             raise typer.Exit(code=1)
 
-        with export_file.open(mode="w", encoding="UTF8") as f:
+        with export_file.open(mode="w", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["path", "type", "key", "value"])
 

@@ -319,7 +319,7 @@ class Vault:
 
         return num_changed
 
-    def export_metadata(self, path: str, export_format: str = "csv") -> None:
+    def export_metadata(self, path: str, export_format: str = "csv") -> None:  # noqa: C901
         """Write metadata to a csv file.
 
         Args:

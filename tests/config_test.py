@@ -103,6 +103,8 @@ def test_no_config_no_vault(tmp_path, mocker) -> None:
     ["Vault 1"] # Name of the vault.
 
         # Path to your obsidian vault
+        # Note for Windows users: Windows paths must use `\\` as the path separator due to a limitation with how TOML parses strings.
+        #   Example: "C:\\Users\\username\\Documents\\Obsidian"
         path = "{str(fake_vault)}"
 
         # Folders within the vault to ignore when indexing metadata

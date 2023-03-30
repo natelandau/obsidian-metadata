@@ -282,7 +282,9 @@ def remove_markdown_sections(
     return text
 
 
-def validate_csv_bulk_imports(csv_path: Path, note_paths: list) -> dict[str, list[dict[str, str]]]:
+def validate_csv_bulk_imports(  # noqa: C901
+    csv_path: Path, note_paths: list
+) -> dict[str, list[dict[str, str]]]:
     """Validate the bulk import CSV file.
 
     Args:

@@ -78,48 +78,6 @@ def dict_keys_to_lower(dictionary: dict) -> dict:
     return {key.lower(): value for key, value in dictionary.items()}
 
 
-def dict_values_to_lists_strings(
-    dictionary: dict,
-    strip_null_values: bool = False,
-) -> dict:
-    """Convert all values in a dictionary to lists of strings.
-
-    Args:
-        dictionary (dict): Dictionary to convert
-        strip_null_values (bool): Whether to strip null values
-
-    Returns:
-        dict: Dictionary with all values converted to lists of strings
-
-        {key: sorted(new_dict[key]) for key in sorted(new_dict)}
-    """
-    dictionary = copy.deepcopy(dictionary)
-    new_dict = {}
-
-    if strip_null_values:
-        for key, value in dictionary.items():
-            if isinstance(value, list):
-                new_dict[key] = sorted([str(item) for item in value if item is not None])
-            elif isinstance(value, dict):
-                new_dict[key] = dict_values_to_lists_strings(value, strip_null_values=True)  # type: ignore[assignment]
-            elif value is None or value == "None" or not value:
-                new_dict[key] = []
-            else:
-                new_dict[key] = [str(value)]
-
-        return new_dict
-
-    for key, value in dictionary.items():
-        if isinstance(value, list):
-            new_dict[key] = sorted([str(item) if item is not None else "" for item in value])
-        elif isinstance(value, dict):
-            new_dict[key] = dict_values_to_lists_strings(value)  # type: ignore[assignment]
-        else:
-            new_dict[key] = [str(value) if value is not None else ""]
-
-    return new_dict
-
-
 def delete_from_dict(  # noqa: C901
     dictionary: dict, key: str, value: str = None, is_regex: bool = False
 ) -> dict:
@@ -183,21 +141,6 @@ def docstring_parameter(*sub: Any) -> Any:
     return dec
 
 
-def inline_metadata_from_string(string: str) -> list[tuple[Any, ...]]:
-    """Search for inline metadata in a string and return a list tuples containing (key, value).
-
-    Args:
-        string (str): String to get metadata from
-
-    Returns:
-        tuple[str]: (key, value)
-    """
-    from obsidian_metadata.models import Patterns
-
-    results = Patterns().find_inline_metadata.findall(string)
-    return [tuple(filter(None, x)) for x in results]
-
-
 def merge_dictionaries(dict1: dict, dict2: dict) -> dict:
     """Merge two dictionaries. When the values are lists, they are merged and sorted.
 
@@ -251,35 +194,6 @@ def rename_in_dict(
         dictionary[key] = sorted({value_2 if x == value_1 else x for x in dictionary[key]})
 
     return dictionary
-
-
-def remove_markdown_sections(
-    text: str,
-    strip_codeblocks: bool = False,
-    strip_inlinecode: bool = False,
-    strip_frontmatter: bool = False,
-) -> str:
-    """Strip unwanted markdown sections from text. This is used to remove code blocks and frontmatter from the body of notes before tags and inline metadata are processed.
-
-    Args:
-        text (str): Text to remove code blocks from
-        strip_codeblocks (bool, optional): Strip code blocks. Defaults to False.
-        strip_inlinecode (bool, optional): Strip inline code. Defaults to False.
-        strip_frontmatter (bool, optional): Strip frontmatter. Defaults to False.
-
-    Returns:
-        str: Text without code blocks
-    """
-    if strip_codeblocks:
-        text = re.sub(r"`{3}.*?`{3}", "", text, flags=re.DOTALL)
-
-    if strip_inlinecode:
-        text = re.sub(r"(?<!`{2})`[^`]+?`", "", text)
-
-    if strip_frontmatter:
-        text = re.sub(r"^\s*---.*?---", "", text, flags=re.DOTALL)
-
-    return text
 
 
 def validate_csv_bulk_imports(  # noqa: C901

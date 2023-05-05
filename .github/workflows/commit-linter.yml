@@ -22,8 +22,8 @@ jobs:
             pull-requests: read # for wagoid/commitlint-github-action to get commits in PR
         runs-on: ubuntu-latest
         steps:
-            - name: Harden Runner
-              uses: step-security/harden-runner@1f99358870fe1c846a3ccba386cc2b2246836776 # v2.2.1
+            - name: Harden Security Runner
+              uses: step-security/harden-runner@v2
               with:
                   egress-policy: block
                   allowed-endpoints: >

@@ -18,7 +18,8 @@ jobs:
             matrix:
                 python-version: ["3.11"]
         steps:
-            - uses: step-security/harden-runner@1f99358870fe1c846a3ccba386cc2b2246836776 # v2.2.1
+            - name: Harden Security Runner
+              uses: step-security/harden-runner@v2
               with:
                   egress-policy: block
                   disable-sudo: true

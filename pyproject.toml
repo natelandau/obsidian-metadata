@@ -18,6 +18,7 @@
 
     [tool.poetry.dependencies]
         charset-normalizer = "2.1.0"
+        emoji              = "^2.2.0"
         loguru             = "^0.6.0"
         python             = "^3.10"
         questionary        = "^1.10.0"

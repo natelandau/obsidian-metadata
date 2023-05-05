@@ -13,10 +13,10 @@ import questionary
 import typer
 
 from obsidian_metadata.models.enums import InsertLocation, MetadataType
-from obsidian_metadata.models.patterns import Patterns
+from obsidian_metadata.models.parsers import Parser
 from obsidian_metadata.models.vault import Vault
 
-PATTERNS = Patterns()
+P = Parser()
 
 # Reset the default style of the questionary prompts qmark
 questionary.prompts.checkbox.DEFAULT_STYLE = questionary.Style([("qmark", "")])
@@ -95,7 +95,7 @@ class Questions:
         if len(text) < 1:
             return "Tag cannot be empty"
 
-        if not self.vault.metadata.contains(area=MetadataType.TAGS, value=text):
+        if not self.vault.contains_metadata(meta_type=MetadataType.TAGS, key=None, value=text):
             return f"'{text}' does not exist as a tag in the vault"
 
         return True
@@ -109,7 +109,7 @@ class Questions:
         if len(text) < 1:
             return "Key cannot be empty"
 
-        if not self.vault.metadata.contains(area=MetadataType.KEYS, key=text):
+        if not self.vault.contains_metadata(meta_type=MetadataType.META, key=text):
             return f"'{text}' does not exist as a key in the vault"
 
         return True
@@ -128,7 +128,7 @@ class Questions:
         except re.error as error:
             return f"Invalid regex: {error}"
 
-        if not self.vault.metadata.contains(area=MetadataType.KEYS, key=text, is_regex=True):
+        if not self.vault.contains_metadata(meta_type=MetadataType.META, key=text, is_regex=True):
             return f"'{text}' does not exist as a key in the vault"
 
         return True
@@ -142,7 +142,7 @@ class Questions:
         Returns:
             bool | str: True if the key is valid, otherwise a string with the error message.
         """
-        if PATTERNS.validate_key_text.search(text) is not None:
+        if P.validate_key_text.search(text) is not None:
             return "Key cannot contain spaces or special characters"
 
         if len(text) == 0:
@@ -159,7 +159,7 @@ class Questions:
         Returns:
             bool | str: True if the tag is valid, otherwise a string with the error message.
         """
-        if PATTERNS.validate_tag_text.search(text) is not None:
+        if P.validate_tag_text.search(text) is not None:
             return "Tag cannot contain spaces or special characters"
 
         if len(text) == 0:
@@ -179,8 +179,8 @@ class Questions:
         if len(text) < 1:
             return "Value cannot be empty"
 
-        if self.key is not None and self.vault.metadata.contains(
-            area=MetadataType.ALL, key=self.key, value=text
+        if self.key is not None and self.vault.contains_metadata(
+            meta_type=MetadataType.ALL, key=self.key, value=text
         ):
             return f"{self.key}:{text} already exists"
 
@@ -248,8 +248,8 @@ class Questions:
         if len(text) == 0:
             return True
 
-        if self.key is not None and not self.vault.metadata.contains(
-            area=MetadataType.ALL, key=self.key, value=text
+        if self.key is not None and not self.vault.contains_metadata(
+            meta_type=MetadataType.ALL, key=self.key, value=text
         ):
             return f"{self.key}:{text} does not exist"
 
@@ -272,8 +272,8 @@ class Questions:
         except re.error as error:
             return f"Invalid regex: {error}"
 
-        if self.key is not None and not self.vault.metadata.contains(
-            area=MetadataType.ALL, key=self.key, value=text, is_regex=True
+        if self.key is not None and not self.vault.contains_metadata(
+            meta_type=MetadataType.ALL, key=self.key, value=text, is_regex=True
         ):
             return f"No values in {self.key} match regex: {text}"
 

@@ -32,7 +32,7 @@ def remove_all(root: Path):
 @pytest.fixture()
 def sample_note(tmp_path) -> Path:
     """Fixture which creates a temporary note file."""
-    source_file: Path = Path("tests/fixtures/test_vault/test1.md")
+    source_file: Path = Path("tests/fixtures/test_vault/sample_note.md")
     if not source_file.exists():
         raise FileNotFoundError(f"Original file not found: {source_file}")
 

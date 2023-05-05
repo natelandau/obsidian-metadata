@@ -110,6 +110,35 @@ When transposing to inline metadata, the `insert location` value in the config f
 
 -   **Commit changes to the vault**
 
+### Known Limitations
+
+Multi-level frontmatter is not supported.
+
+```yaml
+# This works perfectly well
+---
+key: "value"
+key2:
+    - one
+    - two
+    - three
+key3: ["foo", "bar", "baz"]
+key4: value
+
+# This will not work
+---
+key1:
+    key2:
+        - one
+        - two
+        - three
+    key3:
+        - one
+        - two
+        - three
+---
+```
+
 ### Configuration
 
 `obsidian-metadata` requires a configuration file at `~/.obsidian_metadata.toml`. On first run, this file will be created. You can specify a new location for the configuration file with the `--config-file` option.

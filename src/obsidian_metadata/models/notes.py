@@ -10,25 +10,26 @@ import rich.repr
 import typer
 from charset_normalizer import from_path
 from rich.table import Table
+from ruamel.yaml import YAML
 
-from obsidian_metadata._utils import alerts, inline_metadata_from_string
+from obsidian_metadata._utils import alerts
 from obsidian_metadata._utils.alerts import logger as log
-from obsidian_metadata._utils.console import console
+from obsidian_metadata._utils.console import console_no_markup
 from obsidian_metadata.models import (
-    Frontmatter,
-    InlineMetadata,
-    InlineTags,
+    InlineField,
     InsertLocation,
     MetadataType,
-    Patterns,
+    Wrapping,
+    dict_to_yaml,
 )
 from obsidian_metadata.models.exceptions import (
     FrontmatterError,
     InlineMetadataError,
     InlineTagError,
 )
+from obsidian_metadata.models.parsers import Parser
 
-PATTERNS = Patterns()
+P = Parser()
 
 
 @rich.repr.auto
@@ -68,9 +69,8 @@ class Note:
             raise typer.Exit(code=1) from e
 
         try:
-            self.frontmatter: Frontmatter = Frontmatter(self.file_content)
-            self.inline_metadata: InlineMetadata = InlineMetadata(self.file_content)
-            self.tags: InlineTags = InlineTags(self.file_content)
+            self.metadata = self._grab_all_metadata(self.file_content)
+            self.original_metadata = copy.deepcopy(self.metadata)
         except FrontmatterError as e:
             alerts.error(f"Invalid frontmatter: {self.note_path}\n{e}")
             raise typer.Exit(code=1) from e
@@ -85,70 +85,347 @@ class Note:
         """Define rich representation of Vault."""
         yield "dry_run", self.dry_run
         yield "encoding", self.encoding
-        yield "frontmatter", self.frontmatter
-        yield "inline_metadata", self.inline_metadata
         yield "note_path", self.note_path
-        yield "tags", self.tags
 
-    def add_metadata(  # noqa: C901
+    def _grab_all_metadata(self, text: str) -> list[InlineField]:
+        """Grab all metadata from the note and create list of InlineField objects."""
+        all_metadata = []  # List of all metadata to be returned
+
+        # First parse the frontmatter
+        frontmatter_block = P.return_frontmatter(text, data_only=True)
+        if frontmatter_block:
+            yaml = YAML(typ="safe")
+            yaml.allow_unicode = False
+            try:
+                frontmatter: dict = yaml.load(frontmatter_block)
+            except Exception as e:  # noqa: BLE001
+                raise FrontmatterError(e) from e
+
+            for key, value in frontmatter.items():
+                if isinstance(value, dict):
+                    raise FrontmatterError(
+                        f"Nested frontmatter is not supported.\nKey: {key}\n Value: {value}"
+                    )
+                if isinstance(value, list):
+                    for item in value:
+                        all_metadata.append(
+                            InlineField(
+                                meta_type=MetadataType.FRONTMATTER,
+                                key=key,
+                                value=str(item),
+                            )
+                        )
+                else:
+                    all_metadata.append(
+                        InlineField(
+                            meta_type=MetadataType.FRONTMATTER,
+                            key=key,
+                            value=str(value),
+                        )
+                    )
+
+        # Then strip all frontmatter, code blocks, and inline code from the text and parse tags and inline metadata
+        text = P.strip_frontmatter(P.strip_code_blocks(P.strip_inline_code(text)))
+
+        # Parse text line by line
+        for _line in text.splitlines():
+            tags = [
+                InlineField(meta_type=MetadataType.TAGS, key=None, value=tag.lstrip("#"))
+                for tag in P.return_tags(_line)
+            ]
+            all_metadata.extend(tags)
+
+            inline_metadata = P.return_inline_metadata(_line)
+            if inline_metadata:
+                # for item in inline_metadata:
+                for key, value, wrapper in inline_metadata:
+                    all_metadata.append(
+                        InlineField(
+                            meta_type=MetadataType.INLINE,
+                            key=key,
+                            value=value,
+                            wrapping=wrapper,
+                        )
+                    )
+
+        return list(set(all_metadata))
+
+    def _delete_inline_metadata(self, source: InlineField) -> bool:
+        """Delete a specified inline metadata field from the note.
+
+        Args:
+            source (InlineField): InlineField object to delete.
+
+        Returns:
+            bool: True if successful, False if not.
+        """
+        if source.meta_type != MetadataType.INLINE:
+            log.error("Must provide inline metadata to _sub_inline_metadata")
+            raise typer.Exit(code=1)
+
+        remove_string = f"{re.escape(source.key)}::{re.escape(source.value)}"
+        if source.wrapping == Wrapping.NONE:
+            return self.sub(
+                rf"( *> *){remove_string}\s+|{remove_string}(\s+|$)",
+                "",
+                is_regex=True,
+            )
+
+        if source.wrapping == Wrapping.PARENS:
+            return self.sub(
+                rf" ?\({remove_string}\)",
+                "",
+                is_regex=True,
+            )
+
+        if source.wrapping == Wrapping.BRACKETS:
+            return self.sub(
+                rf" ?\[{remove_string}\]",
+                "",
+                is_regex=True,
+            )
+
+        return False
+
+    def _edit_inline_metadata(
+        self, source: InlineField, new_key: str, new_value: str = None
+    ) -> InlineField:
+        """Edit an inline metadata field. Takes an InlineField object and a new key and/or value and edits the inline metadata in the object and note accordingly.
+
+        Args:
+            source (InlineField): InlineField object to edit.
+            new_key (str, optional): New key to use.
+            new_value (str, optional): New value to use.
+
+        Returns:
+            InlineField: New InlineField object.
+        """
+        if source.meta_type != MetadataType.INLINE:
+            log.error("Must provide inline metadata to _sub_inline_metadata")
+            raise typer.Exit(code=1)
+
+        new_inline_field = InlineField(
+            meta_type=MetadataType.INLINE,
+            key=f"{source.key_open}{new_key}{source.key_close}",
+            value=new_value if new_value else source.value,
+            wrapping=source.wrapping,
+            is_changed=True,
+        )
+
+        if source.wrapping == Wrapping.NONE:
+            self.sub(
+                f"{source.key}::{source.value}",
+                f"{new_inline_field.key}:: {new_inline_field.value.lstrip()}",
+            )
+
+        if source.wrapping == Wrapping.PARENS:
+            self.sub(
+                pattern=f"({source.key}::{source.value})",
+                replacement=f"({new_inline_field.key}:: {new_inline_field.value.lstrip()})",
+            )
+        if source.wrapping == Wrapping.BRACKETS:
+            self.sub(
+                pattern=f"[{source.key}::{source.value}]",
+                replacement=f"[{new_inline_field.key}:: {new_inline_field.value.lstrip()}]",
+            )
+
+        self.metadata.remove(source)
+        self.metadata.append(new_inline_field)
+        return new_inline_field
+
+    def _find_matching_fields(
+        self, meta_type: MetadataType, key: str = None, value: str = None, is_regex: bool = False
+    ) -> list[InlineField]:
+        """Create a list of InlineField objects matching the specified key and/or value.
+
+        - When key and value are None, all fields of the specified type are returned.
+        - When value is None, all fields of the specified type with the specified key are returned.
+        - When key is None, all fields of the specified type with the specified value are returned.
+
+
+        Args:
+            meta_type (MetadataType): Type of metadata to search for.
+            key (str, optional): Key to match.
+            value (str, optional): Value to match.
+            is_regex (bool, optional): Whether to treat the key and value as regex.
+
+        Returns:
+            list[InlineField]: List of matching InlineField objects.
+
+        # TODO: Add support for fields where value is a [[link]]
+        """
+        if meta_type == MetadataType.TAGS and value:
+            value = value.lstrip("#")
+
+        if not is_regex:
+            key = f"^{re.escape(key)}$" if key else None
+            value = f"^{re.escape(value)}$" if value else None
+
+        matching_inline_fields = []
+        if key is None and value is None:
+            matching_inline_fields.extend([x for x in self.metadata if x.meta_type == meta_type])
+        elif value is None:
+            matching_inline_fields.extend(
+                [
+                    x
+                    for x in self.metadata
+                    if x.meta_type == meta_type and re.search(key, x.clean_key)
+                ]
+            )
+        elif key is None:
+            matching_inline_fields.extend(
+                [
+                    x
+                    for x in self.metadata
+                    if x.meta_type == meta_type and re.search(value, x.normalized_value)
+                ]
+            )
+        else:
+            matching_inline_fields.extend(
+                [
+                    x
+                    for x in self.metadata
+                    if x.meta_type == meta_type
+                    and re.search(key, x.clean_key)
+                    and re.search(value, x.normalized_value)
+                ]
+            )
+
+        return matching_inline_fields
+
+    def _update_inline_metadata(
+        self, source: InlineField, new_key: str = None, new_value: str = None
+    ) -> bool:
+        """Update an inline metadata field. Takes an InlineField object and a new key and/or value and updates the inline metadata in the object and note accordingly.
+
+        Args:
+            source (InlineField): InlineField object to update.
+            new_key (str, optional): New key to use.
+            new_value (str, optional): New value to use.
+
+        Returns:
+            bool: True if successful, False if not.
+
+        # TODO: Add support for fields where value is a [[link]]
+        """
+        if source.meta_type != MetadataType.INLINE:
+            log.error("Must provide inline metadata to _sub_inline_metadata")
+            raise typer.Exit(code=1)
+
+        if new_key is None and new_value is None:
+            log.error("Must provide new key or value to _sub_inline_metadata")
+            raise typer.Exit(code=1)
+
+        original_key = re.escape(source.key)
+        original_value = re.escape(source.value)
+
+        source.key = f"{source.key_open}{new_key}{source.key_close}" if new_key else source.key
+        source.clean_key = (
+            f"{source.key_open}{new_key}{source.key_close}" if new_key else source.clean_key
+        )
+        source.normalized_key = (
+            new_key.replace(" ", "-").lower() if new_key else source.normalized_key
+        )
+        source.value = f" {new_value.lstrip()}" if new_value else source.value
+        source.normalized_value = new_value if new_value else source.normalized_value
+        source.is_changed = True
+
+        match source.wrapping:
+            case Wrapping.NONE:
+                return self.sub(
+                    f"{original_key}:: ?{original_value}",
+                    f"{source.key}::{source.value}",
+                    is_regex=True,
+                )
+            case Wrapping.PARENS:
+                return self.sub(
+                    rf"\({original_key}:: ?{original_value}\)",
+                    f"({source.key}::{source.value})",
+                    is_regex=True,
+                )
+            case Wrapping.BRACKETS:
+                return self.sub(
+                    rf"\[{original_key}::{original_value}\]",
+                    f"[{source.key}::{source.value}]",
+                    is_regex=True,
+                )
+
+    def add_metadata(
         self,
-        area: MetadataType,
-        key: str = None,
-        value: str | list[str] = None,
+        meta_type: MetadataType,
+        added_key: str = None,
+        added_value: str = None,
         location: InsertLocation = None,
     ) -> bool:
         """Add metadata to the note if it does not already exist. This method adds specified metadata to the appropriate MetadataType object AND writes the new metadata to the note's file.
 
         Args:
-            area (MetadataType): Area to add metadata to.
-            key (str, optional): Key to add
+            added_key (str, optional): Key to add
+            added_value (str, optional): Value to add.
             location (InsertLocation, optional): Location to add inline metadata and tags.
-            value (str, optional): Value to add.
+            meta_type (MetadataType): Area to add metadata to.
 
         Returns:
             bool: Whether the metadata was added.
         """
-        match area:
-            case MetadataType.FRONTMATTER if self.frontmatter.add(key, value):
-                self.write_frontmatter()
-                return True
+        match meta_type:
+            case MetadataType.FRONTMATTER | MetadataType.INLINE:
+                if added_key is None or re.match(r"^\s*$", added_key):
+                    log.error("A valid key must be specified.")
+                    raise typer.Exit(code=1)
+                if self.contains_metadata(meta_type, added_key, added_value):
+                    return False
 
-            case MetadataType.INLINE:
-                if value is None and self.inline_metadata.add(key):
-                    line = f"{key}::"
-                    self.write_string(new_string=line, location=location)
-                    return True
+                new_meta = InlineField(
+                    meta_type=meta_type, key=added_key, value=added_value, is_changed=True
+                )
 
-                new_values = []
-                if isinstance(value, list):
-                    new_values = [_v for _v in value if self.inline_metadata.add(key, _v)]
-                elif self.inline_metadata.add(key, value):
-                    new_values = [value]
-
-                if new_values:
-                    for value in new_values:
-                        self.write_string(new_string=f"{key}:: {value}", location=location)
-                    return True
+                match meta_type:
+                    case MetadataType.FRONTMATTER:
+                        self.metadata.append(new_meta)
+                        self.write_frontmatter()
+                        return True
+                    case MetadataType.INLINE:
+                        self.metadata.append(new_meta)
+                        self.write_string(
+                            f"{added_key}:: {added_value}", location
+                        ) if added_value else self.write_string(f"{added_key}::", location)
+                        return True
 
             case MetadataType.TAGS:
-                new_values = []
-                if isinstance(value, list):
-                    new_values = [_v for _v in value if self.tags.add(_v)]
-                elif self.tags.add(value):
-                    new_values = [value]
+                if added_value is None or re.match(r"^\s*$", added_value):
+                    log.error("A tag must be specified to add.")
+                    raise typer.Exit(code=1)
 
-                if new_values:
-                    for value in new_values:
-                        _v = value
-                        if _v.startswith("#"):
-                            _v = _v[1:]
-                        self.write_string(new_string=f"#{_v}", location=location)
-                    return True
+                new_tags = P.return_tags(f"#{added_value.lstrip('#')}")
+
+                if len(new_tags) == 0:
+                    log.error("A valid tag must be specified.")
+                    raise typer.Exit(code=1)
+
+                tag_added = False
+                for tag in new_tags:
+                    if self.contains_metadata(meta_type, None, tag.lstrip("#")):
+                        continue
+
+                    new_tag = InlineField(
+                        meta_type=MetadataType.TAGS,
+                        key=None,
+                        value=tag.lstrip("#"),
+                        is_changed=True,
+                    )
+
+                    tag_added = True
+                    self.metadata.append(new_tag)
+                    self.write_string(f"#{new_tag.value}", location)
+
+                return tag_added
 
             case _:
-                return False
-
-        return False
+                log.error(
+                    f"Invalid metadata type '{meta_type}' was provided to note.add_metadata()."
+                )
+                raise typer.Exit(code=1)
 
     def commit(self, path: Path = None) -> None:
         """Write the note's new content to disk. This is a destructive action.
@@ -171,114 +448,182 @@ class Note:
             alerts.error(f"Note {p} not found. Exiting")
             raise typer.Exit(code=1) from e
 
-    def contains_tag(self, tag: str, is_regex: bool = False) -> bool:
-        """Check if a note contains the specified inline tag.
-
-        Args:
-            tag (str): Tag to check for.
-            is_regex (bool, optional): Whether to use regex to match the tag.
-
-        Returns:
-            bool: Whether the note has inline tags.
-        """
-        return self.tags.contains(tag, is_regex=is_regex)
-
-    def contains_metadata(self, key: str, value: str = None, is_regex: bool = False) -> bool:
-        """Check if a note has a key or a key-value pair in its Frontmatter or InlineMetadata.
-
-        Args:
-            key (str): Key to check for.
-            value (str, optional): Value to check for.
-            is_regex (bool, optional): Whether to use regex to match the key/value.
-
-        Returns:
-            bool: Whether the note contains the key or key-value pair.
-        """
-        if value is None:
-            if self.frontmatter.contains(key, is_regex=is_regex) or self.inline_metadata.contains(
-                key, is_regex=is_regex
-            ):
-                return True
-            return False
-
-        if self.frontmatter.contains(
-            key, value, is_regex=is_regex
-        ) or self.inline_metadata.contains(key, value, is_regex=is_regex):
-            return True
-
-        return False
-
-    def delete_all_metadata(self) -> None:
-        """Delete all metadata from the note. Removes all frontmatter and inline metadata and tags from the body of the note and from the associated metadata objects."""
-        for key in self.inline_metadata.dict:
-            self.delete_metadata(key=key, area=MetadataType.INLINE)
-
-        for tag in self.tags.list:
-            self.delete_tag(tag=tag)
-
-        self.frontmatter.delete_all()
-        self.write_frontmatter()
-
-    def delete_tag(self, tag: str) -> bool:
-        """Delete an inline tag from the `tags` attribute AND removes the tag from the text of the note if it exists.
-
-        Args:
-            tag (str): Tag to delete.
-
-        Returns:
-            bool: Whether the tag was deleted.
-        """
-        new_list = self.tags.list.copy()
-
-        for _t in new_list:
-            if re.search(tag, _t):
-                _t = re.escape(_t)
-                self.sub(rf"#{_t}([ \|,;:\*\(\)\[\]\\\.\n#&])", r"\1", is_regex=True)
-                self.tags.delete(tag)
-
-        if new_list != self.tags.list:
-            return True
-
-        return False
-
-    def delete_metadata(
+    def contains_metadata(  # noqa: PLR0911
         self,
-        key: str,
-        value: str = None,
-        area: MetadataType = MetadataType.ALL,
+        meta_type: MetadataType,
+        search_key: str,
+        search_value: str = None,
         is_regex: bool = False,
     ) -> bool:
-        """Delete a key or key-value pair from the note's Metadata object and the content of the note.  Regex is supported.
-
-        If no value is provided, will delete an entire specified key.
+        """Check if a note contains the specified metadata.
 
         Args:
-            area (MetadataType, optional): Area to delete metadata from. Defaults to MetadataType.ALL.
+            meta_type (MetadataType): Metadata type to check for.
+            search_key (str): Key to check for.
+            search_value (str, optional): Value to check for.
             is_regex (bool, optional): Whether to use regex to match the key/value.
-            key (str): Key to delete.
-            value (str, optional): Value to delete.
 
         Returns:
-            bool: Whether the key or key-value pair was deleted.
+            bool: Whether the note contains the metadata.
         """
-        changed_value: bool = False
+        if meta_type == MetadataType.ALL:
+            return self.contains_metadata(
+                MetadataType.META, search_key, search_value, is_regex
+            ) or self.contains_metadata(MetadataType.TAGS, search_key, search_value, is_regex)
 
-        if (
-            area == MetadataType.FRONTMATTER or area == MetadataType.ALL
-        ) and self.frontmatter.delete(key=key, value_to_delete=value, is_regex=is_regex):
-            self.write_frontmatter()
-            changed_value = True
+        if meta_type == MetadataType.META:
+            return self.contains_metadata(
+                MetadataType.FRONTMATTER, search_key, search_value, is_regex
+            ) or self.contains_metadata(MetadataType.INLINE, search_key, search_value, is_regex)
 
-        if (
-            area == MetadataType.INLINE or area == MetadataType.ALL
-        ) and self.inline_metadata.contains(key, value):
-            self.write_delete_inline_metadata(key=key, value=value, is_regex=is_regex)
-            self.inline_metadata.delete(key=key, value_to_delete=value, is_regex=is_regex)
-            changed_value = True
+        if meta_type == MetadataType.FRONTMATTER or meta_type == MetadataType.INLINE:
+            if search_key is None or re.match(r"^\s*$", search_key):
+                return False
 
-        if changed_value:
-            return True
+            search_key = re.escape(search_key) if not is_regex else search_key
+
+            if search_value is None:
+                return any(
+                    re.search(search_key, item.clean_key)
+                    for item in self.metadata
+                    if item.meta_type == meta_type
+                )
+
+            search_value = re.escape(search_value) if not is_regex else search_value
+
+            return any(
+                re.search(search_value, str(item.normalized_value))
+                for item in self.metadata
+                if item.meta_type == meta_type and re.search(search_key, str(item.clean_key))
+            )
+
+        if meta_type == MetadataType.TAGS:
+            if search_key is not None or search_value is None or re.match(r"^\s*$", search_value):
+                return False
+
+            search_value = search_value.lstrip("#")
+            search_value = re.escape(search_value) if not is_regex else search_value
+
+            return any(
+                re.search(search_value, str(item.normalized_value))
+                for item in self.metadata
+                if item.meta_type == meta_type
+            )
+
         return False
+
+    def delete_metadata(  # noqa: PLR0912, C901
+        self, meta_type: MetadataType, key: str = None, value: str = None, is_regex: bool = False
+    ) -> bool:
+        """Delete specified metadata from the note. Removes the metadata from the note and the metadata list. When a key is provided without a value, all values associated with that key are deleted.
+
+        Args:
+            meta_type (MetadataType): Metadata type to delete.
+            key (str, optional): Key to delete.
+            value (str, optional): Value to delete.
+            is_regex (bool, optional): Whether to use regex to match the key/value.
+
+        Returns:
+            bool: Whether metadata was deleted.
+        """
+        removed_frontmatter = False
+        meta_to_delete = []
+        if meta_type == MetadataType.META:
+            if key is None or re.match(r"^\s*$", key):
+                log.error("A valid key must be specified.")
+                raise typer.Exit(code=1)
+
+            meta_to_delete.extend(
+                self._find_matching_fields(MetadataType.FRONTMATTER, key, value, is_regex)
+            )
+            meta_to_delete.extend(
+                self._find_matching_fields(MetadataType.INLINE, key, value, is_regex)
+            )
+
+        elif meta_type == MetadataType.ALL:
+            if key is not None and not re.match(r"^\s*$", key):
+                meta_to_delete.extend(
+                    self._find_matching_fields(MetadataType.FRONTMATTER, key, value, is_regex)
+                )
+                meta_to_delete.extend(
+                    self._find_matching_fields(MetadataType.INLINE, key, value, is_regex)
+                )
+
+            if key is None and value is not None and not re.match(r"^\s*$", value):
+                meta_to_delete.extend(
+                    self._find_matching_fields(MetadataType.TAGS, key, value, is_regex)
+                )
+
+        elif meta_type == MetadataType.FRONTMATTER or meta_type == MetadataType.INLINE:
+            if key is None or re.match(r"^\s*$", key):
+                log.error("A valid key must be specified.")
+                raise typer.Exit(code=1)
+
+            meta_to_delete.extend(self._find_matching_fields(meta_type, key, value, is_regex))
+
+        elif meta_type == MetadataType.TAGS:
+            if key is not None or (value is None or re.match(r"^\s*$", value)):
+                log.error("A valid tag must be specified.")
+                raise typer.Exit(code=1)
+
+            meta_to_delete.extend(self._find_matching_fields(meta_type, key, value, is_regex))
+
+        if len(meta_to_delete) == 0:
+            return False
+
+        for field in meta_to_delete:
+            match field.meta_type:
+                case MetadataType.FRONTMATTER:
+                    removed_frontmatter = True
+                    self.metadata.remove(field)
+
+                case MetadataType.INLINE:
+                    if self._delete_inline_metadata(field):
+                        self.metadata.remove(field)
+                    else:
+                        log.warning(
+                            f"Failed to delete {field.clean_key} from {self.note_path.name}"
+                        )
+
+                case MetadataType.TAGS:
+                    if self.sub(
+                        f"#{re.escape(field.value)}([{P.chars_not_in_tags}])", "\1", is_regex=True
+                    ):
+                        self.metadata.remove(field)
+                    else:
+                        log.warning(f"Failed to delete #{field.value} from {self.note_path.name}")
+                        return False
+
+        if removed_frontmatter:
+            self.write_frontmatter()
+
+        return True
+
+    def delete_all_metadata(self) -> bool:
+        """Delete all metadata from the note. Removes all frontmatter and inline metadata and tags from the body of the note and from the associated InlineField objects.
+
+        Returns:
+            bool: Whether metadata was deleted.
+        """
+        deleted_frontmatter = False
+        meta_to_delete = copy.deepcopy(self.metadata)
+
+        for field in meta_to_delete:
+            if field.meta_type == MetadataType.FRONTMATTER:
+                deleted_frontmatter = True
+                self.metadata.remove(field)
+            else:
+                self.delete_metadata(
+                    field.meta_type, field.clean_key, field.normalized_value, is_regex=False
+                )
+
+        if deleted_frontmatter:
+            self.write_frontmatter()
+
+        if len(self.metadata) > 0:
+            return False
+
+        return True
 
     def has_changes(self) -> bool:
         """Check if the note has been updated.
@@ -286,16 +631,10 @@ class Note:
         Returns:
             bool: Whether the note has been updated.
         """
-        if self.frontmatter.has_changes():
-            return True
-
-        if self.tags.has_changes():
-            return True
-
-        if self.inline_metadata.has_changes():
-            return True
-
-        if self.file_content != self.original_file_content:
+        if (
+            self.original_metadata != self.metadata
+            or self.original_file_content != self.file_content
+        ):
             return True
 
         return False
@@ -315,31 +654,11 @@ class Note:
             elif line.startswith("-"):
                 table.add_row(line, style="red")
 
-        console.print(table)
+        console_no_markup.print(table)
 
     def print_note(self) -> None:
         """Print the note to the console."""
-        console.print(self.file_content)
-
-    def rename_tag(self, tag_1: str, tag_2: str) -> bool:
-        """Rename an inline tag. Updates the Metadata object and the text of the note.
-
-        Args:
-            tag_1 (str): Tag to rename.
-            tag_2 (str): New tag name.
-
-        Returns:
-            bool: Whether the tag was renamed.
-        """
-        if tag_1 in self.tags.list:
-            self.sub(
-                rf"#{tag_1}([ \|,;:\*\(\)\[\]\\\.\n#&])",
-                rf"#{tag_2}\1",
-                is_regex=True,
-            )
-            self.tags.rename(tag_1, tag_2)
-            return True
-        return False
+        console_no_markup.print(self.file_content)
 
     def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> bool:
         """Rename a key or key-value pair in the note's InlineMetadata and Frontmatter objects and the content of the note.
@@ -354,180 +673,183 @@ class Note:
         Returns:
             bool: Whether the note was updated.
         """
-        changed_value: bool = False
+        # TODO: Add support for TAGS
+        fields_to_rename = []
         if value_2 is None:
-            if self.frontmatter.rename(key, value_1):
-                self.write_frontmatter()
-                changed_value = True
-            if self.inline_metadata.rename(key, value_1):
-                self.write_inline_metadata_change(key, value_1)
-                changed_value = True
+            fields_to_rename.extend(
+                self._find_matching_fields(meta_type=MetadataType.INLINE, key=key)
+            )
+            fields_to_rename.extend(
+                self._find_matching_fields(meta_type=MetadataType.FRONTMATTER, key=key)
+            )
         else:
-            if self.frontmatter.rename(key, value_1, value_2):
-                self.write_frontmatter()
-                changed_value = True
-            if self.inline_metadata.rename(key, value_1, value_2):
-                self.write_inline_metadata_change(key, value_1, value_2)
-                changed_value = True
+            fields_to_rename.extend(
+                self._find_matching_fields(meta_type=MetadataType.INLINE, key=key, value=value_1)
+            )
+            fields_to_rename.extend(
+                self._find_matching_fields(
+                    meta_type=MetadataType.FRONTMATTER, key=key, value=value_1
+                )
+            )
 
-        if changed_value:
-            return True
+        if len(fields_to_rename) == 0:
+            return False
 
-        return False
+        frontmatter_is_changed = False
+        for field in fields_to_rename:
+            if field.meta_type == MetadataType.FRONTMATTER:
+                frontmatter_is_changed = True
+                field.is_changed = True
+                if value_2 is None:
+                    field.clean_key = value_1
+                    field.key = value_1
+                    field.normalized_key = value_1.replace(" ", "-").lower()
+                else:
+                    field.value = value_2
+                    field.normalized_value = value_2.strip()
 
-    def sub(self, pattern: str, replacement: str, is_regex: bool = False) -> None:
+            if field.meta_type == MetadataType.INLINE:
+                field.is_changed = True
+                if value_2 is None:
+                    self._update_inline_metadata(field, new_key=value_1)
+                else:
+                    self._update_inline_metadata(field, new_value=value_2)
+
+        if frontmatter_is_changed:
+            self.write_frontmatter()
+
+        return True
+
+    def rename_tag(self, old_tag: str, new_tag: str) -> bool:
+        """Rename a tag in the note's body and tags.
+
+        Args:
+            old_tag (str): Tag to rename.
+            new_tag (str): New tag name.
+
+        Returns:
+            bool: Whether the note was updated.
+        """
+        old_tag = old_tag.lstrip("#").strip()
+        new_tag = new_tag.lstrip("#").strip()
+        fields_to_rename = [
+            x for x in self.metadata if x.meta_type == MetadataType.TAGS and x.value == old_tag
+        ]
+
+        if len(fields_to_rename) == 0:
+            return False
+
+        for field in fields_to_rename:
+            field.is_changed = True
+            self.sub(rf"#{re.escape(field.value)}", f"#{new_tag}", is_regex=True)
+            field.value = new_tag
+            field.normalized_value = new_tag
+
+        return True
+
+    def sub(self, pattern: str, replacement: str, is_regex: bool = False) -> bool:
         """Substitutes text within the note.
 
         Args:
             pattern (str): The pattern to replace (plain text or regular expression).
             replacement (str): What to replace the pattern with.
             is_regex (bool): Whether the pattern is a regex pattern or plain text.
+
+        Returns:
+            bool: Whether text was substituted.
         """
         if not is_regex:
             pattern = re.escape(pattern)
 
-        self.file_content = re.sub(pattern, replacement, self.file_content, re.MULTILINE)
+        self.file_content, num_subs = re.subn(pattern, replacement, self.file_content, re.MULTILINE)
 
-    def transpose_metadata(  # noqa: C901, PLR0912, PLR0911
+        return num_subs > 0
+
+    def transpose_metadata(
         self,
         begin: MetadataType,
         end: MetadataType,
         key: str = None,
-        value: str | list[str] = None,
+        value: str = None,
         location: InsertLocation = InsertLocation.BOTTOM,
     ) -> bool:
         """Move metadata from one metadata object to another. i.e. Frontmatter to InlineMetadata or vice versa.
 
-        If no key is specified, will transpose all metadata. If a key is specified, but no value, the entire key will be transposed. if a specific value is specified, just that value will be transposed.
+        If the beginning and end type of the metadata are the same, will move the metadata within the same type to the specified location.
+
+        If no key is specified, will transpose all metadata. If a key is specified, but no value, the key and all associated values will be transposed. If a specific value is specified, just that value will be transposed.
 
         Args:
             begin (MetadataType): The type of metadata to transpose from.
             end (MetadataType): The type of metadata to transpose to.
             key (str, optional): The key to transpose. Defaults to None.
             location (InsertLocation, optional): Where to insert the metadata. Defaults to InsertLocation.BOTTOM.
-            value (str | list[str], optional): The value to transpose. Defaults to None.
+            value (str, optional): The value to transpose. Defaults to None.
 
         Returns:
             bool: Whether the note was updated.
         """
-        if (begin == MetadataType.FRONTMATTER or begin == MetadataType.INLINE) and (
-            end == MetadataType.FRONTMATTER or end == MetadataType.INLINE
-        ):
-            if begin == MetadataType.FRONTMATTER:
-                begin_dict = self.frontmatter.dict
-            else:
-                begin_dict = self.inline_metadata.dict
+        if begin == MetadataType.FRONTMATTER and end == MetadataType.FRONTMATTER:
+            return False
 
-            if begin_dict == {}:
-                return False
-
-            if key is None:  # Transpose all metadata when no key is provided
-                for _key, _value in begin_dict.items():
-                    self.add_metadata(key=_key, value=_value, area=end, location=location)
-                    self.delete_metadata(key=_key, area=begin)
-                return True
-
-            has_changes = False
-            temp_dict = copy.deepcopy(begin_dict)
-            for k, v in begin_dict.items():
-                if key == k:
-                    if value is None:
-                        self.add_metadata(key=k, value=v, area=end, location=location)
-                        self.delete_metadata(key=k, area=begin)
-                        return True
-
-                    if value == v:
-                        self.add_metadata(key=k, value=v, area=end, location=location)
-                        self.delete_metadata(key=k, area=begin)
-                        return True
-
-                    if isinstance(value, str):
-                        if value in v:
-                            self.add_metadata(key=k, value=value, area=end, location=location)
-                            self.delete_metadata(key=k, value=value, area=begin)
-                            return True
-
-                        return False
-
-                    if isinstance(value, list):
-                        for value_item in value:
-                            if value_item in v:
-                                self.add_metadata(
-                                    key=k, value=value_item, area=end, location=location
-                                )
-                                self.delete_metadata(key=k, value=value_item, area=begin)
-                                temp_dict[k].remove(value_item)
-                                has_changes = True
-
-                        if temp_dict[k] == []:
-                            self.delete_metadata(key=k, area=begin)
-
-                    return bool(has_changes)
-
-        if begin == MetadataType.TAGS:
+        if begin == MetadataType.TAGS or end == MetadataType.TAGS:
             # TODO: Implement transposing to and from tags
-            pass
+            return False
 
-        return False
+        if key is None:  # When no key is provided, transpose all metadata
+            meta_to_transpose = [x for x in self.metadata if x.meta_type == begin]
+        else:
+            meta_to_transpose = self._find_matching_fields(begin, key, value)
 
-    def write_delete_inline_metadata(
-        self, key: str = None, value: str = None, is_regex: bool = False
-    ) -> bool:
-        """For a given inline metadata key and/or key-value pair, delete it from the text of the note. If no key is provided, will delete all inline metadata from the text of the note.
+        if len(meta_to_transpose) == 0:
+            return False
 
-        IMPORTANT: This method makes no changes to the InlineMetadata object.
+        for field in sorted(
+            meta_to_transpose,
+            reverse=location != InsertLocation.BOTTOM,
+            key=lambda x: (x.clean_key, x.normalized_value),
+        ):
+            self.delete_metadata(begin, field.clean_key, field.normalized_value)
+            self.add_metadata(
+                end,
+                field.clean_key,
+                field.normalized_value if field.normalized_value != "-" else "",
+                location,
+            )
 
-        Args:
-            is_regex (bool, optional): Whether the key is a regex pattern or plain text. Defaults to False.
-            key (str, optional): Key to delete.
-            value (str, optional): Value to delete.
-
-        Returns:
-            bool: Whether the note was updated.
-        """
-        if self.inline_metadata.dict != {}:
-            if key is None:
-                for _k, _v in self.inline_metadata.dict.items():
-                    for _value in _v:
-                        _k = re.escape(_k)
-                        _value = re.escape(_value)
-                        self.sub(rf"\[?{_k}:: ?\[?\[?{_value}\]?\]?", "", is_regex=True)
-                return True
-
-            for _k, _v in self.inline_metadata.dict.items():
-                if (is_regex and re.search(key, _k)) or (not is_regex and key == _k):
-                    for _value in _v:
-                        if value is None:
-                            _k = re.escape(_k)
-                            _value = re.escape(_value)
-                            self.sub(rf"\[?{_k}:: \[?\[?{_value}\]?\]?", "", is_regex=True)
-                        elif (is_regex and re.search(value, _value)) or (
-                            not is_regex and value == _value
-                        ):
-                            _k = re.escape(_k)
-                            _value = re.escape(_value)
-                            self.sub(rf"\[?({_k}::) ?\[?\[?{_value}\]?\]?", r"\1", is_regex=True)
-                    return True
-        return False
+        return True
 
     def write_frontmatter(self, sort_keys: bool = False) -> bool:
-        """Replace the frontmatter in the note with the current Frontmatter object.  If the Frontmatter object is empty, will delete the frontmatter from the note.
+        """Replace the frontmatter in the note with the current metadata. If not frontmatter exists the entire block will be removed from the note.
+
+        Args:
+            sort_keys (bool, optional): Whether to sort the keys in the frontmatter alphabetically.
 
         Returns:
-            bool: Whether the note was updated.
+            bool: Whether frontmatter was written to the note.
         """
+        # First we find the current frontmatter block in the note.
         try:
-            current_frontmatter = PATTERNS.frontmatter_block.search(self.file_content).group(
-                "frontmatter"
-            )
+            current_frontmatter = P.return_frontmatter(self.file_content, data_only=False)
         except AttributeError:
             current_frontmatter = None
 
-        if current_frontmatter is None and self.frontmatter.dict == {}:
+        frontmatter_objects_as_dict: dict[str, list[str]] = {}
+        for k, v in [
+            (x.key, x.value) for x in self.metadata if x.meta_type == MetadataType.FRONTMATTER
+        ]:
+            frontmatter_objects_as_dict.setdefault(k, []).append(v)
+
+        # Make no changes when there are no changes to make:
+        if current_frontmatter is None and len(frontmatter_objects_as_dict) == 0:
             return False
 
-        new_frontmatter = self.frontmatter.to_yaml(sort_keys=sort_keys)
-        new_frontmatter = "" if self.frontmatter.dict == {} else f"---\n{new_frontmatter}---\n"
+        # TODO: Make no changes if frontmatter in content is the same as all frontmatter metadata objects
+
+        # Update frontmatter in the note
+        new_frontmatter = dict_to_yaml(frontmatter_objects_as_dict, sort_keys=sort_keys)
+
+        new_frontmatter = "" if not new_frontmatter else f"---\n{new_frontmatter}---\n"
 
         if current_frontmatter is None:
             self.file_content = new_frontmatter + self.file_content
@@ -536,57 +858,6 @@ class Note:
         current_frontmatter = f"{re.escape(current_frontmatter)}\n?"
         self.sub(current_frontmatter, new_frontmatter, is_regex=True)
         return True
-
-    def write_all_inline_metadata(
-        self,
-        location: InsertLocation,
-    ) -> bool:
-        """Write all metadata found in the InlineMetadata object to the note at a specified insert location.
-
-        Args:
-            location (InsertLocation): Where to insert the metadata.
-
-        Returns:
-            bool: Whether the note was updated.
-        """
-        if self.inline_metadata.dict != {}:
-            string = ""
-            for k, v in sorted(self.inline_metadata.dict.items()):
-                for value in v:
-                    string += f"{k}:: {value}\n"
-
-            if self.write_string(new_string=string, location=location, allow_multiple=True):
-                return True
-
-        return False
-
-    def write_inline_metadata_change(self, key: str, value_1: str, value_2: str = None) -> None:
-        """Write changes to a specific inline metadata key or value.
-
-        Args:
-            key (str): Key to rename.
-            value_1 (str): Value to replace OR new key name (if value_2 is None).
-            value_2 (str, optional): New value.
-
-        """
-        found_inline_metadata = inline_metadata_from_string(self.file_content)
-
-        for _k, _v in found_inline_metadata:
-            if re.search(key, _k):
-                if value_2 is None:
-                    if re.search(rf"{key}[^\\w\\d_-]+", _k):
-                        key_text = re.split(r"[^\\w\\d_-]+$", _k)[0]
-                        key_markdown = re.split(r"^[\\w\\d_-]+", _k)[1]
-                        self.sub(
-                            rf"{key_text}{key_markdown}::",
-                            rf"{value_1}{key_markdown}::",
-                        )
-                    else:
-                        self.sub(f"{_k}::", f"{value_1}::")
-                elif re.search(key, _k) and re.search(value_1, _v):
-                    _k = re.escape(_k)
-                    _v = re.escape(_v)
-                    self.sub(f"{_k}:: ?{_v}", f"{_k}:: {value_2}", is_regex=True)
 
     def write_string(
         self,
@@ -611,31 +882,27 @@ class Note:
             case InsertLocation.BOTTOM:
                 self.file_content += f"\n{new_string}"
                 return True
+
             case InsertLocation.TOP:
-                try:
-                    top = PATTERNS.frontmatter_block.search(self.file_content).group("frontmatter")
-                except AttributeError:
-                    top = ""
+                frontmatter = P.return_frontmatter(self.file_content)
 
-                if not top:
+                if frontmatter is None:
                     self.file_content = f"{new_string}\n{self.file_content}"
                     return True
 
-                new_string = f"{top}\n{new_string}"
-                top = re.escape(top)
-                self.sub(top, new_string, is_regex=True)
+                new_string = f"{frontmatter}\n{new_string}"
+                ecaped_frontmatter = re.escape(frontmatter)
+                self.sub(ecaped_frontmatter, new_string, is_regex=True)
                 return True
-            case InsertLocation.AFTER_TITLE:
-                try:
-                    top = PATTERNS.top_with_header.search(self.file_content).group("top")
-                except AttributeError:
-                    top = ""
 
-                if not top:
+            case InsertLocation.AFTER_TITLE:
+                top = P.return_top_with_header(self.file_content)
+
+                if top is None:
                     self.file_content = f"{new_string}\n{self.file_content}"
                     return True
 
-                new_string = f"{top}\n{new_string}"
+                new_string = f"{top.strip()}\n{new_string}\n"
                 top = re.escape(top)
                 self.sub(top, new_string, is_regex=True)
                 return True

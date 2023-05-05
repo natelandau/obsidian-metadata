@@ -7,6 +7,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from obsidian_metadata.cli import app
+from tests.helpers import Regex, strip_ansi
 
 from .helpers import KeyInputs, Regex  # noqa: F401
 
@@ -37,6 +38,8 @@ def test_application(tmp_path) -> None:
         # input=KeyInputs.DOWN + KeyInputs.DOWN + KeyInputs.DOWN + KeyInputs.ENTER, # noqa: ERA001
     )
 
+    output = strip_ansi(result.output)
+
     banner = r"""
    ___  _         _     _ _
   / _ \| |__  ___(_) __| (_) __ _ _ __
@@ -49,7 +52,8 @@ def test_application(tmp_path) -> None:
  |_|  |_|\___|\__\__,_|\__,_|\__,_|\__\__,_|
 """
 
-    assert banner in result.output
+    assert banner in output
+    assert output == Regex(r"SUCCESS  \| Loaded \d+ notes from \d+ total notes")
     assert result.exit_code == 1
 
 

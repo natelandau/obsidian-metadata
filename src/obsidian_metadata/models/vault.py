@@ -11,14 +11,15 @@ from typing import Any
 import rich.repr
 import typer
 from rich import box
+from rich.columns import Columns
 from rich.prompt import Confirm
 from rich.table import Table
 
 from obsidian_metadata._config.config import VaultConfig
-from obsidian_metadata._utils import alerts
+from obsidian_metadata._utils import alerts, dict_contains, merge_dictionaries
 from obsidian_metadata._utils.alerts import logger as log
-from obsidian_metadata._utils.console import console
-from obsidian_metadata.models import InsertLocation, MetadataType, Note, VaultMetadata
+from obsidian_metadata._utils.console import console, console_no_markup
+from obsidian_metadata.models import InsertLocation, MetadataType, Note
 
 
 @dataclass
@@ -54,7 +55,9 @@ class Vault:
         self.insert_location: InsertLocation = self._find_insert_location()
         self.dry_run: bool = dry_run
         self.backup_path: Path = self.vault_path.parent / f"{self.vault_path.name}.bak"
-        self.metadata = VaultMetadata()
+        self.frontmatter: dict[str, list[str]] = {}
+        self.inline_meta: dict[str, list[str]] = {}
+        self.tags: list[str] = []
         self.exclude_paths: list[Path] = []
 
         for p in config.exclude_paths:
@@ -104,16 +107,33 @@ class Vault:
                 ]
 
             if _filter.tag_filter is not None:
-                notes_list = [n for n in notes_list if n.contains_tag(_filter.tag_filter)]
+                notes_list = [
+                    n
+                    for n in notes_list
+                    if n.contains_metadata(
+                        MetadataType.TAGS, search_key="", search_value=_filter.tag_filter
+                    )
+                ]
 
             if _filter.key_filter is not None and _filter.value_filter is not None:
                 notes_list = [
                     n
                     for n in notes_list
-                    if n.contains_metadata(_filter.key_filter, _filter.value_filter)
+                    if n.contains_metadata(
+                        meta_type=MetadataType.META,
+                        search_key=_filter.key_filter,
+                        search_value=_filter.value_filter,
+                    )
                 ]
+
             if _filter.key_filter is not None and _filter.value_filter is None:
-                notes_list = [n for n in notes_list if n.contains_metadata(_filter.key_filter)]
+                notes_list = [
+                    n
+                    for n in notes_list
+                    if n.contains_metadata(
+                        MetadataType.META, search_key=_filter.key_filter, search_value=None
+                    )
+                ]
 
         return notes_list
 
@@ -167,37 +187,60 @@ class Vault:
         ]
 
     def _rebuild_vault_metadata(self) -> None:
-        """Rebuild vault metadata."""
-        self.metadata = VaultMetadata()
+        """Rebuild vault metadata. Indexes all frontmatter, inline metadata, and tags and adds them to dictionary objects."""
         with console.status(
             "Processing notes...  [dim](Can take a while for a large vault)[/]",
             spinner="bouncingBall",
         ):
+            vault_frontmatter = {}
+            vault_inline_meta = {}
+            vault_tags = []
             for _note in self.notes_in_scope:
-                self.metadata.index_metadata(
-                    area=MetadataType.FRONTMATTER, metadata=_note.frontmatter.dict
-                )
-                self.metadata.index_metadata(
-                    area=MetadataType.INLINE, metadata=_note.inline_metadata.dict
-                )
-                self.metadata.index_metadata(
-                    area=MetadataType.TAGS,
-                    metadata=_note.tags.list,
-                )
+                for field in _note.metadata:
+                    match field.meta_type:
+                        case MetadataType.FRONTMATTER:
+                            if field.clean_key not in vault_frontmatter:
+                                vault_frontmatter[field.clean_key] = (
+                                    [field.normalized_value]
+                                    if field.normalized_value != "-"
+                                    else []
+                                )
+                            elif field.normalized_value != "-":
+                                vault_frontmatter[field.clean_key].append(field.normalized_value)
+                        case MetadataType.INLINE:
+                            if field.clean_key not in vault_inline_meta:
+                                vault_inline_meta[field.clean_key] = (
+                                    [field.normalized_value]
+                                    if field.normalized_value != "-"
+                                    else []
+                                )
+                            elif field.normalized_value != "-":
+                                vault_inline_meta[field.clean_key].append(field.normalized_value)
+                        case MetadataType.TAGS:
+                            if field.normalized_value not in vault_tags:
+                                vault_tags.append(field.normalized_value)
+
+            self.frontmatter = {
+                k: sorted(list(set(v))) for k, v in sorted(vault_frontmatter.items())
+            }
+            self.inline_meta = {
+                k: sorted(list(set(v))) for k, v in sorted(vault_inline_meta.items())
+            }
+            self.tags = sorted(list(set(vault_tags)))
 
     def add_metadata(
         self,
-        area: MetadataType,
+        meta_type: MetadataType,
         key: str = None,
-        value: str | list[str] = None,
+        value: str = None,
         location: InsertLocation = None,
     ) -> int:
         """Add metadata to all notes in the vault which do not already contain it.
 
         Args:
-            area (MetadataType): Area of metadata to add to.
+            meta_type (MetadataType): Area of metadata to add to.
             key (str): Key to add.
-            value (str|list, optional): Value to add.
+            value (str, optional): Value to add.
             location (InsertLocation, optional): Location to insert metadata. (Defaults to `vault.config.insert_location`)
 
         Returns:
@@ -209,7 +252,9 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.add_metadata(area=area, key=key, value=value, location=location):
+            if _note.add_metadata(
+                meta_type=meta_type, added_key=key, added_value=value, location=location
+            ):
                 log.trace(f"Added metadata to {_note.note_path}")
                 num_changed += 1
 
@@ -257,6 +302,43 @@ class Vault:
                 log.trace(f"writing to {_note.note_path}")
                 _note.commit()
 
+    def contains_metadata(
+        self, meta_type: MetadataType, key: str, value: str = None, is_regex: bool = False
+    ) -> bool:
+        """Check if the vault contains metadata.
+
+        Args:
+            meta_type (MetadataType): Area of metadata to check.
+            key (str): Key to check.
+            value (str, optional): Value to check. Defaults to None.
+            is_regex (bool, optional): Whether the value is a regex. Defaults to False.
+
+        Returns:
+            bool: Whether the vault contains the metadata.
+        """
+        if meta_type == MetadataType.FRONTMATTER and key is not None:
+            return dict_contains(self.frontmatter, key, value, is_regex)
+
+        if meta_type == MetadataType.INLINE and key is not None:
+            return dict_contains(self.inline_meta, key, value, is_regex)
+
+        if meta_type == MetadataType.TAGS and value is not None:
+            if not is_regex:
+                value = f"^{re.escape(value)}$"
+            return any(re.search(value, item) for item in self.tags)
+
+        if meta_type == MetadataType.META:
+            return self.contains_metadata(
+                MetadataType.FRONTMATTER, key, value, is_regex
+            ) or self.contains_metadata(MetadataType.INLINE, key, value, is_regex)
+
+        if meta_type == MetadataType.ALL:
+            return self.contains_metadata(
+                MetadataType.TAGS, key, value, is_regex
+            ) or self.contains_metadata(MetadataType.META, key, value, is_regex)
+
+        return False
+
     def delete_backup(self) -> None:
         """Delete the vault backup."""
         log.debug("Deleting vault backup")
@@ -280,7 +362,7 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.delete_tag(tag):
+            if _note.delete_metadata(MetadataType.TAGS, value=tag):
                 log.trace(f"Deleted tag from {_note.note_path}")
                 num_changed += 1
 
@@ -293,13 +375,13 @@ class Vault:
         self,
         key: str,
         value: str = None,
-        area: MetadataType = MetadataType.ALL,
+        meta_type: MetadataType = MetadataType.ALL,
         is_regex: bool = False,
     ) -> int:
         """Delete metadata in the vault.
 
         Args:
-            area (MetadataType): Area of metadata to delete from.
+            meta_type (MetadataType): Area of metadata to delete from.
             is_regex (bool): Whether to use regex for key and value. Defaults to False.
             key (str): Key to delete. Regex is supported
             value (str, optional): Value to delete. Regex is supported
@@ -310,7 +392,7 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.delete_metadata(key=key, value=value, area=area, is_regex=is_regex):
+            if _note.delete_metadata(meta_type=meta_type, key=key, value=value, is_regex=is_regex):
                 log.trace(f"Deleted metadata from {_note.note_path}")
                 num_changed += 1
 
@@ -319,7 +401,7 @@ class Vault:
 
         return num_changed
 
-    def export_metadata(self, path: str, export_format: str = "csv") -> None:  # noqa: C901
+    def export_metadata(self, path: str, export_format: str = "csv") -> None:
         """Write metadata to a csv file.
 
         Args:
@@ -337,28 +419,28 @@ class Vault:
                     writer = csv.writer(f)
                     writer.writerow(["Metadata Type", "Key", "Value"])
 
-                    for key, value in self.metadata.frontmatter.items():
-                        if isinstance(value, list):
-                            if len(value) > 0:
-                                for v in value:
-                                    writer.writerow(["frontmatter", key, v])
-                            else:
+                    for key, value in self.frontmatter.items():
+                        if len(value) > 0:
+                            for v in value:
                                 writer.writerow(["frontmatter", key, v])
+                        else:
+                            writer.writerow(["frontmatter", key, ""])
 
-                    for key, value in self.metadata.inline_metadata.items():
-                        if isinstance(value, list):
-                            if len(value) > 0:
-                                for v in value:
-                                    writer.writerow(["inline_metadata", key, v])
-                            else:
-                                writer.writerow(["frontmatter", key, v])
-                    for tag in self.metadata.tags:
+                    for key, value in self.inline_meta.items():
+                        if len(value) > 0:
+                            for v in value:
+                                writer.writerow(["inline_metadata", key, v])
+                        else:
+                            writer.writerow(["inline_metadata", key, ""])
+
+                    for tag in self.tags:
                         writer.writerow(["tags", "", f"{tag}"])
+
             case "json":
                 dict_to_dump = {
-                    "frontmatter": self.metadata.dict,
-                    "inline_metadata": self.metadata.inline_metadata,
-                    "tags": self.metadata.tags,
+                    "frontmatter": self.frontmatter,
+                    "inline_metadata": self.inline_meta,
+                    "tags": self.tags,
                 }
 
                 with export_file.open(mode="w", encoding="utf-8") as f:
@@ -380,26 +462,21 @@ class Vault:
             writer.writerow(["path", "type", "key", "value"])
 
             for _note in self.all_notes:
-                for key, value in _note.frontmatter.dict.items():
-                    for v in value:
-                        writer.writerow(
-                            [_note.note_path.relative_to(self.vault_path), "frontmatter", key, v]
-                        )
-
-                for key, value in _note.inline_metadata.dict.items():
-                    for v in value:
-                        writer.writerow(
-                            [
-                                _note.note_path.relative_to(self.vault_path),
-                                "inline_metadata",
-                                key,
-                                v,
-                            ]
-                        )
-
-                for tag in _note.tags.list:
+                for field in sorted(
+                    _note.metadata,
+                    key=lambda x: (
+                        x.meta_type.name,
+                        x.clean_key,
+                        x.normalized_value,
+                    ),
+                ):
                     writer.writerow(
-                        [_note.note_path.relative_to(self.vault_path), "tag", "", f"{tag}"]
+                        [
+                            _note.note_path.relative_to(self.vault_path),
+                            field.meta_type.name,
+                            field.clean_key if field.clean_key is not None else "",
+                            field.normalized_value if field.normalized_value != "-" else "",
+                        ]
                     )
 
     def get_changed_notes(self) -> list[Note]:
@@ -430,14 +507,14 @@ class Vault:
         table.add_row("Notes with changes", str(len(self.get_changed_notes())))
         table.add_row("Insert Location", str(self.insert_location.value))
 
-        console.print(table)
+        console_no_markup.print(table)
 
     def list_editable_notes(self) -> None:
         """Print a list of notes within the scope that are being edited."""
         table = Table(title="Notes in current scope", show_header=False, box=box.HORIZONTALS)
         for _n, _note in enumerate(self.notes_in_scope, start=1):
             table.add_row(str(_n), str(_note.note_path.relative_to(self.vault_path)))
-        console.print(table)
+        console_no_markup.print(table)
 
     def move_inline_metadata(self, location: InsertLocation) -> int:
         """Move all inline metadata to the selected location.
@@ -451,11 +528,15 @@ class Vault:
         num_changed = 0
 
         for _note in self.notes_in_scope:
-            if _note.write_delete_inline_metadata():
-                log.trace(f"Deleted inline metadata from {_note.note_path}")
+            if _note.transpose_metadata(
+                begin=MetadataType.INLINE,
+                end=MetadataType.INLINE,
+                key=None,
+                value=None,
+                location=location,
+            ):
+                log.trace(f"Moved inline metadata in {_note.note_path}")
                 num_changed += 1
-                _note.write_all_inline_metadata(location)
-                log.trace(f"Wrote all inline metadata to {_note.note_path}")
 
         if num_changed > 0:
             self._rebuild_vault_metadata()
@@ -465,6 +546,50 @@ class Vault:
     def num_excluded_notes(self) -> int:
         """Count number of excluded notes."""
         return len(self.all_notes) - len(self.notes_in_scope)
+
+    def print_metadata(self, meta_type: MetadataType = MetadataType.ALL) -> None:
+        """Print metadata for the vault."""
+        dict_to_print = None
+        list_to_print = None
+        match meta_type:
+            case MetadataType.INLINE:
+                dict_to_print = self.inline_meta
+                header = "All inline metadata"
+            case MetadataType.FRONTMATTER:
+                dict_to_print = self.frontmatter
+                header = "All frontmatter"
+            case MetadataType.TAGS:
+                list_to_print = [f"#{x}" for x in self.tags]
+                header = "All inline tags"
+            case MetadataType.KEYS:
+                list_to_print = sorted(
+                    merge_dictionaries(self.frontmatter, self.inline_meta).keys()
+                )
+                header = "All Keys"
+            case MetadataType.ALL:
+                dict_to_print = merge_dictionaries(self.frontmatter, self.inline_meta)
+                list_to_print = [f"#{x}" for x in self.tags]
+                header = "All metadata"
+
+        if dict_to_print is not None:
+            table = Table(title=header, show_footer=False, show_lines=True)
+            table.add_column("Keys", style="bold")
+            table.add_column("Values")
+            for key, value in sorted(dict_to_print.items()):
+                values: str | dict[str, list[str]] = (
+                    "\n".join(sorted(value)) if isinstance(value, list) else value
+                )
+                table.add_row(f"{key}", str(values))
+            console_no_markup.print(table)
+
+        if list_to_print is not None:
+            columns = Columns(
+                sorted(list_to_print),
+                equal=True,
+                expand=True,
+                title=header if meta_type != MetadataType.ALL else "All inline tags",
+            )
+            console_no_markup.print(columns)
 
     def rename_tag(self, old_tag: str, new_tag: str) -> int:
         """Rename an inline tag in the vault.
@@ -518,7 +643,7 @@ class Vault:
         begin: MetadataType,
         end: MetadataType,
         key: str = None,
-        value: str | list[str] = None,
+        value: str = None,
         location: InsertLocation = None,
     ) -> int:
         """Transpose metadata from one type to another.
@@ -546,15 +671,15 @@ class Vault:
                 location=location,
             ):
                 num_changed += 1
-                log.trace(f"Transposed metadata in {_note.note_path}")
 
         if num_changed > 0:
             self._rebuild_vault_metadata()
+            log.trace(f"Transposed metadata in {_note.note_path}")
 
         return num_changed
 
     def update_from_dict(self, dictionary: dict[str, Any]) -> int:
-        """Update note metadata from a dictionary. This is a destructive operation. All metadata in the specified notes not in the dictionary will be removed.
+        """Update note metadata from a dictionary. This method is used when updating note metadata from a CSV file.  This is a destructive operation. All existing metadata in the specified notes not in the dictionary will be removed.
 
         Requires a dictionary with the note path as the key and a dictionary of metadata as the value.  Each key must have a list of associated dictionaries in the following format:
 
@@ -577,25 +702,32 @@ class Vault:
             if str(path) in dictionary:
                 log.debug(f"Bulk update metadata for '{path}'")
                 num_changed += 1
-                _note.delete_all_metadata()
+
+                # Deleta all existing metadata in the note
+                _note.delete_metadata(meta_type=MetadataType.META, key=r".*", is_regex=True)
+                _note.delete_metadata(meta_type=MetadataType.TAGS, value=r".*", is_regex=True)
+
+                # Add the new metadata
                 for row in dictionary[str(path)]:
                     if row["type"].lower() == "frontmatter":
                         _note.add_metadata(
-                            area=MetadataType.FRONTMATTER, key=row["key"], value=row["value"]
+                            meta_type=MetadataType.FRONTMATTER,
+                            added_key=row["key"],
+                            added_value=row["value"],
                         )
 
                     if row["type"].lower() == "inline_metadata":
                         _note.add_metadata(
-                            area=MetadataType.INLINE,
-                            key=row["key"],
-                            value=row["value"],
+                            meta_type=MetadataType.INLINE,
+                            added_key=row["key"],
+                            added_value=row["value"],
                             location=self.insert_location,
                         )
 
                     if row["type"].lower() == "tag":
                         _note.add_metadata(
-                            area=MetadataType.TAGS,
-                            value=row["value"],
+                            meta_type=MetadataType.TAGS,
+                            added_value=row["value"],
                             location=self.insert_location,
                         )
 

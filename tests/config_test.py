@@ -36,7 +36,7 @@ def test_vault_path_errors(tmp_path, capsys) -> None:
     assert "Vault path not found" in captured.out
 
     with pytest.raises(typer.Exit):
-        Config(config_path=config_file, vault_path=Path("tests/fixtures/sample_note.md"))
+        Config(config_path=config_file, vault_path=Path("tests/fixtures/test_vault/sample_note.md"))
     captured = capsys.readouterr()
     assert "Vault path is not a directory" in captured.out
 

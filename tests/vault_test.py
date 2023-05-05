@@ -1,16 +1,17 @@
 # type: ignore
 """Tests for the Vault module."""
 
+import re
 from pathlib import Path
 
 import pytest
 import typer
-from rich import print
 
 from obsidian_metadata._config import Config
+from obsidian_metadata._utils.console import console
 from obsidian_metadata.models import Vault, VaultFilter
 from obsidian_metadata.models.enums import InsertLocation, MetadataType
-from tests.helpers import Regex
+from tests.helpers import Regex, strip_ansi
 
 
 def test_vault_creation(test_vault, tmp_path):
@@ -28,65 +29,33 @@ def test_vault_creation(test_vault, tmp_path):
     assert vault.dry_run is False
     assert str(vault.exclude_paths[0]) == Regex(r".*\.git")
     assert len(vault.all_notes) == 2
-
-    assert vault.metadata.dict == {
-        "bottom_key1": ["bottom_key1_value"],
-        "bottom_key2": ["bottom_key2_value"],
+    assert vault.frontmatter == {
         "date_created": ["2022-12-22"],
-        "frontmatter_Key1": ["author name"],
-        "frontmatter_Key2": ["article", "note"],
-        "intext_key": ["intext_value"],
-        "key📅": ["📅_key_value"],
-        "shared_key1": [
-            "shared_key1_value",
-            "shared_key1_value2",
-            "shared_key1_value3",
-        ],
-        "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
-        "tags": [
-            "frontmatter_tag1",
-            "frontmatter_tag2",
-            "shared_tag",
-            "📅/frontmatter_tag3",
-        ],
-        "top_key1": ["top_key1_value"],
-        "top_key2": ["top_key2_value"],
-        "top_key3": ["top_key3_value_as_link"],
+        "frontmatter1": ["foo"],
+        "frontmatter2": ["bar", "baz", "qux"],
+        "tags": ["bar", "foo"],
+        "🌱": ["🌿"],
     }
-
-    assert vault.metadata.tags == [
-        "inline_tag_bottom1",
-        "inline_tag_bottom2",
-        "inline_tag_top1",
-        "inline_tag_top2",
-        "intext_tag1",
-        "intext_tag2",
-        "shared_tag",
+    assert vault.inline_meta == {
+        "inline1": ["bar baz", "foo"],
+        "inline2": ["[[foo]]"],
+        "inline3": ["value"],
+        "inline4": ["foo"],
+        "inline5": [],
+        "intext1": ["foo"],
+        "intext2": ["foo"],
+        "key with space": ["foo"],
+        "🌱": ["🌿"],
+    }
+    assert vault.tags == ["tag1", "tag2"]
+    assert vault.exclude_paths == [
+        tmp_path / "vault" / ".git",
+        tmp_path / "vault" / ".obsidian",
+        tmp_path / "vault" / "ignore_folder",
     ]
-    assert vault.metadata.inline_metadata == {
-        "bottom_key1": ["bottom_key1_value"],
-        "bottom_key2": ["bottom_key2_value"],
-        "intext_key": ["intext_value"],
-        "key📅": ["📅_key_value"],
-        "shared_key1": ["shared_key1_value", "shared_key1_value2"],
-        "shared_key2": ["shared_key2_value2"],
-        "top_key1": ["top_key1_value"],
-        "top_key2": ["top_key2_value"],
-        "top_key3": ["top_key3_value_as_link"],
-    }
-    assert vault.metadata.frontmatter == {
-        "date_created": ["2022-12-22"],
-        "frontmatter_Key1": ["author name"],
-        "frontmatter_Key2": ["article", "note"],
-        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
-        "shared_key2": ["shared_key2_value1"],
-        "tags": [
-            "frontmatter_tag1",
-            "frontmatter_tag2",
-            "shared_tag",
-            "📅/frontmatter_tag3",
-        ],
-    }
+    assert vault.filters == []
+    assert len(vault.all_note_paths) == 2
+    assert len(vault.notes_in_scope) == 2
 
 
 def set_insert_location(test_vault):
@@ -104,139 +73,36 @@ def set_insert_location(test_vault):
     assert vault.insert_location == InsertLocation.BOTTOM
 
 
-def test_add_metadata_1(test_vault) -> None:
-    """Test adding metadata to the vault.
+@pytest.mark.parametrize(
+    ("meta_type", "key", "value", "expected"),
+    [
+        (MetadataType.FRONTMATTER, "new_key", "new_value", 2),
+        (MetadataType.FRONTMATTER, "frontmatter1", "new_value", 2),
+        (MetadataType.INLINE, "new_key", "new_value", 2),
+        (MetadataType.INLINE, "inline5", "new_value", 2),
+        (MetadataType.INLINE, "inline1", "foo", 1),
+        (MetadataType.TAGS, None, "new_value", 2),
+        (MetadataType.TAGS, None, "tag1", 1),
+    ],
+)
+def test_add_metadata(test_vault, meta_type, key, value, expected):
+    """Test add_metadata method.
 
     GIVEN a vault object
-    WHEN a new metadata key is added
-    THEN the metadata is added to the vault
+    WHEN metadata is added
+    THEN add the metadata and return the number of notes updated
     """
     vault = Vault(config=test_vault)
+    assert vault.add_metadata(meta_type, key, value) == expected
 
-    assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key") == 2
-    assert vault.metadata.dict == {
-        "bottom_key1": ["bottom_key1_value"],
-        "bottom_key2": ["bottom_key2_value"],
-        "date_created": ["2022-12-22"],
-        "frontmatter_Key1": ["author name"],
-        "frontmatter_Key2": ["article", "note"],
-        "intext_key": ["intext_value"],
-        "key📅": ["📅_key_value"],
-        "new_key": [],
-        "shared_key1": [
-            "shared_key1_value",
-            "shared_key1_value2",
-            "shared_key1_value3",
-        ],
-        "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
-        "tags": [
-            "frontmatter_tag1",
-            "frontmatter_tag2",
-            "shared_tag",
-            "📅/frontmatter_tag3",
-        ],
-        "top_key1": ["top_key1_value"],
-        "top_key2": ["top_key2_value"],
-        "top_key3": ["top_key3_value_as_link"],
-    }
-    assert vault.metadata.frontmatter == {
-        "date_created": ["2022-12-22"],
-        "frontmatter_Key1": ["author name"],
-        "frontmatter_Key2": ["article", "note"],
-        "new_key": [],
-        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
-        "shared_key2": ["shared_key2_value1"],
-        "tags": [
-            "frontmatter_tag1",
-            "frontmatter_tag2",
-            "shared_tag",
-            "📅/frontmatter_tag3",
-        ],
-    }
+    if meta_type == MetadataType.FRONTMATTER:
+        assert value in vault.frontmatter[key]
 
+    if meta_type == MetadataType.INLINE:
+        assert value in vault.inline_meta[key]
 
-def test_add_metadata_2(test_vault) -> None:
-    """Test adding metadata to the vault.
-
-    GIVEN a vault object
-    WHEN a new metadata key and value is added
-    THEN the metadata is added to the vault
-    """
-    vault = Vault(config=test_vault)
-    assert vault.add_metadata(MetadataType.FRONTMATTER, "new_key2", "new_key2_value") == 2
-    assert vault.metadata.dict == {
-        "bottom_key1": ["bottom_key1_value"],
-        "bottom_key2": ["bottom_key2_value"],
-        "date_created": ["2022-12-22"],
-        "frontmatter_Key1": ["author name"],
-        "frontmatter_Key2": ["article", "note"],
-        "intext_key": ["intext_value"],
-        "key📅": ["📅_key_value"],
-        "new_key2": ["new_key2_value"],
-        "shared_key1": [
-            "shared_key1_value",
-            "shared_key1_value2",
-            "shared_key1_value3",
-        ],
-        "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
-        "tags": [
-            "frontmatter_tag1",
-            "frontmatter_tag2",
-            "shared_tag",
-            "📅/frontmatter_tag3",
-        ],
-        "top_key1": ["top_key1_value"],
-        "top_key2": ["top_key2_value"],
-        "top_key3": ["top_key3_value_as_link"],
-    }
-    assert vault.metadata.frontmatter == {
-        "date_created": ["2022-12-22"],
-        "frontmatter_Key1": ["author name"],
-        "frontmatter_Key2": ["article", "note"],
-        "new_key2": ["new_key2_value"],
-        "shared_key1": ["shared_key1_value", "shared_key1_value3"],
-        "shared_key2": ["shared_key2_value1"],
-        "tags": [
-            "frontmatter_tag1",
-            "frontmatter_tag2",
-            "shared_tag",
-            "📅/frontmatter_tag3",
-        ],
-    }
-
-
-def test_commit_changes_1(test_vault, tmp_path):
-    """Test committing changes to content in the vault.
-
-    GIVEN a vault object
-    WHEN the commit_changes method is called
-    THEN the changes are committed to the vault
-    """
-    vault = Vault(config=test_vault)
-
-    content = Path(f"{tmp_path}/vault/test1.md").read_text()
-    assert "new_key: new_key_value" not in content
-    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
-    vault.commit_changes()
-    committed_content = Path(f"{tmp_path}/vault/test1.md").read_text()
-    assert "new_key: new_key_value" in committed_content
-
-
-def test_commit_changes_2(test_vault, tmp_path):
-    """Test committing changes to content in the vault in dry run mode.
-
-    GIVEN a vault object
-    WHEN dry_run is set to True
-    THEN no changes are committed to the vault
-    """
-    vault = Vault(config=test_vault, dry_run=True)
-    content = Path(f"{tmp_path}/vault/test1.md").read_text()
-    assert "new_key: new_key_value" not in content
-
-    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
-    vault.commit_changes()
-    committed_content = Path(f"{tmp_path}/vault/test1.md").read_text()
-    assert "new_key: new_key_value" not in committed_content
+    if meta_type == MetadataType.TAGS:
+        assert value in vault.tags
 
 
 def test_backup_1(test_vault, capsys):
@@ -274,6 +140,92 @@ def test_backup_2(test_vault, capsys):
     captured = capsys.readouterr()
     assert vault.backup_path.exists() is False
     assert captured.out == Regex(r"DRYRUN +| Backup up vault to")
+
+
+@pytest.mark.parametrize(
+    ("meta_type", "key", "value", "is_regex", "expected"),
+    [
+        (MetadataType.FRONTMATTER, "frontmatter1", None, False, True),
+        (MetadataType.FRONTMATTER, "frontmatter1", "foo", False, True),
+        (MetadataType.FRONTMATTER, "no_key", None, False, False),
+        (MetadataType.FRONTMATTER, "frontmatter1", "no_value", False, False),
+        (MetadataType.FRONTMATTER, r"f\w+\d", None, True, True),
+        (MetadataType.FRONTMATTER, r"f\w+\d", r"\w+", True, True),
+        (MetadataType.FRONTMATTER, r"^\d+", None, True, False),
+        (MetadataType.FRONTMATTER, r"frontmatter1", r"^\d+", True, False),
+        (MetadataType.INLINE, "intext1", None, False, True),
+        (MetadataType.INLINE, "intext1", "foo", False, True),
+        (MetadataType.INLINE, "no_key", None, False, False),
+        (MetadataType.INLINE, "intext1", "no_value", False, False),
+        (MetadataType.INLINE, r"i\w+\d", None, True, True),
+        (MetadataType.INLINE, r"i\w+\d", r"\w+", True, True),
+        (MetadataType.INLINE, r"^\d+", None, True, False),
+        (MetadataType.INLINE, r"intext1", r"^\d+", True, False),
+        (MetadataType.TAGS, None, "tag1", False, True),
+        (MetadataType.TAGS, None, "no tag", False, False),
+        (MetadataType.TAGS, None, r"^\w+\d", True, True),
+        (MetadataType.TAGS, None, r"^\d", True, False),
+        ##############3
+        (MetadataType.META, "frontmatter1", None, False, True),
+        (MetadataType.META, "frontmatter1", "foo", False, True),
+        (MetadataType.META, "no_key", None, False, False),
+        (MetadataType.META, "frontmatter1", "no_value", False, False),
+        (MetadataType.META, r"f\w+\d", None, True, True),
+        (MetadataType.META, r"f\w+\d", r"\w+", True, True),
+        (MetadataType.META, r"^\d+", None, True, False),
+        (MetadataType.META, r"frontmatter1", r"^\d+", True, False),
+        (MetadataType.META, r"i\w+\d", None, True, True),
+        (MetadataType.ALL, None, "tag1", False, True),
+        (MetadataType.ALL, None, "no tag", False, False),
+        (MetadataType.ALL, None, r"^\w+\d", True, True),
+        (MetadataType.ALL, None, r"^\d", True, False),
+        (MetadataType.ALL, "frontmatter1", "foo", False, True),
+        (MetadataType.ALL, r"i\w+\d", None, True, True),
+    ],
+)
+def test_contains_metadata(test_vault, meta_type, key, value, is_regex, expected):
+    """Test the contains_metadata method.
+
+    GIVEN a vault object
+    WHEN the contains_metadata method is called
+    THEN the method returns True if the metadata is found
+    """
+    vault = Vault(config=test_vault)
+    assert vault.contains_metadata(meta_type, key, value, is_regex) == expected
+
+
+def test_commit_changes_1(test_vault, tmp_path):
+    """Test committing changes to content in the vault.
+
+    GIVEN a vault object
+    WHEN the commit_changes method is called
+    THEN the changes are committed to the vault
+    """
+    vault = Vault(config=test_vault)
+
+    content = Path(f"{tmp_path}/vault/sample_note.md").read_text()
+    assert "new_key: new_key_value" not in content
+    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
+    vault.commit_changes()
+    committed_content = Path(f"{tmp_path}/vault/sample_note.md").read_text()
+    assert "new_key: new_key_value" in committed_content
+
+
+def test_commit_changes_2(test_vault, tmp_path):
+    """Test committing changes to content in the vault in dry run mode.
+
+    GIVEN a vault object
+    WHEN dry_run is set to True
+    THEN no changes are committed to the vault
+    """
+    vault = Vault(config=test_vault, dry_run=True)
+    content = Path(f"{tmp_path}/vault/sample_note.md").read_text()
+    assert "new_key: new_key_value" not in content
+
+    vault.add_metadata(MetadataType.FRONTMATTER, "new_key", "new_key_value")
+    vault.commit_changes()
+    committed_content = Path(f"{tmp_path}/vault/sample_note.md").read_text()
+    assert "new_key: new_key_value" not in committed_content
 
 
 def test_delete_backup_1(test_vault, capsys):
@@ -315,75 +267,64 @@ def test_delete_backup_2(test_vault, capsys):
     assert vault.backup_path.exists() is True
 
 
-def test_delete_tag_1(test_vault) -> None:
-    """Test delete_tag() method.
+@pytest.mark.parametrize(
+    ("tag_to_delete", "expected"),
+    [
+        ("tag1", 1),
+        ("tag2", 1),
+        ("tag3", 0),
+    ],
+)
+def test_delete_tag(test_vault, tag_to_delete, expected):
+    """Test delete_tag method.
 
     GIVEN a vault object
     WHEN the delete_tag method is called
-    THEN the inline tag is deleted
+    THEN delete tags if found and return the number of notes updated
     """
     vault = Vault(config=test_vault)
 
-    assert vault.delete_tag("intext_tag2") == 1
-    assert vault.metadata.tags == [
-        "inline_tag_bottom1",
-        "inline_tag_bottom2",
-        "inline_tag_top1",
-        "inline_tag_top2",
-        "intext_tag1",
-        "shared_tag",
-    ]
+    assert vault.delete_tag(tag_to_delete) == expected
+    assert tag_to_delete not in vault.tags
 
 
-def test_delete_tag_2(test_vault) -> None:
-    """Test delete_tag() method.
+@pytest.mark.parametrize(
+    ("meta_type", "key_to_delete", "value_to_delete", "expected"),
+    [
+        (MetadataType.FRONTMATTER, "frontmatter1", "foo", 1),
+        (MetadataType.FRONTMATTER, "frontmatter1", None, 1),
+        (MetadataType.FRONTMATTER, "frontmatter1", "bar", 0),
+        (MetadataType.FRONTMATTER, "frontmatter2", "bar", 1),
+        (MetadataType.META, "frontmatter1", "foo", 1),
+        (MetadataType.INLINE, "frontmatter1", "foo", 0),
+        (MetadataType.INLINE, "inline1", "foo", 1),
+        (MetadataType.INLINE, "inline1", None, 1),
+    ],
+)
+def test_delete_metadata(test_vault, meta_type, key_to_delete, value_to_delete, expected):
+    """Test delete_metadata method.
 
     GIVEN a vault object
-    WHEN the delete_tag method is called with a tag that does not exist
-    THEN no changes are made
+    WHEN the delete_metadata method is called
+    THEN delete metadata if found and return the number of notes updated
     """
     vault = Vault(config=test_vault)
+    assert (
+        vault.delete_metadata(meta_type=meta_type, key=key_to_delete, value=value_to_delete)
+        == expected
+    )
 
-    assert vault.delete_tag("no tag") == 0
+    if meta_type == MetadataType.FRONTMATTER or meta_type == MetadataType.META:
+        if value_to_delete is None:
+            assert key_to_delete not in vault.frontmatter
+        elif key_to_delete in vault.frontmatter:
+            assert value_to_delete not in vault.frontmatter[key_to_delete]
 
-
-def test_delete_metadata_1(test_vault) -> None:
-    """Test deleting a metadata key/value.
-
-    GIVEN a vault object
-    WHEN the delete_metadata method is called with a key and value
-    THEN the specified metadata key/value is deleted
-    """
-    vault = Vault(config=test_vault)
-
-    assert vault.delete_metadata("top_key1", "top_key1_value") == 1
-    assert vault.metadata.dict["top_key1"] == []
-
-
-def test_delete_metadata_2(test_vault) -> None:
-    """Test deleting a metadata key/value.
-
-    GIVEN a vault object
-    WHEN the delete_metadata method is called with a key
-    THEN the specified metadata key is deleted
-    """
-    vault = Vault(config=test_vault)
-
-    assert vault.delete_metadata("top_key2") == 1
-    assert "top_key2" not in vault.metadata.dict
-
-
-def test_delete_metadata_3(test_vault) -> None:
-    """Test deleting a metadata key/value.
-
-    GIVEN a vault object
-    WHEN the delete_metadata method is called with a key and/or value that does not exist
-    THEN no changes are made
-    """
-    vault = Vault(config=test_vault)
-
-    assert vault.delete_metadata("no key") == 0
-    assert vault.delete_metadata("top_key1", "no_value") == 0
+    if meta_type == MetadataType.INLINE or meta_type == MetadataType.META:
+        if value_to_delete is None:
+            assert key_to_delete not in vault.inline_meta
+        elif key_to_delete in vault.inline_meta:
+            assert value_to_delete not in vault.inline_meta[key_to_delete]
 
 
 def test_export_csv_1(tmp_path, test_vault):
@@ -394,11 +335,16 @@ def test_export_csv_1(tmp_path, test_vault):
     THEN the vault metadata is exported to a CSV file
     """
     vault = Vault(config=test_vault)
-    export_file = Path(f"{tmp_path}/export.csv")
+    export_file = tmp_path / "export.csv"
 
     vault.export_metadata(path=export_file, export_format="csv")
     assert export_file.exists() is True
-    assert "frontmatter,date_created,2022-12-22" in export_file.read_text()
+    result = export_file.read_text()
+    assert "Metadata Type,Key,Value" in result
+    assert "frontmatter,date_created,2022-12-22" in result
+    assert "inline_metadata,🌱,🌿" in result
+    assert "inline_metadata,inline5,\n" in result
+    assert "tags,,tag1" in result
 
 
 def test_export_csv_2(tmp_path, test_vault):
@@ -409,7 +355,7 @@ def test_export_csv_2(tmp_path, test_vault):
     THEN an error is raised
     """
     vault = Vault(config=test_vault)
-    export_file = Path(f"{tmp_path}/does_not_exist/export.csv")
+    export_file = tmp_path / "does_not_exist" / "export.csv"
 
     with pytest.raises(typer.Exit):
         vault.export_metadata(path=export_file, export_format="csv")
@@ -424,11 +370,14 @@ def test_export_json(tmp_path, test_vault):
     THEN the vault metadata is exported to a JSON file
     """
     vault = Vault(config=test_vault)
-    export_file = Path(f"{tmp_path}/export.json")
+    export_file = tmp_path / "export.json"
 
     vault.export_metadata(path=export_file, export_format="json")
     assert export_file.exists() is True
-    assert '"frontmatter": {' in export_file.read_text()
+    result = export_file.read_text()
+    assert '"frontmatter": {' in result
+    assert '"inline_metadata": {' in result
+    assert '"tags": [' in result
 
 
 def test_export_notes_to_csv_1(tmp_path, test_vault):
@@ -439,15 +388,17 @@ def test_export_notes_to_csv_1(tmp_path, test_vault):
     THEN the notes are exported to a CSV file
     """
     vault = Vault(config=test_vault)
-    export_file = Path(f"{tmp_path}/export.csv")
+    export_file = tmp_path / "export.csv"
     vault.export_notes_to_csv(path=export_file)
     assert export_file.exists() is True
-    assert "path,type,key,value" in export_file.read_text()
-    assert "test1.md,frontmatter,shared_key1,shared_key1_value" in export_file.read_text()
-    assert "test1.md,inline_metadata,shared_key1,shared_key1_value" in export_file.read_text()
-    assert "test1.md,tag,,shared_tag" in export_file.read_text()
-    assert "test1.md,frontmatter,tags,📅/frontmatter_tag3" in export_file.read_text()
-    assert "test1.md,inline_metadata,key📅,📅_key_value" in export_file.read_text()
+    result = export_file.read_text()
+    assert "path,type,key,value" in result
+    assert "sample_note.md,FRONTMATTER,date_created,2022-12-22" in result
+    assert "sample_note.md,FRONTMATTER,🌱,🌿" in result
+    assert "sample_note.md,INLINE,inline2,[[foo]]" in result
+    assert "sample_note.md,INLINE,inline1,bar baz" in result
+    assert "sample_note.md,TAGS,,tag1" in result
+    assert "sample_note.md,INLINE,inline5,\n" in result
 
 
 def test_export_notes_to_csv_2(test_vault):
@@ -531,7 +482,7 @@ def test_get_filtered_notes_4(sample_vault) -> None:
     filters = [VaultFilter(tag_filter="brunch")]
     vault = Vault(config=vault_config, filters=filters)
     assert len(vault.all_notes) == 13
-    assert len(vault.notes_in_scope) == 1
+    assert len(vault.notes_in_scope) == 0
 
 
 def test_get_filtered_notes_5(sample_vault) -> None:
@@ -550,6 +501,21 @@ def test_get_filtered_notes_5(sample_vault) -> None:
     assert len(vault.notes_in_scope) == 0
 
 
+def test_get_changed_notes(test_vault, tmp_path):
+    """Test get_changed_notes() method.
+
+    GIVEN a vault object
+    WHEN the get_changed_notes method is called
+    THEN the changed notes are returned
+    """
+    vault = Vault(config=test_vault)
+    assert vault.get_changed_notes() == []
+    vault.delete_metadata(key="frontmatter1", meta_type=MetadataType.FRONTMATTER)
+    changed_notes = vault.get_changed_notes()
+    assert len(changed_notes) == 1
+    assert changed_notes[0].note_path == tmp_path / "vault" / "sample_note.md"
+
+
 def test_info(test_vault, capsys):
     """Test info() method.
 
@@ -561,10 +527,10 @@ def test_info(test_vault, capsys):
 
     vault.info()
 
-    captured = capsys.readouterr()
-    assert captured.out == Regex(r"Vault +\│ /[\d\w]+")
-    assert captured.out == Regex(r"Notes in scope +\│ \d+")
-    assert captured.out == Regex(r"Backup +\│ None")
+    captured = strip_ansi(capsys.readouterr().out)
+    assert captured == Regex(r"Vault +\│ /[\d\w]+")
+    assert captured == Regex(r"Notes in scope +\│ \d+")
+    assert captured == Regex(r"Backup +\│ None")
 
 
 def test_list_editable_notes(test_vault, capsys) -> None:
@@ -579,7 +545,7 @@ def test_list_editable_notes(test_vault, capsys) -> None:
     vault.list_editable_notes()
     captured = capsys.readouterr()
     assert captured.out == Regex("Notes in current scope")
-    assert captured.out == Regex(r"\d +test1\.md")
+    assert captured.out == Regex(r"\d +sample_note\.md")
 
 
 def test_move_inline_metadata_1(test_vault) -> None:
@@ -594,6 +560,40 @@ def test_move_inline_metadata_1(test_vault) -> None:
     assert vault.move_inline_metadata(location=InsertLocation.TOP) == 1
 
 
+@pytest.mark.parametrize(
+    ("meta_type", "expected_regex"),
+    [
+        (
+            MetadataType.ALL,
+            r"All metadata.*Keys +┃ Values +┃.*frontmatter1 +│ foo.*inline1 +│ bar baz.*tags +│ bar.*All inline tags.*#tag1.*#tag2",
+        ),
+        (
+            MetadataType.FRONTMATTER,
+            r"All frontmatter.*Keys +┃ Values +┃.*frontmatter1 +│ foo.*tags +│ bar",
+        ),
+        (
+            MetadataType.INLINE,
+            r"All inline metadata.*Keys +┃ Values +┃.*inline2 +│ \[\[foo\]\]",
+        ),
+        (
+            MetadataType.TAGS,
+            r"All inline tags.*#tag1.*#tag2",
+        ),
+    ],
+)
+def test_print_metadata(test_vault, capsys, meta_type, expected_regex) -> None:
+    """Test print_metadata() method.
+
+    GIVEN a vault object
+    WHEN the print_metadata() method is called
+    THEN the metadata is printed
+    """
+    vault = Vault(config=test_vault)
+    vault.print_metadata(meta_type=meta_type)
+    captured = strip_ansi(capsys.readouterr().out)
+    assert captured == Regex(expected_regex, re.DOTALL)
+
+
 def test_rename_tag_1(test_vault) -> None:
     """Test rename_tag() method.
 
@@ -603,16 +603,9 @@ def test_rename_tag_1(test_vault) -> None:
     """
     vault = Vault(config=test_vault)
 
-    assert vault.rename_tag("intext_tag2", "new_tag") == 1
-    assert vault.metadata.tags == [
-        "inline_tag_bottom1",
-        "inline_tag_bottom2",
-        "inline_tag_top1",
-        "inline_tag_top2",
-        "intext_tag1",
-        "new_tag",
-        "shared_tag",
-    ]
+    assert vault.rename_tag("tag1", "new_tag") == 1
+    assert "tag1" not in vault.tags
+    assert "new_tag" in vault.tags
 
 
 def test_rename_tag_2(test_vault) -> None:
@@ -625,9 +618,21 @@ def test_rename_tag_2(test_vault) -> None:
     vault = Vault(config=test_vault)
 
     assert vault.rename_tag("no tag", "new_tag") == 0
+    assert "new_tag" not in vault.tags
 
 
-def test_rename_metadata_1(test_vault) -> None:
+@pytest.mark.parametrize(
+    ("key", "value1", "value2", "expected"),
+    [
+        ("no key", "new_value", None, 0),
+        ("frontmatter1", "no_value", "new_value", 0),
+        ("frontmatter1", "foo", "new_value", 1),
+        ("inline1", "foo", "new_value", 1),
+        ("frontmatter1", "new_key", None, 1),
+        ("inline1", "new_key", None, 1),
+    ],
+)
+def test_rename_metadata(test_vault, key, value1, value2, expected) -> None:
     """Test rename_metadata() method.
 
     GIVEN a vault object
@@ -636,90 +641,63 @@ def test_rename_metadata_1(test_vault) -> None:
     """
     vault = Vault(config=test_vault)
 
-    assert vault.rename_metadata("no key", "new_key") == 0
-    assert vault.rename_metadata("tags", "nonexistent_value", "new_vaule") == 0
+    assert vault.rename_metadata(key, value1, value2) == expected
+
+    if expected > 0 and value2 is None:
+        assert key not in vault.frontmatter
+        assert key not in vault.inline_meta
+
+    if expected > 0 and value2:
+        if key in vault.frontmatter:
+            assert value1 not in vault.frontmatter[key]
+            assert value2 in vault.frontmatter[key]
+        if key in vault.inline_meta:
+            assert value1 not in vault.inline_meta[key]
+            assert value2 in vault.inline_meta[key]
 
 
-def test_rename_metadata_2(test_vault) -> None:
-    """Test rename_metadata() method.
-
-    GIVEN a vault object
-    WHEN the rename_metadata() method with a key and no value
-    THEN the metadata key is renamed
-    """
-    vault = Vault(config=test_vault)
-
-    assert vault.rename_metadata("tags", "new_key") == 1
-    assert "tags" not in vault.metadata.dict
-    assert vault.metadata.dict["new_key"] == [
-        "frontmatter_tag1",
-        "frontmatter_tag2",
-        "shared_tag",
-        "📅/frontmatter_tag3",
-    ]
-
-
-def test_rename_metadata_3(test_vault) -> None:
-    """Test rename_metadata() method.
-
-    GIVEN a vault object
-    WHEN the rename_metadata() method is called with a key and value
-    THEN the metadata key/value is renamed
-    """
-    vault = Vault(config=test_vault)
-
-    assert vault.rename_metadata("tags", "frontmatter_tag1", "new_vaule") == 1
-    assert vault.metadata.dict["tags"] == [
-        "frontmatter_tag2",
-        "new_vaule",
-        "shared_tag",
-        "📅/frontmatter_tag3",
-    ]
-
-
-def test_transpose_metadata(test_vault) -> None:
+@pytest.mark.parametrize(
+    ("begin", "end", "key", "value", "expected"),
+    [
+        # no matches
+        (MetadataType.INLINE, MetadataType.FRONTMATTER, "no key", None, 0),
+        (MetadataType.INLINE, MetadataType.FRONTMATTER, "no key", "new_value", 0),
+        (MetadataType.INLINE, MetadataType.FRONTMATTER, "inline1", "new_value", 0),
+        (MetadataType.FRONTMATTER, MetadataType.INLINE, "no key", None, 0),
+        (MetadataType.FRONTMATTER, MetadataType.INLINE, "no key", "new_value", 0),
+        (MetadataType.FRONTMATTER, MetadataType.INLINE, "frontmatter1", "new_value", 0),
+        # entire keys
+        (MetadataType.FRONTMATTER, MetadataType.INLINE, "frontmatter1", None, 1),
+        (MetadataType.FRONTMATTER, MetadataType.INLINE, "frontmatter2", None, 1),
+        (MetadataType.INLINE, MetadataType.FRONTMATTER, "inline1", None, 1),
+        # specific values
+        (MetadataType.FRONTMATTER, MetadataType.INLINE, "frontmatter1", "foo", 1),
+        (MetadataType.INLINE, MetadataType.FRONTMATTER, "inline1", "bar baz", 1),
+        (MetadataType.INLINE, MetadataType.FRONTMATTER, "inline2", "[[foo]]", 1),
+    ],
+)
+def test_transpose_metadata_1(test_vault, begin, end, key, value, expected) -> None:
     """Test transpose_metadata() method.
 
     GIVEN a vault object
     WHEN the transpose_metadata() method is called
-    THEN the metadata is transposed
+    THEN the number of notes with transposed metadata is returned and the vault metadata is updated
     """
     vault = Vault(config=test_vault)
 
-    assert vault.transpose_metadata(begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER) == 1
+    assert vault.transpose_metadata(begin=begin, end=end, key=key, value=value) == expected
 
-    assert vault.metadata.inline_metadata == {}
-    assert vault.metadata.frontmatter == {
-        "bottom_key1": ["bottom_key1_value"],
-        "bottom_key2": ["bottom_key2_value"],
-        "date_created": ["2022-12-22"],
-        "frontmatter_Key1": ["author name"],
-        "frontmatter_Key2": ["article", "note"],
-        "intext_key": ["intext_value"],
-        "key📅": ["📅_key_value"],
-        "shared_key1": [
-            "shared_key1_value",
-            "shared_key1_value2",
-            "shared_key1_value3",
-        ],
-        "shared_key2": ["shared_key2_value1", "shared_key2_value2"],
-        "tags": [
-            "frontmatter_tag1",
-            "frontmatter_tag2",
-            "shared_tag",
-            "📅/frontmatter_tag3",
-        ],
-        "top_key1": ["top_key1_value"],
-        "top_key2": ["top_key2_value"],
-        "top_key3": ["top_key3_value_as_link"],
-    }
-
-    assert (
-        vault.transpose_metadata(
-            begin=MetadataType.INLINE, end=MetadataType.FRONTMATTER, location=InsertLocation.TOP
-        )
-        == 0
-    )
+    if expected > 0:
+        if begin == MetadataType.INLINE and value is None:
+            assert key not in vault.inline_meta
+            assert key in vault.frontmatter
+        elif begin == MetadataType.FRONTMATTER and value is None:
+            assert key not in vault.frontmatter
+            assert key in vault.inline_meta
+        elif begin == MetadataType.INLINE and value:
+            assert value in vault.frontmatter[key]
+        elif begin == MetadataType.FRONTMATTER and value:
+            assert value in vault.inline_meta[key]
 
 
 def test_update_from_dict_1(test_vault):
@@ -729,11 +707,11 @@ def test_update_from_dict_1(test_vault):
     WHEN no dictionary keys match paths in the vault
     THEN no notes are updated and 0 is returned
     """
-    vault = Vault(config=test_vault)
     update_dict = {
         "path1": {"type": "frontmatter", "key": "new_key", "value": "new_value"},
         "path2": {"type": "frontmatter", "key": "new_key", "value": "new_value"},
     }
+    vault = Vault(config=test_vault)
 
     assert vault.update_from_dict(update_dict) == 0
     assert vault.get_changed_notes() == []
@@ -763,17 +741,18 @@ def test_update_from_dict_3(test_vault):
     vault = Vault(config=test_vault)
 
     update_dict = {
-        "test1.md": [
+        "sample_note.md": [
             {"type": "frontmatter", "key": "new_key", "value": "new_value"},
             {"type": "inline_metadata", "key": "new_key2", "value": "new_value"},
             {"type": "tag", "key": "", "value": "new_tag"},
         ]
     }
     assert vault.update_from_dict(update_dict) == 1
-    assert vault.get_changed_notes()[0].note_path.name == "test1.md"
-    assert vault.get_changed_notes()[0].frontmatter.dict == {"new_key": ["new_value"]}
-    assert vault.get_changed_notes()[0].inline_metadata.dict == {"new_key2": ["new_value"]}
-    assert vault.get_changed_notes()[0].tags.list == ["new_tag"]
-    assert vault.metadata.frontmatter == {"new_key": ["new_value"]}
-    assert vault.metadata.inline_metadata == {"new_key2": ["new_value"]}
-    assert vault.metadata.tags == ["new_tag"]
+
+    note = vault.get_changed_notes()[0]
+
+    assert note.note_path.name == "sample_note.md"
+    assert len(note.metadata) == 3
+    assert vault.frontmatter == {"new_key": ["new_value"]}
+    assert vault.inline_meta == {"new_key2": ["new_value"]}
+    assert vault.tags == ["new_tag"]

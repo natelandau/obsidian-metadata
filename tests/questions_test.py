@@ -34,7 +34,7 @@ def test_validate_key_exists() -> None:
     questions = Questions(vault=VAULT)
     assert "'test' does not exist" in questions._validate_key_exists("test")
     assert "Key cannot be empty" in questions._validate_key_exists("")
-    assert questions._validate_key_exists("frontmatter_Key1") is True
+    assert questions._validate_key_exists("frontmatter1") is True
 
 
 def test_validate_new_key() -> None:
@@ -82,7 +82,7 @@ def test_validate_key_exists_regex() -> None:
     assert "'test' does not exist" in questions._validate_key_exists_regex("test")
     assert "Key cannot be empty" in questions._validate_key_exists_regex("")
     assert "Invalid regex" in questions._validate_key_exists_regex("[")
-    assert questions._validate_key_exists_regex(r"\w+_Key\d") is True
+    assert questions._validate_key_exists_regex(r"f\w+\d") is True
 
 
 def test_validate_value() -> None:
@@ -90,29 +90,26 @@ def test_validate_value() -> None:
     questions = Questions(vault=VAULT)
 
     assert questions._validate_value("test") is True
-    questions2 = Questions(vault=VAULT, key="frontmatter_Key1")
-    assert questions2._validate_value("test") == "frontmatter_Key1:test does not exist"
-    assert questions2._validate_value("author name") is True
+    questions2 = Questions(vault=VAULT, key="frontmatter1")
+    assert questions2._validate_value("test") == "frontmatter1:test does not exist"
+    assert questions2._validate_value("foo") is True
 
 
 def test_validate_value_exists_regex() -> None:
     """Test value exists regex validation."""
-    questions2 = Questions(vault=VAULT, key="frontmatter_Key1")
+    questions2 = Questions(vault=VAULT, key="frontmatter1")
     assert "Invalid regex" in questions2._validate_value_exists_regex("[")
     assert "Regex cannot be empty" in questions2._validate_value_exists_regex("")
     assert (
         questions2._validate_value_exists_regex(r"\d\d\d\w\d")
-        == r"No values in frontmatter_Key1 match regex: \d\d\d\w\d"
+        == r"No values in frontmatter1 match regex: \d\d\d\w\d"
     )
-    assert questions2._validate_value_exists_regex(r"^author \w+") is True
+    assert questions2._validate_value_exists_regex(r"^f\w{2}$") is True
 
 
 def test_validate_new_value() -> None:
     """Test new value validation."""
-    questions = Questions(vault=VAULT, key="frontmatter_Key1")
+    questions = Questions(vault=VAULT, key="frontmatter1")
     assert questions._validate_new_value("not_exists") is True
     assert "Value cannot be empty" in questions._validate_new_value("")
-    assert (
-        questions._validate_new_value("author name")
-        == "frontmatter_Key1:author name already exists"
-    )
+    assert questions._validate_new_value("foo") == "frontmatter1:foo already exists"

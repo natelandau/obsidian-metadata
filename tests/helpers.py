@@ -22,7 +22,7 @@ class KeyInputs:
     THREE = "3"
 
 
-def remove_ansi(text) -> str:
+def strip_ansi(text) -> str:
     """Remove ANSI escape sequences from a string.
 
     Args:

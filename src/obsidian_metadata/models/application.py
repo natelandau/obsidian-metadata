@@ -84,8 +84,8 @@ class Application:
             "Add new metadata to your vault. Currently only supports adding to the frontmatter of a note."
         )
 
-        area = self.questions.ask_area()
-        match area:
+        meta_type = self.questions.ask_area()
+        match meta_type:
             case MetadataType.FRONTMATTER | MetadataType.INLINE:
                 key = self.questions.ask_new_key(question="Enter the key for the new metadata")
                 if key is None:  # pragma: no cover
@@ -98,7 +98,7 @@ class Application:
                     return
 
                 num_changed = self.vault.add_metadata(
-                    area=area, key=key, value=value, location=self.vault.insert_location
+                    meta_type=meta_type, key=key, value=value, location=self.vault.insert_location
                 )
                 if num_changed == 0:  # pragma: no cover
                     alerts.warning("No notes were changed")
@@ -112,7 +112,7 @@ class Application:
                     return
 
                 num_changed = self.vault.add_metadata(
-                    area=area, value=tag, location=self.vault.insert_location
+                    meta_type=meta_type, value=tag, location=self.vault.insert_location
                 )
 
                 if num_changed == 0:  # pragma: no cover
@@ -373,23 +373,24 @@ class Application:
             match self.questions.ask_selection(choices=choices, question="Select an action"):
                 case "all_metadata":
                     console.print("")
-                    self.vault.metadata.print_metadata(area=MetadataType.ALL)
+                    # TODO: Add a way to print metadata
+                    self.vault.print_metadata(meta_type=MetadataType.ALL)
                     console.print("")
                 case "all_frontmatter":
                     console.print("")
-                    self.vault.metadata.print_metadata(area=MetadataType.FRONTMATTER)
+                    self.vault.print_metadata(meta_type=MetadataType.FRONTMATTER)
                     console.print("")
                 case "all_inline":
                     console.print("")
-                    self.vault.metadata.print_metadata(area=MetadataType.INLINE)
+                    self.vault.print_metadata(meta_type=MetadataType.INLINE)
                     console.print("")
                 case "all_keys":
                     console.print("")
-                    self.vault.metadata.print_metadata(area=MetadataType.KEYS)
+                    self.vault.print_metadata(meta_type=MetadataType.KEYS)
                     console.print("")
                 case "all_tags":
                     console.print("")
-                    self.vault.metadata.print_metadata(area=MetadataType.TAGS)
+                    self.vault.print_metadata(meta_type=MetadataType.TAGS)
                     console.print("")
                 case _:
                     return
@@ -503,10 +504,10 @@ class Application:
             return
 
         num_changed = self.vault.delete_metadata(
-            key=key_to_delete, area=MetadataType.ALL, is_regex=True
+            key=key_to_delete, meta_type=MetadataType.ALL, is_regex=True
         )
         if num_changed == 0:
-            alerts.warning(f"No notes found with a key matching: [reverse]{key_to_delete}[/]")
+            alerts.warning(f"No notes found with a key matching regex: [reverse]{key_to_delete}[/]")
             return
 
         alerts.success(
@@ -527,7 +528,7 @@ class Application:
             return
 
         num_changed = self.vault.delete_metadata(
-            key=key, value=value, area=MetadataType.ALL, is_regex=True
+            key=key, value=value, meta_type=MetadataType.ALL, is_regex=True
         )
         if num_changed == 0:
             alerts.warning(f"No notes found matching: {key}: {value}")

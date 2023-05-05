@@ -34,7 +34,7 @@ def clean_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
 
 def clear_screen() -> None:  # pragma: no cover
     """Clear the screen."""
-    _ = system("cls") if name == "nt" else system("clear")
+    _ = system("cls") if name == "nt" else system("clear")  # noqa: S605, S607
 
 
 def dict_contains(

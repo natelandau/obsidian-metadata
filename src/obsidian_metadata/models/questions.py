@@ -313,23 +313,6 @@ class Questions:
             qmark="INPUT    |",
         ).ask()
 
-    def ask_area(self) -> MetadataType | str:  # pragma: no cover
-        """Ask the user for the metadata area to work on.
-
-        Returns:
-            MetadataType: The metadata area to work on.
-        """
-        choices = []
-        for metadata_type in MetadataType:
-            choices.append({"name": metadata_type.value, "value": metadata_type})
-
-        choices.append(questionary.Separator())  # type: ignore [arg-type]
-        choices.append({"name": "Cancel", "value": "cancel"})
-        return self.ask_selection(
-            choices=choices,
-            question="Select the type of metadata",
-        )
-
     def ask_confirm(self, question: str, default: bool = True) -> bool:  # pragma: no cover
         """Ask the user to confirm an action.
 
@@ -443,6 +426,27 @@ class Questions:
         return self.ask_selection(
             choices=choices,
             question=question,
+        )
+
+    def ask_meta_type(self) -> MetadataType | str:  # pragma: no cover
+        """Ask the user for the type of metadata to work on.
+
+        Returns:
+            MetadataType: The metadata type
+        """
+        choices = []
+        for meta_type in MetadataType:
+            match meta_type:
+                case MetadataType.ALL | MetadataType.META | MetadataType.KEYS:
+                    continue
+                case _:
+                    choices.append({"name": meta_type.value, "value": meta_type})
+
+        choices.append(questionary.Separator())  # type: ignore [arg-type]
+        choices.append({"name": "Cancel", "value": "cancel"})
+        return self.ask_selection(
+            choices=choices,
+            question="Select the type of metadata",
         )
 
     def ask_new_key(self, question: str = "New key name") -> str:  # pragma: no cover

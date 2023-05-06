@@ -66,7 +66,7 @@ def test_add_metadata_frontmatter(test_application, mocker, capsys) -> None:
         side_effect=["add_metadata", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_area",
+        "obsidian_metadata.models.application.Questions.ask_meta_type",
         return_value=MetadataType.FRONTMATTER,
     )
     mocker.patch(
@@ -98,7 +98,7 @@ def test_add_metadata_inline(test_application, mocker, capsys) -> None:
         side_effect=["add_metadata", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_area",
+        "obsidian_metadata.models.application.Questions.ask_meta_type",
         return_value=MetadataType.INLINE,
     )
     mocker.patch(
@@ -130,7 +130,7 @@ def test_add_metadata_tag(test_application, mocker, capsys) -> None:
         side_effect=["add_metadata", KeyError],
     )
     mocker.patch(
-        "obsidian_metadata.models.application.Questions.ask_area",
+        "obsidian_metadata.models.application.Questions.ask_meta_type",
         return_value=MetadataType.TAGS,
     )
     mocker.patch(

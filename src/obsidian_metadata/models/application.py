@@ -84,7 +84,7 @@ class Application:
             "Add new metadata to your vault. Currently only supports adding to the frontmatter of a note."
         )
 
-        meta_type = self.questions.ask_area()
+        meta_type = self.questions.ask_meta_type()
         match meta_type:
             case MetadataType.FRONTMATTER | MetadataType.INLINE:
                 key = self.questions.ask_new_key(question="Enter the key for the new metadata")

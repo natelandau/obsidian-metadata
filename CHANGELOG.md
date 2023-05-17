@@ -1,3 +1,17 @@
+## v0.12.0 (2023-05-17)
+
+### Feat
+
+- greatly improve capturing all formats of inline metadata (#41)
+- greatly improve capturing metadata all formats of inline metadata
+
+### Fix
+
+- allow markdown inline code in metadata values
+- only ask for valid metadata types when adding new metadata
+- convert charsets to utf-8 when necessary (#32)
+- improve TOML error handing and docs for Windows paths (#31)
+
 ## v0.11.1 (2023-03-29)
 
 ### Fix

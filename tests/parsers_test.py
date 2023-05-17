@@ -172,6 +172,10 @@ def test_return_inline_metadata_2(string, returned):
         ("_foo_::bar baz", [("_foo_", "bar baz", Wrapping.NONE)]),
         ("**foo**::bar_baz", [("**foo**", "bar_baz", Wrapping.NONE)]),
         ("`foo`::`bar baz`", [("`foo`", "`bar baz`", Wrapping.NONE)]),
+        ("`foo`:: `bar baz`", [("`foo`", " `bar baz`", Wrapping.NONE)]),
+        ("`foo::bar baz`", [("`foo", "bar baz`", Wrapping.NONE)]),
+        ("`foo:: bar baz`", [("`foo", " bar baz`", Wrapping.NONE)]),
+        ("**URL**::`https://example.com`", [("**URL**", "`https://example.com`", Wrapping.NONE)]),
     ],
 )
 def test_return_inline_metadata_3(string, returned):
@@ -347,15 +351,26 @@ key: value
     assert P.strip_frontmatter(content, data_only=True) == content
 
 
-def test_strip_inline_code_1():
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        ("Foo `bar` baz `Qux` ```bar\n```", "Foo baz ```bar\n```"),
+        ("foo", "foo"),
+        ("foo `bar` baz `qux`", "foo baz "),
+        ("key:: `value`", "key:: "),
+        ("foo\nbar\n`baz`", "foo\nbar\n"),
+        ("foo\nbar::baz\n`qux`", "foo\nbar::baz\n"),
+        ("`foo::bar`", ""),
+    ],
+)
+def test_strip_inline_code_1(content, expected):
     """Test the strip_inline_code method.
 
     GIVEN a string with inline code
     WHEN the strip_inline_code method is called
     THEN the inline code is removed
     """
-    assert P.strip_inline_code("Foo `bar` baz `Qux` ```bar\n```") == "Foo baz ```bar\n```"
-    assert P.strip_inline_code("Foo `bar` baz `Qux` ```bar\n```") == "Foo baz ```bar\n```"
+    assert P.strip_inline_code(content) == expected
 
 
 def test_validators():

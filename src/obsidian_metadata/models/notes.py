@@ -87,7 +87,7 @@ class Note:
         yield "encoding", self.encoding
         yield "note_path", self.note_path
 
-    def _grab_all_metadata(self, text: str) -> list[InlineField]:
+    def _grab_all_metadata(self, text: str) -> list[InlineField]:  # noqa: C901
         """Grab all metadata from the note and create list of InlineField objects."""
         all_metadata = []  # List of all metadata to be returned
 
@@ -124,17 +124,9 @@ class Note:
                         )
                     )
 
-        # Then strip all frontmatter, code blocks, and inline code from the text and parse tags and inline metadata
-        text = P.strip_frontmatter(P.strip_code_blocks(P.strip_inline_code(text)))
-
-        # Parse text line by line
+        # strip frontmatter and code blocks from the text and parse inline metadata
+        text = P.strip_frontmatter(P.strip_code_blocks(text))
         for _line in text.splitlines():
-            tags = [
-                InlineField(meta_type=MetadataType.TAGS, key=None, value=tag.lstrip("#"))
-                for tag in P.return_tags(_line)
-            ]
-            all_metadata.extend(tags)
-
             inline_metadata = P.return_inline_metadata(_line)
             if inline_metadata:
                 # for item in inline_metadata:
@@ -147,6 +139,15 @@ class Note:
                             wrapping=wrapper,
                         )
                     )
+
+        # Then strip all inline code and parse tags
+        text = P.strip_inline_code(text)
+        for _line in text.splitlines():
+            tags = [
+                InlineField(meta_type=MetadataType.TAGS, key=None, value=tag.lstrip("#"))
+                for tag in P.return_tags(_line)
+            ]
+            all_metadata.extend(tags)
 
         return list(set(all_metadata))
 

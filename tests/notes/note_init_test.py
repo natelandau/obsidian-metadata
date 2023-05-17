@@ -153,17 +153,23 @@ foo [key3::value3] bar
 key4::value4
 foo (key4::value) bar
 key5::value5
+key6:: `value6`
+`key7::value7`
+`key8`::`value8`
 
     """
     )
     note = Note(note_path=note_path)
     assert sorted(note.metadata, key=lambda x: (x.key, x.value)) == [
+        InlineField(meta_type=MetadataType.INLINE, key="`key7", value="value7`"),
+        InlineField(meta_type=MetadataType.INLINE, key="`key8`", value="`value8`"),
         InlineField(meta_type=MetadataType.INLINE, key="key1", value="value1"),
         InlineField(meta_type=MetadataType.INLINE, key="key2", value="2022-12-22"),
         InlineField(meta_type=MetadataType.INLINE, key="key3", value="value3"),
         InlineField(meta_type=MetadataType.INLINE, key="key4", value="value"),
         InlineField(meta_type=MetadataType.INLINE, key="key4", value="value4"),
         InlineField(meta_type=MetadataType.INLINE, key="key5", value="value5"),
+        InlineField(meta_type=MetadataType.INLINE, key="key6", value=" `value6`"),
     ]
 
 

@@ -186,10 +186,10 @@ class Note:
                 is_regex=True,
             )
 
-        return False
+        return False  # type: ignore [unreachable]
 
     def _edit_inline_metadata(
-        self, source: InlineField, new_key: str, new_value: str = None
+        self, source: InlineField, new_key: str, new_value: str | None = None
     ) -> InlineField:
         """Edit an inline metadata field. Takes an InlineField object and a new key and/or value and edits the inline metadata in the object and note accordingly.
 
@@ -235,7 +235,11 @@ class Note:
         return new_inline_field
 
     def _find_matching_fields(
-        self, meta_type: MetadataType, key: str = None, value: str = None, is_regex: bool = False
+        self,
+        meta_type: MetadataType,
+        key: str | None = None,
+        value: str | None = None,
+        is_regex: bool = False,
     ) -> list[InlineField]:
         """Create a list of InlineField objects matching the specified key and/or value.
 
@@ -295,7 +299,7 @@ class Note:
         return matching_inline_fields
 
     def _update_inline_metadata(
-        self, source: InlineField, new_key: str = None, new_value: str = None
+        self, source: InlineField, new_key: str | None = None, new_value: str | None = None
     ) -> bool:
         """Update an inline metadata field. Takes an InlineField object and a new key and/or value and updates the inline metadata in the object and note accordingly.
 
@@ -354,8 +358,8 @@ class Note:
     def add_metadata(
         self,
         meta_type: MetadataType,
-        added_key: str = None,
-        added_value: str = None,
+        added_key: str | None = None,
+        added_value: str | None = None,
         location: InsertLocation = None,
     ) -> bool:
         """Add metadata to the note if it does not already exist. This method adds specified metadata to the appropriate MetadataType object AND writes the new metadata to the note's file.
@@ -428,7 +432,7 @@ class Note:
                 )
                 raise typer.Exit(code=1)
 
-    def commit(self, path: Path = None) -> None:
+    def commit(self, path: Path | None = None) -> None:
         """Write the note's new content to disk. This is a destructive action.
 
         Args:
@@ -453,7 +457,7 @@ class Note:
         self,
         meta_type: MetadataType,
         search_key: str,
-        search_value: str = None,
+        search_value: str | None = None,
         is_regex: bool = False,
     ) -> bool:
         """Check if a note contains the specified metadata.
@@ -514,7 +518,11 @@ class Note:
         return False
 
     def delete_metadata(  # noqa: PLR0912, C901
-        self, meta_type: MetadataType, key: str = None, value: str = None, is_regex: bool = False
+        self,
+        meta_type: MetadataType,
+        key: str | None = None,
+        value: str | None = None,
+        is_regex: bool = False,
     ) -> bool:
         """Delete specified metadata from the note. Removes the metadata from the note and the metadata list. When a key is provided without a value, all values associated with that key are deleted.
 
@@ -661,7 +669,7 @@ class Note:
         """Print the note to the console."""
         console_no_markup.print(self.file_content)
 
-    def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> bool:
+    def rename_metadata(self, key: str, value_1: str, value_2: str | None = None) -> bool:
         """Rename a key or key-value pair in the note's InlineMetadata and Frontmatter objects and the content of the note.
 
         If no value is provided, will rename the entire specified key.
@@ -770,8 +778,8 @@ class Note:
         self,
         begin: MetadataType,
         end: MetadataType,
-        key: str = None,
-        value: str = None,
+        key: str | None = None,
+        value: str | None = None,
         location: InsertLocation = InsertLocation.BOTTOM,
     ) -> bool:
         """Move metadata from one metadata object to another. i.e. Frontmatter to InlineMetadata or vice versa.

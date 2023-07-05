@@ -231,8 +231,8 @@ class Vault:
     def add_metadata(
         self,
         meta_type: MetadataType,
-        key: str = None,
-        value: str = None,
+        key: str | None = None,
+        value: str | None = None,
         location: InsertLocation = None,
     ) -> int:
         """Add metadata to all notes in the vault which do not already contain it.
@@ -303,7 +303,7 @@ class Vault:
                 _note.commit()
 
     def contains_metadata(
-        self, meta_type: MetadataType, key: str, value: str = None, is_regex: bool = False
+        self, meta_type: MetadataType, key: str, value: str | None = None, is_regex: bool = False
     ) -> bool:
         """Check if the vault contains metadata.
 
@@ -374,7 +374,7 @@ class Vault:
     def delete_metadata(
         self,
         key: str,
-        value: str = None,
+        value: str | None = None,
         meta_type: MetadataType = MetadataType.ALL,
         is_regex: bool = False,
     ) -> int:
@@ -490,8 +490,7 @@ class Vault:
             if _note.has_changes():
                 changed_notes.append(_note)
 
-        changed_notes = sorted(changed_notes, key=lambda x: x.note_path)
-        return changed_notes
+        return sorted(changed_notes, key=lambda x: x.note_path)
 
     def info(self) -> None:
         """Print information about the vault."""
@@ -613,7 +612,7 @@ class Vault:
 
         return num_changed
 
-    def rename_metadata(self, key: str, value_1: str, value_2: str = None) -> int:
+    def rename_metadata(self, key: str, value_1: str, value_2: str | None = None) -> int:
         """Rename a key or key-value pair in the note's metadata.
 
         If no value is provided, will rename an entire key.
@@ -642,8 +641,8 @@ class Vault:
         self,
         begin: MetadataType,
         end: MetadataType,
-        key: str = None,
-        value: str = None,
+        key: str | None = None,
+        value: str | None = None,
         location: InsertLocation = None,
     ) -> int:
         """Transpose metadata from one type to another.

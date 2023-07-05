@@ -63,7 +63,7 @@ class Questions:
 
         return True
 
-    def __init__(self, vault: Vault = None, key: str = None) -> None:
+    def __init__(self, vault: Vault = None, key: str | None = None) -> None:
         """Initialize the class.
 
         Args:

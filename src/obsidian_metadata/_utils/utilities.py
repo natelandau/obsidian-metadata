@@ -38,7 +38,7 @@ def clear_screen() -> None:  # pragma: no cover
 
 
 def dict_contains(
-    dictionary: dict[str, list[str]], key: str, value: str = None, is_regex: bool = False
+    dictionary: dict[str, list[str]], key: str, value: str | None = None, is_regex: bool = False
 ) -> bool:
     """Check if a dictionary contains a key or if a key contains a value.
 
@@ -79,7 +79,7 @@ def dict_keys_to_lower(dictionary: dict) -> dict:
 
 
 def delete_from_dict(  # noqa: C901
-    dictionary: dict, key: str, value: str = None, is_regex: bool = False
+    dictionary: dict, key: str, value: str | None = None, is_regex: bool = False
 ) -> dict:
     """Delete a key or a value from a dictionary.
 
@@ -172,7 +172,7 @@ def merge_dictionaries(dict1: dict, dict2: dict) -> dict:
 
 
 def rename_in_dict(
-    dictionary: dict[str, list[str]], key: str, value_1: str, value_2: str = None
+    dictionary: dict[str, list[str]], key: str, value_1: str, value_2: str | None = None
 ) -> dict:
     """Rename a key or a value in a dictionary who's values are lists of strings.
 

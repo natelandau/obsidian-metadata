@@ -54,7 +54,7 @@ class ConfigQuestions:
 class Config:
     """Representation of a configuration file."""
 
-    def __init__(self, config_path: Path = None, vault_path: Path = None) -> None:
+    def __init__(self, config_path: Path | None = None, vault_path: Path | None = None) -> None:
         if vault_path is None:
             self.config_path: Path = self._validate_config_path(Path(config_path))
             self.config: dict[str, Any] = self._load_config()

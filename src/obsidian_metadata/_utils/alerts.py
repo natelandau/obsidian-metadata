@@ -87,7 +87,7 @@ def info(msg: str) -> None:
     console.print(f"INFO     | {msg}")
 
 
-def usage(msg: str, width: int = None) -> None:
+def usage(msg: str, width: int | None = None) -> None:
     """Print a usage message without using logging.
 
     Args:

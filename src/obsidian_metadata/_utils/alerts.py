@@ -124,14 +124,10 @@ def dim(msg: str) -> None:
 
 def _log_formatter(record: dict) -> str:
     """Create custom log formatter based on the log level.  This effects the logs sent to stdout/stderr but not the log file."""
-    if (
-        record["level"].name == "INFO"
-        or record["level"].name == "SUCCESS"
-        or record["level"].name == "WARNING"
-    ):
+    if record["level"].name in ("INFO", "SUCCESS", "WARNING"):
         return "<level><normal>{level: <8} | {message}</normal></level>\n{exception}"
 
-    if record["level"].name == "TRACE" or record["level"].name == "DEBUG":
+    if record["level"].name in ("TRACE", "DEBUG"):
         return "<level><normal>{level: <8} | {message}</normal></level> <fg #c5c5c5>({name}:{function}:{line})</fg #c5c5c5>\n{exception}"
 
     return "<level>{level: <8} | {message}</level> <fg #c5c5c5>({name}:{function}:{line})</fg #c5c5c5>\n{exception}"

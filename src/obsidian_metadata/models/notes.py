@@ -481,7 +481,7 @@ class Note:
                 MetadataType.FRONTMATTER, search_key, search_value, is_regex
             ) or self.contains_metadata(MetadataType.INLINE, search_key, search_value, is_regex)
 
-        if meta_type == MetadataType.FRONTMATTER or meta_type == MetadataType.INLINE:
+        if meta_type in [MetadataType.FRONTMATTER, MetadataType.INLINE]:
             if search_key is None or re.match(r"^\s*$", search_key):
                 return False
 
@@ -562,8 +562,7 @@ class Note:
                 meta_to_delete.extend(
                     self._find_matching_fields(MetadataType.TAGS, key, value, is_regex)
                 )
-
-        elif meta_type == MetadataType.FRONTMATTER or meta_type == MetadataType.INLINE:
+        elif meta_type in {MetadataType.FRONTMATTER, MetadataType.INLINE}:
             if key is None or re.match(r"^\s*$", key):
                 log.error("A valid key must be specified.")
                 raise typer.Exit(code=1)
@@ -770,7 +769,9 @@ class Note:
         if not is_regex:
             pattern = re.escape(pattern)
 
-        self.file_content, num_subs = re.subn(pattern, replacement, self.file_content, re.MULTILINE)
+        self.file_content, num_subs = re.subn(
+            pattern, replacement, self.file_content, flags=re.MULTILINE
+        )
 
         return num_subs > 0
 
@@ -801,7 +802,7 @@ class Note:
         if begin == MetadataType.FRONTMATTER and end == MetadataType.FRONTMATTER:
             return False
 
-        if begin == MetadataType.TAGS or end == MetadataType.TAGS:
+        if MetadataType.TAGS in {begin, end}:
             # TODO: Implement transposing to and from tags
             return False
 

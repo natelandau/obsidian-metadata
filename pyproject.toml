@@ -17,16 +17,16 @@
         obsidian-metadata = "obsidian_metadata.cli:app"
 
     [tool.poetry.dependencies]
-        charset-normalizer = "^3.1.0"
-        emoji              = "^2.6.0"
+        charset-normalizer = "^3.2.0"
+        emoji              = "^2.8.0"
         loguru             = "^0.7.0"
         python             = "^3.10"
         questionary        = "^1.10.0"
-        regex              = "^2023.6.3"
-        rich               = "^13.4.2"
+        regex              = "^2023.8.8"
+        rich               = "^13.5.2"
         ruamel-yaml        = "^0.17.32"
-        shellingham        = "^1.5.0.post1"
-        tomlkit            = "^0.11.8"
+        shellingham        = "^1.5.3"
+        tomlkit            = "^0.12.1"
         typer              = "^0.9.0"
 
     [tool.poetry.group.test.dependencies]
@@ -37,19 +37,18 @@
         pytest-xdist           = "^3.3.1"
 
     [tool.poetry.group.dev.dependencies]
-        black                 = "^23.3.0"
-        commitizen            = "^3.5.2"
-        coverage              = "^7.2.7"
+        black                 = "^23.7.0"
+        commitizen            = "^3.7.0"
+        coverage              = "^7.3.0"
         interrogate           = "^1.5.0"
-        mypy                  = "^1.4.1"
+        mypy                  = "^1.5.1"
         pdoc                  = "^14.0.0"
-        poethepoet            = "^0.20.0"
+        poethepoet            = "^0.22.0"
         pre-commit            = "^3.3.3"
-        ruff                  = "^0.0.277"
-        sh                    = "^2.0.4"
-        typeguard             = "^4.0.0"
-        types-python-dateutil = "^2.8.19.13"
-        vulture               = "^2.7"
+        ruff                  = "^0.0.286"
+        sh                    = "^2.0.6"
+        types-python-dateutil = "^2.8.19.14"
+        vulture               = "^2.9.1"
 
 [tool.black]
     line-length = 100

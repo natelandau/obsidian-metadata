@@ -236,7 +236,7 @@ def validate_csv_bulk_imports(  # noqa: C901
                 {"type": row["type"], "key": row["key"], "value": row["value"]}
             )
 
-        if row_num == 0 or row_num == 1:
+        if row_num in [0, 1]:
             raise typer.BadParameter("Empty CSV file")
 
         paths_to_remove = [x for x in csv_dict if x not in note_paths]

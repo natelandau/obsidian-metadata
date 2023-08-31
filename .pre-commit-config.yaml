@@ -72,12 +72,21 @@ repos:
       hooks:
           - id: vulture
 
+    - repo: "https://github.com/crate-ci/typos"
+      rev: "v1.16.8"
+      hooks:
+          - id: typos
+
     - repo: local
       hooks:
-          - id: custom
-            name: custom pre-commit script
-            entry: scripts/pre-commit-hook.sh
+          # This calls a custom pre-commit script.
+          # Disable if you don't have it.
+          - id: stopwords
+            name: stopwords
+            entry: bash -c '~/bin/git-stopwords ${PWD}/"$@"'
             language: system
+            pass_filenames: true
+            types: [text]
 
           - id: black
             name: black

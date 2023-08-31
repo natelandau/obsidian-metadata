@@ -1,0 +1,7 @@
+[default]
+    default.locale = "en_us"
+
+    [default.extend-words]
+        nd = "nd" # In the context of 2nd
+[files]
+    extend-exclude = ["*_cache", ".venv", "src/jdfile/utils/strings.py", "tests/fixtures/"]

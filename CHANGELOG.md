@@ -95,7 +95,7 @@
 
 ### Fix
 
-- **ui**: add seperator to top of select lists
+- **ui**: add separator to top of select lists
 - allow adding inline tags with same key different values (#17)
 - remove unnecessary question when viewing diffs
 

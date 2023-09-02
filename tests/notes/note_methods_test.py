@@ -1,9 +1,11 @@
 # type: ignore
 """Test for metadata methods within Note class."""
+import shutil
 from pathlib import Path
 
 import pytest
 import typer
+from charset_normalizer import from_path
 from tests.helpers import Regex
 
 from obsidian_metadata._utils.console import console
@@ -97,8 +99,8 @@ def test__edit_inline_metadata_2(tmp_path, content, new_key, new_value, new_cont
 @pytest.mark.parametrize(
     ("meta_type", "key", "value", "is_regex", "expected"),
     [
-        (MetadataType.FRONTMATTER, None, None, False, 8),
-        (MetadataType.FRONTMATTER, None, None, True, 8),
+        (MetadataType.FRONTMATTER, None, None, False, 9),
+        (MetadataType.FRONTMATTER, None, None, True, 9),
         (MetadataType.FRONTMATTER, "frontmatter1", None, False, 1),
         (MetadataType.FRONTMATTER, r"\w+2", None, True, 3),
         (MetadataType.FRONTMATTER, "frontmatter1", "foo", False, 1),
@@ -108,10 +110,10 @@ def test__edit_inline_metadata_2(tmp_path, content, new_key, new_value, new_cont
         (MetadataType.FRONTMATTER, "frontmatterXX", None, False, 0),
         (MetadataType.FRONTMATTER, r"^\d", "XXX", False, 0),
         (MetadataType.FRONTMATTER, "frontmatterXX", r"^\d+", False, 0),
-        (MetadataType.INLINE, None, None, False, 10),
-        (MetadataType.INLINE, None, None, True, 10),
+        (MetadataType.INLINE, None, None, False, 11),
+        (MetadataType.INLINE, None, None, True, 11),
         (MetadataType.INLINE, "inline1", None, False, 2),
-        (MetadataType.INLINE, r"\w+2", None, True, 2),
+        (MetadataType.INLINE, r"\w+2", None, True, 3),
         (MetadataType.INLINE, "inline1", "foo", False, 1),
         (MetadataType.INLINE, "inline1", r"\w+", True, 2),
         (MetadataType.INLINE, r"\w+1", "foo", True, 2),
@@ -155,7 +157,7 @@ def test__update_inline_metadata_1(sample_note, meta_type):
     THEN raise an error
     """
     note = Note(note_path=sample_note)
-    source_field = [x for x in note.metadata][0]
+    source_field = next(iter(note.metadata))
     source_field.meta_type = meta_type
 
     with pytest.raises(typer.Exit):
@@ -170,7 +172,7 @@ def test__update_inline_metadata_2(sample_note):
     THEN raise an error
     """
     note = Note(note_path=sample_note)
-    source_field = [x for x in note.metadata][0]
+    source_field = next(iter(note.metadata))
     source_field.meta_type = MetadataType.INLINE
 
     with pytest.raises(typer.Exit):
@@ -198,11 +200,11 @@ def test__update_inline_metadata_3(
     note = Note(note_path=sample_note)
 
     if orig_key is None:
-        source_inlinefield = [
+        source_inlinefield = next(
             x
             for x in note.metadata
             if x.meta_type == MetadataType.INLINE and x.normalized_value == orig_value
-        ][0]
+        )
         assert (
             note._update_inline_metadata(source_inlinefield, new_key=new_key, new_value=new_value)
             is True
@@ -210,11 +212,11 @@ def test__update_inline_metadata_3(
         assert source_inlinefield.normalized_value == new_value
 
     elif orig_value is None:
-        source_inlinefield = [
+        source_inlinefield = next(
             x
             for x in note.metadata
             if x.meta_type == MetadataType.INLINE and x.normalized_key == orig_key
-        ][0]
+        )
         assert (
             note._update_inline_metadata(source_inlinefield, new_key=new_key, new_value=new_value)
             is True
@@ -222,13 +224,13 @@ def test__update_inline_metadata_3(
         assert source_inlinefield.normalized_key == new_key.lower()
 
     else:
-        source_inlinefield = [
+        source_inlinefield = next(
             x
             for x in note.metadata
             if x.meta_type == MetadataType.INLINE
             if x.normalized_key == orig_key
             if x.normalized_value == orig_value
-        ][0]
+        )
         assert (
             note._update_inline_metadata(source_inlinefield, new_key=new_key, new_value=new_value)
             is True
@@ -329,6 +331,18 @@ def test_add_metadata_6(sample_note):
         (MetadataType.INLINE, "test", "value", "test:: value"),
         (MetadataType.TAGS, None, "testtag", "#testtag"),
         (MetadataType.TAGS, None, "#testtag", "#testtag"),
+        (
+            MetadataType.INLINE,
+            "french3",
+            "Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.",
+            "french3:: Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.",
+        ),
+        (
+            MetadataType.FRONTMATTER,
+            "french3",
+            "Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.",
+            "french3: Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.",
+        ),
     ],
 )
 def test_add_metadata_7(sample_note, metatype, key, value, expected):
@@ -362,15 +376,14 @@ def test_commit_1(sample_note, tmp_path) -> None:
     note.sub(pattern="Heading 1", replacement="Heading 2")
 
     note.commit()
-    note = Note(note_path=sample_note)
-    assert "Heading 2" in note.file_content
-    assert "Heading 1" not in note.file_content
+    assert "Heading 2" in sample_note.read_text()
+    assert "Heading 1" not in sample_note.read_text()
 
     new_path = Path(tmp_path / "new_note.md")
+
     note.commit(new_path)
-    note2 = Note(note_path=new_path)
-    assert "Heading 2" in note2.file_content
-    assert "Heading 1" not in note2.file_content
+    assert "Heading 2" in new_path.read_text()
+    assert "Heading 1" not in new_path.read_text()
 
 
 def test_commit_2(sample_note) -> None:
@@ -382,10 +395,37 @@ def test_commit_2(sample_note) -> None:
     """
     note = Note(note_path=sample_note, dry_run=True)
     note.sub(pattern="Heading 1", replacement="Heading 2")
-
     note.commit()
-    note = Note(note_path=sample_note)
-    assert "Heading 1" in note.file_content
+
+    assert "Heading 2" in note.file_content
+    assert "Heading 1" in sample_note.read_text()
+
+
+def test_commit_3(tmp_path) -> None:
+    """Test that commit() method preserves encoding.
+
+    GIVEN a file in CP1250 encoding
+    WHEN the file is written to
+    THEN the file is output in its original encoding.
+    """
+    source_file: Path = Path("tests/fixtures/CP1250.md")
+    dest_file: Path = Path(tmp_path / source_file.name)
+    shutil.copy(source_file, dest_file)
+
+    # Assert that the file is in CP1250 encoding
+    assert from_path(dest_file).best().encoding == "cp1250"
+
+    # Create the note object
+    note = Note(note_path=dest_file)
+    assert note.encoding == "cp1250"
+
+    # Modify and commit the note
+    note.sub(pattern="Heading 1", replacement="Heading 2")
+    note.commit()
+
+    # Assert that the file is still in CP1250 encoding
+    assert from_path(dest_file).best().encoding == "cp1250"
+    assert "Heading 2" in dest_file.read_text(encoding="cp1250")
 
 
 @pytest.mark.parametrize(
@@ -437,8 +477,6 @@ def test_commit_2(sample_note) -> None:
         (MetadataType.ALL, r"^i\w+1", r"^\d+", True, False),
         (MetadataType.ALL, None, "not_a_value", False, False),
         (MetadataType.ALL, None, r"^\d+", True, False),
-        (MetadataType.ALL, "frontmatter1", "foo", False, True),
-        (MetadataType.ALL, r"^f\w+1", r"[a-z]{3}", True, True),
         (MetadataType.ALL, "frontmatter1", "foo", False, True),
         (MetadataType.ALL, r"^f\w+1", r"[a-z]{3}", True, True),
         (MetadataType.ALL, "inline1", "foo", False, True),
@@ -563,7 +601,6 @@ def test_delete_metadata_2(sample_note, meta_type, key, value, is_regex):
         (MetadataType.META, r"\d{8}", None, True),
         (MetadataType.FRONTMATTER, r"\d{8}", None, True),
         (MetadataType.INLINE, r"\d{8}", None, True),
-        (MetadataType.META, r"\d{8}", None, True),
         (MetadataType.META, "frontmatter1", r"\d{8}", True),
         (MetadataType.FRONTMATTER, "frontmatter1", r"\d{8}", True),
         (MetadataType.INLINE, "inline1", r"\d{8}", True),
@@ -835,7 +872,7 @@ def test_transpose_metadata_1(sample_note, begin, end, key, value, location):
             None,
             None,
             InsertLocation.BOTTOM,
-            "```\n\ninline1:: bar baz\ninline1:: foo\ninline2:: [[foo]]\ninline3:: value\ninline4:: foo\ninline5::\nintext1:: foo\nintext2:: foo\nkey with space:: foo\n🌱:: 🌿",
+            "```\n\nfrench2:: Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.\ninline1:: bar baz\ninline1:: foo\ninline2:: [[foo]]\ninline3:: value\ninline4:: foo\ninline5::\nintext1:: foo\nintext2:: foo\nkey with space:: foo\n🌱:: 🌿",
         ),
     ],
 )
@@ -978,7 +1015,7 @@ no frontmatter
     )
     new_note = """\
 ---
-key: value
+french: Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.
 ---
 
 # Header1
@@ -986,7 +1023,11 @@ inline:: only
 no frontmatter
 """
     note = Note(note_path=note_path)
-    note.add_metadata(meta_type=MetadataType.FRONTMATTER, added_key="key", added_value="value")
+    note.add_metadata(
+        meta_type=MetadataType.FRONTMATTER,
+        added_key="french",
+        added_value="Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.",
+    )
     assert note.write_frontmatter() is True
     assert note.file_content == new_note
 

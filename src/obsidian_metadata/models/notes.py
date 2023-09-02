@@ -448,7 +448,8 @@ class Note:
 
         try:
             log.trace(f"Writing note {p} to disk")
-            p.write_text(self.file_content)
+            content_bytes = bytes(self.file_content, self.encoding)
+            p.write_bytes(content_bytes)
         except FileNotFoundError as e:
             alerts.error(f"Note {p} not found. Exiting")
             raise typer.Exit(code=1) from e

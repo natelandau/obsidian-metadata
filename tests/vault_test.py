@@ -31,12 +31,18 @@ def test_vault_creation(test_vault, tmp_path):
     assert len(vault.all_notes) == 2
     assert vault.frontmatter == {
         "date_created": ["2022-12-22"],
+        "french1": [
+            "Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis",
+        ],
         "frontmatter1": ["foo"],
         "frontmatter2": ["bar", "baz", "qux"],
         "tags": ["bar", "foo"],
         "🌱": ["🌿"],
     }
     assert vault.inline_meta == {
+        "french2": [
+            "Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.",
+        ],
         "inline1": ["bar baz", "foo"],
         "inline2": ["[[foo]]"],
         "inline3": ["value"],

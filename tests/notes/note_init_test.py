@@ -34,7 +34,7 @@ def test_create_note_1(sample_note):
     assert note.note_path == Path(sample_note)
     assert note.dry_run is True
     assert note.encoding == "utf_8"
-    assert len(note.metadata) == 20
+    assert len(note.metadata) == 22
 
     with sample_note.open():
         content = sample_note.read_text()

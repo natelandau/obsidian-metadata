@@ -1,3 +1,9 @@
+## v0.12.1 (2023-09-02)
+
+### Fix
+
+- **notes**: preserve file encoding when writing to filesystem (#59)
+
 ## v0.12.0 (2023-05-17)
 
 ### Feat

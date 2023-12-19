@@ -53,7 +53,7 @@ jobs:
                       webi.sh:443
 
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
             - name: Build and run dev container task
               uses: devcontainers/ci@v0.3

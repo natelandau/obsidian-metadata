@@ -5,7 +5,7 @@ default_stages: [commit, manual]
 fail_fast: true
 repos:
     - repo: "https://github.com/commitizen-tools/commitizen"
-      rev: 3.7.0
+      rev: v3.13.0
       hooks:
           - id: commitizen
           - id: commitizen-branch
@@ -26,7 +26,7 @@ repos:
           - id: text-unicode-replacement-char
 
     - repo: "https://github.com/pre-commit/pre-commit-hooks"
-      rev: v4.4.0
+      rev: v4.5.0
       hooks:
           - id: check-added-large-files
           - id: check-ast
@@ -54,26 +54,26 @@ repos:
             types: [python]
 
     - repo: "https://github.com/adrienverge/yamllint.git"
-      rev: v1.32.0
+      rev: v1.33.0
       hooks:
           - id: yamllint
             files: ^.*\.(yaml|yml)$
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.0.286"
+      rev: "v0.1.8"
       hooks:
           - id: ruff
             args: ["--extend-ignore", "I001,D301,D401"]
             exclude: tests/
 
     - repo: "https://github.com/jendrikseipp/vulture"
-      rev: "v2.9.1"
+      rev: "v2.10"
       hooks:
           - id: vulture
 
     - repo: "https://github.com/crate-ci/typos"
-      rev: "v1.16.8"
+      rev: "v1.16.25"
       hooks:
           - id: typos
 

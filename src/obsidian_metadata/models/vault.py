@@ -661,8 +661,8 @@ class Vault:
             location = self.insert_location
 
         num_changed = 0
-        for _note in self.notes_in_scope:
-            if _note.transpose_metadata(
+        for note in self.notes_in_scope:
+            if note.transpose_metadata(
                 begin=begin,
                 end=end,
                 key=key,
@@ -673,7 +673,7 @@ class Vault:
 
         if num_changed > 0:
             self._rebuild_vault_metadata()
-            log.trace(f"Transposed metadata in {_note.note_path}")
+            log.trace(f"Transposed metadata in {note.note_path}")
 
         return num_changed
 

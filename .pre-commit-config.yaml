@@ -61,7 +61,7 @@ repos:
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.1.8"
+      rev: "v0.1.13"
       hooks:
           - id: ruff
             args: ["--extend-ignore", "I001,D301,D401"]
@@ -73,7 +73,7 @@ repos:
           - id: vulture
 
     - repo: "https://github.com/crate-ci/typos"
-      rev: "v1.16.25"
+      rev: "v1.17.1"
       hooks:
           - id: typos
 
